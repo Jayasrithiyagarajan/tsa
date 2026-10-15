@@ -2,14 +2,16 @@
 /** Portal shell. @var string $content @var string $title @var array $crumbs */
 $u = Auth::user();
 $role = $u['role'];
-$portal = ['admin' => 'Admin Portal', 'inspector' => 'Inspector Portal', 'qc' => 'QC Portal', 'customer' => 'Customer Portal'][$role];
+$portal = ['superadmin' => 'Super Admin Portal', 'admin' => 'Admin Portal', 'inspector' => 'Inspector Portal', 'qc' => 'QC Portal', 'customer' => 'Customer Portal'][$role];
 $unread = (int) DB::value('SELECT COUNT(*) FROM notifications WHERE user_id = ? AND read_at IS NULL', [$u['id']]);
 $notes = DB::all('SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 8', [$u['id']]);
 
 $c = [];
-if ($role === 'admin') {
+if (Auth::is('admin')) {
     $c = DB::one("SELECT (SELECT COUNT(*) FROM service_requests WHERE status IN ('new','under_review')) req,
-                         (SELECT COUNT(*) FROM sub_jobs WHERE status='pending') unassigned");
+                         (SELECT COUNT(*) FROM sub_jobs WHERE status='pending') unassigned,
+                         (SELECT COUNT(*) FROM jobs WHERE status='awaiting_approval') approvals,
+                         (SELECT COUNT(*) FROM inspector_cards WHERE status='active' AND handed_over_at IS NULL) cards_pending");
 } elseif ($role === 'inspector') {
     $c = DB::one("SELECT SUM(status IN ('assigned','in_progress')) open, SUM(status='rework') rework FROM sub_jobs WHERE inspector_id = ?", [$u['id']]);
 } elseif ($role === 'qc') {
@@ -24,11 +26,18 @@ $nav = [
             ['admin/requests', 'inbox', 'Client Requests', $cnt($c['req'] ?? 0, true)],
             ['admin/jobs', 'briefcase', 'Jobs & Sub-jobs', ''],
             ['admin/assign', 'users', 'Assignment Board', $cnt($c['unassigned'] ?? 0)],
+            ['admin/jobs?status=awaiting_approval', 'check', 'Final Approval', $cnt($c['approvals'] ?? 0, true)],
         ]],
         ['Documents', [
             ['admin/certificates', 'award', 'Certificates', ''],
-            ['admin/stickers', 'tag', 'Stickers', ''],
+            ['admin/stickers', 'layers', 'Sticker Stock', ''],
+            ['admin/project-stickers', 'tag', 'Project Stickers', ''],
             ['admin/templates', 'layers', 'Templates', ''],
+        ]],
+        ['ID Card System', [
+            ['admin/cards', 'qr', 'Inspector ID Cards', $cnt($c['cards_pending'] ?? 0)],
+            ['admin/cards/new', 'plus', 'Issue Card', ''],
+            ['admin/cards/validate', 'shield', 'Validate Card', ''],
         ]],
         ['Master Data', [
             ['admin/clients', 'building', 'Clients', ''],
@@ -45,7 +54,9 @@ $nav = [
             ['inspector', 'grid', 'My Day', ''],
             ['inspector/jobs', 'briefcase', 'Assigned Jobs', $cnt(($c['open'] ?? 0) + ($c['rework'] ?? 0), (int) ($c['rework'] ?? 0) > 0)],
             ['inspector/history', 'history', 'Submitted & Approved', ''],
+            ['inspector/stickers', 'tag', 'My Stickers', ''],
             ['inspector/kpi', 'chart', 'My KPIs', ''],
+            ['inspector/card', 'qr', 'My ID Card', ''],
         ]],
     ],
     'qc' => [
@@ -66,8 +77,24 @@ $nav = [
             ['portal/equipment', 'truck', 'Equipment Register', ''],
         ]],
     ],
-][$role];
+][$role === 'superadmin' ? 'admin' : $role];
+if ($role === 'admin') {
+    // operations admin: no template / settings / audit screens and no card issuing (Super Admin only)
+    $superOnly = ['admin/templates', 'admin/cards/new', 'admin/audit', 'admin/settings'];
+    foreach ($nav as $i => [$group, $links]) {
+        $nav[$i][1] = array_values(array_filter($links, fn ($l) => !in_array($l[0], $superOnly, true)));
+        if (!$nav[$i][1]) unset($nav[$i]);
+    }
+}
 $homeKey = Auth::home();
+// highlight only the most specific matching link (admin/cards/new must not also light up admin/cards)
+$activeHref = '';
+foreach ($nav as [, $links]) {
+    foreach ($links as [$href]) {
+        $hit = $href === $homeKey ? trim(request_path(), '/') === $href : is_active_nav($href);
+        if ($hit && strlen($href) > strlen($activeHref)) $activeHref = $href;
+    }
+}
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -92,7 +119,7 @@ $homeKey = Auth::home();
       <?php foreach ($nav as [$group, $links]): ?>
         <div class="nav-label"><?= e($group) ?></div>
         <?php foreach ($links as [$href, $ic, $label, $extra]):
-            $active = $href === $homeKey ? trim(request_path(), '/') === $href : is_active_nav($href); ?>
+            $active = $href === $activeHref; ?>
           <a href="<?= url($href) ?>" class="<?= $active ? 'active' : '' ?>"><?= icon($ic) ?><span><?= e($label) ?></span><?= $extra ?></a>
         <?php endforeach; ?>
       <?php endforeach; ?>
@@ -117,7 +144,7 @@ $homeKey = Auth::home();
           <?php if ($href): ?><a href="<?= url($href) ?>"><?= e($label) ?></a><?php else: ?><b><?= e($label) ?></b><?php endif; ?>
         <?php endforeach; ?>
       </div>
-      <?php if ($role === 'admin'): ?>
+      <?php if (Auth::is('admin')): ?>
         <form class="topsearch" action="<?= url('admin/search') ?>" method="get" role="search">
           <?= icon('search', 'sm') ?>
           <input name="q" placeholder="Search jobs, certificates, clients…" value="<?= e($_GET['q'] ?? '') ?>" aria-label="Search">

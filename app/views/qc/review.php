@@ -49,7 +49,7 @@
         <dt>Inspection date</dt><dd><?= e(fmt_date($cert['inspection_date'] ?? null) ?: '—') ?></dd>
         <dt>Next due</dt><dd><?= e(fmt_date($cert['next_inspection_date'] ?? null) ?: '—') ?></dd>
         <?php if ($stats): ?><dt>Checklist</dt><dd><?= (int) $stats['pass'] ?> pass · <b style="color:var(--red)"><?= (int) $stats['fail'] ?> fail</b> · <?= (int) $stats['na'] ?> N/A · <?= (int) $stats['missing'] ?> open</dd><?php endif; ?>
-        <?php if ($sj['requires_sticker']): ?><dt>Sticker</dt><dd><?= $sticker ? '<span class="mono">' . e($sticker['sticker_no']) . '</span> (' . e(Workflow::label($sticker['status'])) . ')' : '<span class="muted">none</span>' ?></dd><?php endif; ?>
+        <?php if ($sj['requires_sticker']): ?><dt>Sticker</dt><dd><?= $sticker ? '<a class="mono" href="' . url('documents/sticker/' . $sticker['id']) . '" target="_blank">' . e($sticker['sticker_no']) . '</a> (' . ($sticker['color'] === 'red' ? 'red · Failed' : 'blue · Accepted') . ', linked)' : '<span class="muted">none</span>' ?></dd><?php endif; ?>
       </dl>
       <?php if ($failed): ?><div class="divider"></div><div class="strong small mb-2">Failed items & remarks</div>
         <ul class="issue-list"><?php foreach ($failed as $f): ?><li><?= badge($f['result'] ?? 'na') ?><span><b><?= nl2br(e(preg_replace('/^(## |>> )/m', '', $f['label']))) ?></b><?= $f['remarks'] ? '<br><span class="muted">' . e($f['remarks']) . '</span>' : '' ?></span></li><?php endforeach; ?></ul><?php endif; ?>

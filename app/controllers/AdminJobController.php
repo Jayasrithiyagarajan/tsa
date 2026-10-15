@@ -73,7 +73,7 @@ final class AdminJobController extends Controller
         foreach ($subs as &$s) {
             $s['cert'] = DB::one('SELECT id, certificate_no, status, template_id FROM certificates WHERE sub_job_id = ?', [$s['id']]);
             $s['checklist'] = DB::one('SELECT id, status FROM checklists WHERE sub_job_id = ?', [$s['id']]);
-            $s['sticker'] = DB::one("SELECT id, sticker_no, status FROM stickers WHERE sub_job_id = ? AND status IN ('reserved','issued') ORDER BY id DESC LIMIT 1", [$s['id']]);
+            $s['sticker'] = DB::one("SELECT id, sticker_no, status, color FROM stickers WHERE sub_job_id = ? AND status = 'closed' ORDER BY id DESC LIMIT 1", [$s['id']]);
         }
         unset($s);
         $history = DB::all("SELECT a.*, u.name user_name FROM audit_logs a LEFT JOIN users u ON u.id = a.user_id
@@ -128,6 +128,12 @@ final class AdminJobController extends Controller
     public function cancelSubJob(string $id): void
     {
         $this->attempt(fn () => JobService::cancelSubJob((int) $id, (string) input('reason', '')), 'Sub-job cancelled.');
+    }
+
+    /** Final approval after QC: closes the job and releases certificates to the client. */
+    public function close(string $id): void
+    {
+        $this->attempt(fn () => JobService::close((int) $id, (string) input('note', '')), 'Final approval given. The job is closed and the client can now download the certificates.');
     }
 
     public function cancel(string $id): void

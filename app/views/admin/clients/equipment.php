@@ -3,7 +3,7 @@
   <div class="ph-text"><h1>Equipment register</h1><div class="sub">All client equipment with last and next inspection dates (updated automatically when QC issues a certificate).</div></div>
   <div class="actions">
     <?php View::render('partials/export', [], null); ?>
-    <button class="btn btn-primary" data-modal="eq-new"><?= icon('plus', 'sm') ?> Add equipment</button>
+    <?php if (Auth::isSuper()): ?><button class="btn btn-primary" data-modal="eq-new"><?= icon('plus', 'sm') ?> Add equipment</button><?php endif; ?>
   </div>
 </div>
 <div class="card">

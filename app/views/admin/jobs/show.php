@@ -24,6 +24,17 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
   </div>
 </div>
 
+<?php if ($job['status'] === 'awaiting_approval'): ?>
+  <form class="alert alert-warning" method="post" action="<?= url('admin/jobs/' . $job['id'] . '/close') ?>" onsubmit="return confirm('Give final approval and close <?= e($job['job_no']) ?>? The client will be able to download the certificates.')">
+    <?= Csrf::field() ?><?= icon('check') ?>
+    <div style="flex:1"><b>Final approval needed.</b> Every inspection passed QC review. Check the documents below, then close the job —
+      only then are the certificates and reports released to <?= e($job['client_name']) ?>.
+      <input class="input mt-1" name="note" maxlength="255" placeholder="Note (optional)" style="max-width:420px"></div>
+    <button class="btn btn-primary"><?= icon('check', 'sm') ?> Final approval &amp; close job</button>
+  </form>
+<?php elseif ($job['status'] === 'completed' && !empty($job['closed_by'])): ?>
+  <div class="alert alert-success"><?= icon('check') ?><div>Closed with final approval by <b><?= e(DB::value('SELECT name FROM users WHERE id = ?', [$job['closed_by']])) ?></b> on <?= e(fmt_datetime($job['completed_at'])) ?>.</div></div>
+<?php endif; ?>
 <div class="card card-b mb-2">
   <div class="progress-label"><span class="strong" style="color:var(--text)">Job progress</span><span><?= $progress['approved'] ?> of <?= $progress['total'] ?> sub-jobs approved · <?= $progress['submitted'] ?> at QC · <?= $progress['active'] ?> in inspection · <?= $progress['unassigned'] ?> unassigned</span></div>
   <div class="progress" style="height:10px"><span style="width:<?= $progress['pct'] ?>%"></span></div>
@@ -58,7 +69,7 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
                 <div class="dd-menu" style="min-width:220px">
                   <a class="dd-item" href="<?= url('inspector/subjobs/' . $s['id']) ?>"><b>Open inspection workspace</b></a>
                   <?php if ($s['status'] === 'submitted'): ?><a class="dd-item" href="<?= url('qc/review/' . $s['id']) ?>"><b>Open QC review</b></a><?php endif; ?>
-                  <?php if ($s['sticker']): ?><a class="dd-item" href="<?= url('documents/sticker/' . $s['sticker']['id']) ?>"><b>Print sticker</b></a><?php endif; ?>
+                  <?php if ($s['sticker']): ?><a class="dd-item" href="<?= url('documents/sticker/' . $s['sticker']['id']) ?>"><b>Digital sticker</b></a><?php endif; ?>
                   <?php if (Workflow::can('sub_job', $s['status'], 'pending') && $s['inspector_id']): ?>
                     <button type="submit" class="dd-item" style="width:100%;text-align:left;border:0;background:none;cursor:pointer" formaction="<?= url('admin/subjobs/' . $s['id'] . '/unassign') ?>" formnovalidate><b>Remove inspector</b></button>
                   <?php endif; ?>
@@ -148,7 +159,7 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
 
 <dialog class="modal" id="cancel-job"><form method="post" action="<?= url('admin/jobs/' . $job['id'] . '/cancel') ?>"><?= Csrf::field() ?>
   <div class="m-h"><h3>Cancel job <?= e($job['job_no']) ?>?</h3></div>
-  <div class="m-b"><p class="muted small">All open sub-jobs are cancelled and reserved stickers return to stock. Jobs with submitted or approved inspections cannot be cancelled.</p>
+  <div class="m-b"><p class="muted small">All open sub-jobs are cancelled; stickers already linked to them are voided. Jobs with submitted or approved inspections cannot be cancelled.</p>
     <div class="field mt-2"><label>Reason</label><textarea class="textarea" name="reason" required></textarea></div></div>
   <div class="m-f"><button type="button" class="btn btn-ghost" data-modal-close>Keep job</button><button class="btn btn-danger solid">Cancel job</button></div>
 </form></dialog>

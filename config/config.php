@@ -5,6 +5,8 @@ $config = [
     'app_short' => 'TUV EAST IMS',
     'env'       => 'local',               // local | production
     'timezone'  => 'Asia/Riyadh',
+    // Public address printed in sticker / certificate QR codes, e.g. https://ims.tuv-east.com (empty = the address in use)
+    'public_url' => '',
 
     'db' => [
         'host' => '127.0.0.1',

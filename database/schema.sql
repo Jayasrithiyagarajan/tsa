@@ -7,7 +7,7 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS audit_logs, notifications, settings, number_sequences,
+DROP TABLE IF EXISTS audit_logs, notifications, settings, number_sequences, inspector_cards,
   attachments, stickers, qc_reviews, certificates, checklist_responses, checklists,
   job_assignments, sub_jobs, jobs, service_request_items, service_requests,
   equipment, certificate_templates, checklist_template_items, checklist_templates,
@@ -38,7 +38,7 @@ CREATE TABLE users (
   name            VARCHAR(120) NOT NULL,
   email           VARCHAR(190) NOT NULL UNIQUE,
   password_hash   VARCHAR(255) NOT NULL,
-  role            ENUM('admin','inspector','qc','customer') NOT NULL,
+  role            ENUM('superadmin','admin','inspector','qc','customer') NOT NULL,   -- superadmin: full control; admin: jobs + final approval, master data view-only
   phone           VARCHAR(40)  NULL,
   client_id       INT UNSIGNED NULL,                      -- customers only
   signature_path  VARCHAR(255) NULL,
@@ -73,6 +73,7 @@ CREATE TABLE inspector_profiles (
   cert_no         VARCHAR(60) NULL,
   cert_expiry     DATE NULL,
   base_location   VARCHAR(80) NULL,
+  photo_path      VARCHAR(255) NULL,                     -- ID photo, uploaded by the inspector or admin
   CONSTRAINT fk_ip_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -216,10 +217,12 @@ CREATE TABLE jobs (
   due_date        DATE NULL,
   priority        ENUM('low','normal','high','urgent') NOT NULL DEFAULT 'normal',
   lead_inspector_id INT UNSIGNED NULL,
-  status          ENUM('pending_assignment','assigned','in_progress','under_review','completed','cancelled') NOT NULL DEFAULT 'pending_assignment',
+  status          ENUM('pending_assignment','assigned','in_progress','under_review','awaiting_approval','completed','cancelled') NOT NULL DEFAULT 'pending_assignment',
+                  -- awaiting_approval: every sub-job passed QC; an admin's final approval closes the job (completed) and releases the certificates
   notes           TEXT NULL,
   created_by      INT UNSIGNED NULL,
   completed_at    DATETIME NULL,
+  closed_by       INT UNSIGNED NULL,                      -- admin who gave the final approval
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_jobs_status (status),
@@ -348,26 +351,70 @@ CREATE TABLE qc_reviews (
   CONSTRAINT fk_qc_rev FOREIGN KEY (reviewer_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Stickers are pre-printed serialized stock → issued to one sub-job/equipment → may be voided.
+-- Stickers are pre-printed serialized stock → allocated (handed) to an inspector → closed when linked to
+-- one sub-job/equipment (locked from then on; the digital sticker follows the job) → may be voided.
 CREATE TABLE stickers (
   id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   sticker_no      VARCHAR(40) NOT NULL UNIQUE,
+  verify_token    CHAR(32) NULL UNIQUE,                     -- printed as QR on the sticker → public /s/{token}
   batch_no        VARCHAR(40) NULL,
-  color           VARCHAR(20) NOT NULL DEFAULT 'green',     -- green = pass, red = rejected
-  status          ENUM('in_stock','reserved','issued','void') NOT NULL DEFAULT 'in_stock',
+  color           VARCHAR(20) NOT NULL DEFAULT 'green',     -- green (printed blue) = Accepted, red = Failed
+  status          ENUM('in_stock','allocated','closed','void') NOT NULL DEFAULT 'in_stock',
   sub_job_id      INT UNSIGNED NULL,
   equipment_id    INT UNSIGNED NULL,
   certificate_id  INT UNSIGNED NULL,
-  inspector_id    INT UNSIGNED NULL,
-  issued_at       DATETIME NULL,
+  inspector_id    INT UNSIGNED NULL,                        -- inspector holding / who used the sticker
+  allocated_at    DATETIME NULL,
+  allocated_by    INT UNSIGNED NULL,
+  linked_at       DATETIME NULL,                            -- linked to the sub-job → status closed
+  issued_at       DATETIME NULL,                            -- certificate issued by QC
   expiry_date     DATE NULL,
   void_reason     VARCHAR(255) NULL,
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_st_status (status),
+  KEY idx_st_insp (inspector_id, status),
   CONSTRAINT fk_st_sj FOREIGN KEY (sub_job_id) REFERENCES sub_jobs(id) ON DELETE SET NULL,
   CONSTRAINT fk_st_eq FOREIGN KEY (equipment_id) REFERENCES equipment(id) ON DELETE SET NULL,
   CONSTRAINT fk_st_cert FOREIGN KEY (certificate_id) REFERENCES certificates(id) ON DELETE SET NULL,
   CONSTRAINT fk_st_insp FOREIGN KEY (inspector_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ID / competence card (CR80, printed front + back) for a TUV EAST inspector (holder_type inspector, user_id set)
+-- or for an assessed client worker such as a rigger or scaffolding erector (holder_type worker, no login).
+-- The QR on the back opens /verify/card/{token}, which shows the card online with a valid / expired / revoked message.
+-- A card is valid (and, for inspectors, visible in the inspector portal) only once it is physically handed over;
+-- handing over a new card revokes the holder's previous active one.
+CREATE TABLE inspector_cards (
+  id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  holder_type     ENUM('inspector','worker') NOT NULL DEFAULT 'inspector',
+  user_id         INT UNSIGNED NULL,                       -- inspector cards
+  client_id       INT UNSIGNED NULL,                       -- worker cards: the worker's company, when it is a client
+  card_no         VARCHAR(40)  NOT NULL UNIQUE,            -- printed as "ID CODE"
+  verify_token    CHAR(32)     NOT NULL UNIQUE,
+  holder_name     VARCHAR(120) NOT NULL,
+  id_number       VARCHAR(30)  NULL,                       -- Iqama / national ID
+  company         VARCHAR(120) NOT NULL,
+  title           VARCHAR(80)  NOT NULL,                   -- bottom band of the front, e.g. LIFTING EQUIPMENT INSPECTOR
+  photo_path      VARCHAR(255) NULL,
+  job_ref         VARCHAR(60)  NULL,
+  certification   VARCHAR(120) NULL,
+  assessor        VARCHAR(120) NULL,
+  competence      TEXT         NULL,                       -- "Certificate of Competence" box, one line per item
+  issue_date      DATE         NOT NULL,
+  expiry_date     DATE         NOT NULL,
+  status          ENUM('active','revoked') NOT NULL DEFAULT 'active',
+  revoked_reason  VARCHAR(255) NULL,
+  handed_over_at  DATETIME NULL,                           -- NULL = printed, not yet given to the inspector
+  handed_over_by  INT UNSIGNED NULL,
+  created_by      INT UNSIGNED NULL,
+  created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_ic_user (user_id, status),
+  KEY idx_ic_idno (id_number),
+  CONSTRAINT fk_ic_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ic_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ic_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ic_hand FOREIGN KEY (handed_over_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE attachments (

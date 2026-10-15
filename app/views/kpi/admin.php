@@ -13,7 +13,7 @@ $tOn = KpiService::target('on_time_rate');
 <div class="page-head">
   <div class="ph-text"><div class="eyebrow">Operations</div><h1>KPI dashboard</h1>
     <div class="sub">Request handling, assignment, delivery and quality across the whole inspection workflow.</div></div>
-  <div class="actions"><button class="btn btn-secondary" data-modal="kpi-targets"><?= icon('sliders', 'sm') ?> Targets</button></div>
+  <?php if (Auth::isSuper()): ?><div class="actions"><button class="btn btn-secondary" data-modal="kpi-targets"><?= icon('sliders', 'sm') ?> Targets</button></div><?php endif; ?>
 </div>
 <?php View::render('partials/kpi_period', ['P' => $P], null); ?>
 <?php View::render('partials/kpi_cards', ['cards' => $cards], null); ?>

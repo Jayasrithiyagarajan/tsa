@@ -24,7 +24,8 @@ final class Notify
 
     public static function role(string $role, string $title, ?string $body = null, ?string $link = null): void
     {
-        foreach (DB::all("SELECT id FROM users WHERE role = ? AND status = 'active'", [$role]) as $u) {
+        $roles = $role === 'admin' ? ['admin', 'superadmin'] : [$role];      // admin notifications reach Super Admins too
+        foreach (DB::all("SELECT id FROM users WHERE role IN (" . implode(',', array_fill(0, count($roles), '?')) . ") AND status = 'active'", $roles) as $u) {
             self::user((int) $u['id'], $title, $body, $link);
         }
     }

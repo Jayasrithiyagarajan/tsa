@@ -2,7 +2,8 @@
 require __DIR__ . '/app/bootstrap.php';
 
 $r = new Router();
-$A = ['admin'];
+$A = ['admin'];                 // operations admin; a Super Admin passes every 'admin' check too (Auth::is)
+$SA = ['superadmin'];           // user accounts, sticker stock, ID cards, templates, settings, master-data edits
 $I = ['inspector'];
 $Q = ['qc'];
 $C = ['customer'];
@@ -14,7 +15,9 @@ $r->get('/request',               [PublicController::class, 'requestForm']);
 $r->post('/request',              [PublicController::class, 'requestSubmit']);
 $r->get('/request/thanks/{no}',   [PublicController::class, 'requestThanks']);
 $r->get('/verify',                [PublicController::class, 'verify']);
+$r->get('/verify/card/{token}',   [PublicController::class, 'verifyCard']);
 $r->get('/verify/{token}',        [PublicController::class, 'verifyToken']);
+$r->get('/s/{token}',             [PublicController::class, 'stickerScan']);
 $r->get('/login',                 [AuthController::class, 'form']);
 $r->post('/login',                [AuthController::class, 'login']);
 $r->post('/logout',               [AuthController::class, 'logout'], 'auth');
@@ -29,15 +32,16 @@ $r->get('/notifications/{id}',              [ProfileController::class, 'openNoti
 $r->post('/notifications/read-all',         [ProfileController::class, 'readAll'], 'auth');
 $r->get('/documents/checklist/{id}',        [DocumentController::class, 'checklist'], 'auth');
 $r->get('/documents/certificate/{id}',      [DocumentController::class, 'certificate'], 'auth');
-$r->get('/documents/sticker/{id}',          [DocumentController::class, 'sticker'], ['admin', 'inspector', 'qc']);
+$r->get('/documents/sticker/{id}',          [DocumentController::class, 'sticker'], 'auth');
 $r->get('/documents/attachment/{id}',       [DocumentController::class, 'attachment'], 'auth');
+$r->get('/id-photo/{id}',                   [AdminCardController::class, 'userPhoto'], ['admin', 'inspector', 'qc']);
 $r->get('/documents/signature/{id}',        [DocumentController::class, 'signature'], 'auth');
 
 // ---------------------------------------------------------------- admin portal
 $r->get('/admin',                           [AdminDashboardController::class, 'index'], $A);
 $r->get('/admin/search',                    [AdminDashboardController::class, 'search'], $A);
 $r->get('/admin/kpi',                       [KpiController::class, 'admin'], $A);
-$r->post('/admin/kpi/targets',              [KpiController::class, 'targets'], $A);
+$r->post('/admin/kpi/targets',              [KpiController::class, 'targets'], $SA);
 $r->get('/admin/kpi/inspector/{id}',        [KpiController::class, 'adminInspector'], $A);
 $r->get('/admin/kpi/qc/{id}',               [KpiController::class, 'adminQc'], $A);
 $r->get('/admin/requests',                  [AdminRequestController::class, 'index'], $A);
@@ -55,37 +59,54 @@ $r->get('/admin/jobs/{id}',                 [AdminJobController::class, 'show'],
 $r->post('/admin/jobs/{id}/update',         [AdminJobController::class, 'update'], $A);
 $r->post('/admin/jobs/{id}/assign',         [AdminJobController::class, 'assign'], $A);
 $r->post('/admin/jobs/{id}/subjobs',        [AdminJobController::class, 'addSubJob'], $A);
+$r->post('/admin/jobs/{id}/close',          [AdminJobController::class, 'close'], $A);       // final approval after QC
 $r->post('/admin/jobs/{id}/cancel',         [AdminJobController::class, 'cancel'], $A);
 $r->post('/admin/subjobs/{id}/unassign',    [AdminJobController::class, 'unassign'], $A);
 $r->post('/admin/subjobs/{id}/cancel',      [AdminJobController::class, 'cancelSubJob'], $A);
 $r->post('/admin/subjobs/{id}/override',    [AdminJobController::class, 'override'], $A);
 $r->get('/admin/clients',                   [AdminClientController::class, 'index'], $A);
-$r->get('/admin/clients/new',               [AdminClientController::class, 'create'], $A);
-$r->post('/admin/clients',                  [AdminClientController::class, 'store'], $A);
+$r->get('/admin/clients/new',               [AdminClientController::class, 'create'], $SA);
+$r->post('/admin/clients',                  [AdminClientController::class, 'store'], $SA);
 $r->get('/admin/clients/{id}',              [AdminClientController::class, 'show'], $A);
-$r->post('/admin/clients/{id}',             [AdminClientController::class, 'update'], $A);
+$r->post('/admin/clients/{id}',             [AdminClientController::class, 'update'], $SA);
 $r->get('/admin/equipment',                 [AdminClientController::class, 'equipment'], $A);
-$r->post('/admin/equipment',                [AdminClientController::class, 'saveEquipment'], $A);
+$r->post('/admin/equipment',                [AdminClientController::class, 'saveEquipment'], $SA);
 $r->get('/admin/users',                     [AdminUserController::class, 'index'], $A);
-$r->get('/admin/users/new',                 [AdminUserController::class, 'create'], $A);
-$r->post('/admin/users',                    [AdminUserController::class, 'store'], $A);
+$r->get('/admin/users/new',                 [AdminUserController::class, 'create'], $SA);
+$r->post('/admin/users',                    [AdminUserController::class, 'store'], $SA);
 $r->get('/admin/users/{id}',                [AdminUserController::class, 'edit'], $A);
-$r->post('/admin/users/{id}',               [AdminUserController::class, 'update'], $A);
-$r->get('/admin/templates',                 [AdminTemplateController::class, 'index'], $A);
-$r->post('/admin/types',                    [AdminTemplateController::class, 'saveType'], $A);
-$r->get('/admin/templates/checklist/{id}',  [AdminTemplateController::class, 'checklist'], $A);
-$r->post('/admin/templates/checklist/{id}', [AdminTemplateController::class, 'saveChecklist'], $A);
-$r->get('/admin/templates/certificate/{id}',  [AdminTemplateController::class, 'certificate'], $A);
-$r->post('/admin/templates/certificate/{id}', [AdminTemplateController::class, 'saveCertificate'], $A);
-$r->get('/admin/templates/preview/{kind}/{id}', [AdminTemplateController::class, 'preview'], $A);
+$r->post('/admin/users/{id}',               [AdminUserController::class, 'update'], $SA);
+$r->get('/admin/templates',                 [AdminTemplateController::class, 'index'], $SA);
+$r->post('/admin/types',                    [AdminTemplateController::class, 'saveType'], $SA);
+$r->get('/admin/templates/checklist/{id}',  [AdminTemplateController::class, 'checklist'], $SA);
+$r->post('/admin/templates/checklist/{id}', [AdminTemplateController::class, 'saveChecklist'], $SA);
+$r->get('/admin/templates/certificate/{id}',  [AdminTemplateController::class, 'certificate'], $SA);
+$r->post('/admin/templates/certificate/{id}', [AdminTemplateController::class, 'saveCertificate'], $SA);
+$r->get('/admin/templates/preview/{kind}/{id}', [AdminTemplateController::class, 'preview'], $SA);
 $r->get('/admin/certificates',              [AdminDocumentController::class, 'certificates'], $A);
-$r->post('/admin/certificates/{id}/revoke', [AdminDocumentController::class, 'revoke'], $A);
+$r->post('/admin/certificates/{id}/revoke', [AdminDocumentController::class, 'revoke'], $SA);
 $r->get('/admin/stickers',                  [AdminDocumentController::class, 'stickers'], $A);
-$r->post('/admin/stickers',                 [AdminDocumentController::class, 'addStickers'], $A);
-$r->post('/admin/stickers/{id}/void',       [AdminDocumentController::class, 'voidSticker'], $A);
-$r->get('/admin/audit',                     [AdminDocumentController::class, 'audit'], $A);
-$r->get('/admin/settings',                  [AdminDocumentController::class, 'settings'], $A);
-$r->post('/admin/settings',                 [AdminDocumentController::class, 'saveSettings'], $A);
+$r->post('/admin/stickers',                 [AdminDocumentController::class, 'addStickers'], $SA);
+$r->get('/admin/project-stickers',          [AdminDocumentController::class, 'projectStickers'], $A);
+$r->post('/admin/stickers/allocate',        [AdminDocumentController::class, 'allocateStickers'], $SA);
+$r->post('/admin/stickers/return',          [AdminDocumentController::class, 'returnStickers'], $SA);
+$r->get('/admin/stickers/print',            [DocumentController::class, 'stickerSheet'], $SA);
+$r->post('/admin/stickers/print',           [DocumentController::class, 'stickerSheet'], $SA);
+$r->post('/admin/stickers/{id}/void',       [AdminDocumentController::class, 'voidSticker'], $SA);
+$r->get('/admin/cards',                     [AdminCardController::class, 'index'], $A);
+$r->get('/admin/cards/new',                 [AdminCardController::class, 'create'], $SA);
+$r->post('/admin/cards',                    [AdminCardController::class, 'store'], $SA);
+$r->post('/admin/cards/settings',           [AdminCardController::class, 'settings'], $SA);
+$r->get('/admin/cards/validate',            [AdminCardController::class, 'validate'], $A);
+$r->get('/admin/cards/{id}',                [AdminCardController::class, 'edit'], $A);
+$r->post('/admin/cards/{id}',               [AdminCardController::class, 'update'], $SA);
+$r->post('/admin/cards/{id}/revoke',        [AdminCardController::class, 'revoke'], $SA);
+$r->post('/admin/cards/{id}/handover',      [AdminCardController::class, 'handover'], $SA);
+$r->get('/admin/cards/{id}/print',          [AdminCardController::class, 'print'], $SA);
+$r->get('/admin/cards/{id}/photo',          [AdminCardController::class, 'photo'], $A);
+$r->get('/admin/audit',                     [AdminDocumentController::class, 'audit'], $SA);
+$r->get('/admin/settings',                  [AdminDocumentController::class, 'settings'], $SA);
+$r->post('/admin/settings',                 [AdminDocumentController::class, 'saveSettings'], $SA);
 
 // ---------------------------------------------------------------- inspector portal
 $r->get('/inspector',                          [InspectorController::class, 'dashboard'], $I);
@@ -100,6 +121,9 @@ $r->post('/inspector/subjobs/{id}/upload',     [InspectorController::class, 'upl
 $r->post('/inspector/attachments/{id}/delete', [InspectorController::class, 'deleteAttachment'], ['inspector', 'admin']);
 $r->post('/inspector/subjobs/{id}/submit',     [InspectorController::class, 'submit'], ['inspector', 'admin']);
 $r->get('/inspector/history',                  [InspectorController::class, 'history'], $I);
+$r->get('/inspector/stickers',                 [InspectorController::class, 'stickers'], $I);
+$r->get('/inspector/card',                     [InspectorController::class, 'card'], $I);
+$r->post('/inspector/card/photo',              [InspectorController::class, 'cardPhoto'], $I);
 $r->get('/inspector/kpi',                      [KpiController::class, 'inspector'], $I);
 
 // ---------------------------------------------------------------- QC portal

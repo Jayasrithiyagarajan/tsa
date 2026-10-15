@@ -32,10 +32,10 @@ final class Workflow
             'rejected'   => ['draft'],
         ],
         'sticker' => [
-            'in_stock' => ['reserved', 'void'],
-            'reserved' => ['in_stock', 'issued', 'void'],
-            'issued'   => ['void'],
-            'void'     => [],
+            'in_stock'  => ['allocated', 'closed', 'void'],
+            'allocated' => ['allocated', 'in_stock', 'closed', 'void'],   // re-allocate / return to office / link to a job
+            'closed'    => ['void'],                                     // linked to a job: locked, only an admin can void it
+            'void'      => [],
         ],
     ];
 
@@ -46,13 +46,14 @@ final class Workflow
         'completed' => 'Completed',
         'pending' => 'Unassigned', 'submitted' => 'Awaiting QC', 'rework' => 'Rework Required', 'approved' => 'Approved',
         'draft' => 'Draft', 'pending_qc' => 'Pending QC', 'issued' => 'Issued', 'revoked' => 'Revoked',
-        'in_stock' => 'In Stock', 'reserved' => 'Reserved', 'void' => 'Void',
+        'in_stock' => 'In Stock', 'allocated' => 'Allocated', 'closed' => 'Closed', 'reserved' => 'Reserved', 'void' => 'Void',
         'accepted' => 'Accepted', 'repair' => 'Repair',
         'pass' => 'Pass', 'fail' => 'Fail', 'na' => 'N/A',
         'active' => 'Active', 'inactive' => 'Inactive', 'out_of_service' => 'Out of Service', 'retired' => 'Retired',
         'low' => 'Low', 'normal' => 'Normal', 'high' => 'High', 'urgent' => 'Urgent',
         'website' => 'Website', 'email' => 'Email', 'phone' => 'Phone', 'portal' => 'Customer Portal',
-        'admin' => 'Administrator', 'inspector' => 'Inspector', 'qc' => 'QC Reviewer', 'customer' => 'Customer',
+        'superadmin' => 'Super Admin', 'admin' => 'Administrator', 'inspector' => 'Inspector', 'qc' => 'QC Reviewer', 'customer' => 'Customer',
+        'awaiting_approval' => 'Awaiting Final Approval',
     ];
 
     private const TONES = [
@@ -61,12 +62,13 @@ final class Workflow
         'pending_assignment' => 'amber', 'assigned' => 'blue', 'in_progress' => 'indigo', 'under_review_job' => 'violet',
         'completed' => 'green', 'pending' => 'amber', 'submitted' => 'violet', 'rework' => 'red', 'approved' => 'green',
         'draft' => 'gray', 'pending_qc' => 'violet', 'issued' => 'green', 'revoked' => 'red',
-        'in_stock' => 'gray', 'reserved' => 'amber', 'void' => 'red',
+        'in_stock' => 'gray', 'allocated' => 'amber', 'closed' => 'blue', 'reserved' => 'amber', 'void' => 'red',
         'accepted' => 'green', 'repair' => 'amber', 'pass' => 'green', 'fail' => 'red', 'na' => 'gray',
         'active' => 'green', 'inactive' => 'gray', 'out_of_service' => 'red', 'retired' => 'gray',
         'low' => 'gray', 'normal' => 'blue', 'high' => 'amber', 'urgent' => 'red',
         'website' => 'blue', 'email' => 'violet', 'phone' => 'teal', 'portal' => 'indigo',
-        'admin' => 'indigo', 'inspector' => 'teal', 'qc' => 'violet', 'customer' => 'blue',
+        'superadmin' => 'red', 'admin' => 'indigo', 'inspector' => 'teal', 'qc' => 'violet', 'customer' => 'blue',
+        'awaiting_approval' => 'amber',
     ];
 
     public static function label(string $s): string

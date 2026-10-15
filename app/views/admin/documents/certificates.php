@@ -28,7 +28,7 @@
         <td class="actions">
           <a class="btn btn-ghost btn-sm" href="<?= url('documents/certificate/' . $c['sub_job_id']) ?>" title="View"><?= icon('eye', 'sm') ?></a>
           <a class="btn btn-ghost btn-sm" href="<?= url('documents/certificate/' . $c['sub_job_id'], ['download' => 1]) ?>" title="Download PDF"><?= icon('download', 'sm') ?></a>
-          <?php if ($c['status'] === 'issued'): ?><button class="btn btn-ghost btn-sm" data-modal="revoke-<?= $c['id'] ?>" title="Revoke" style="color:var(--red)"><?= icon('x', 'sm') ?></button><?php endif; ?>
+          <?php if ($c['status'] === 'issued' && Auth::isSuper()): ?><button class="btn btn-ghost btn-sm" data-modal="revoke-<?= $c['id'] ?>" title="Revoke" style="color:var(--red)"><?= icon('x', 'sm') ?></button><?php endif; ?>
         </td>
       </tr>
     <?php endforeach; ?></tbody>

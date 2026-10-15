@@ -58,6 +58,26 @@ final class PublicController extends Controller
         $this->view('public/verify', ['title' => 'Certificate Verification', 'q' => $cert['certificate_no'] ?? '', 'cert' => $cert, 'searched' => true], 'public');
     }
 
+    /** QR on a sticker. Discloses the certificate only once QC has issued it; otherwise just the sticker state. */
+    public function stickerScan(string $token): void
+    {
+        $st = preg_match('/^[a-f0-9]{32}$/', $token)
+            ? DB::one('SELECT s.sticker_no, s.status, s.color, s.sub_job_id, c.certificate_no FROM stickers s LEFT JOIN certificates c ON c.sub_job_id = s.sub_job_id WHERE s.verify_token = ?', [$token])
+            : null;
+        $cert = $st && $st['status'] === 'closed' && $st['certificate_no'] ? $this->lookup('c.certificate_no = ?', $st['certificate_no']) : null;
+        $this->view('public/verify', ['title' => 'Sticker Verification', 'q' => $cert['certificate_no'] ?? '', 'cert' => $cert, 'sticker' => $st ?: ['sticker_no' => null], 'searched' => true], 'public');
+    }
+
+    /** Target of the QR code on the back of an inspector ID card: the card online + a validity message. */
+    public function verifyCard(string $token): void
+    {
+        $card = preg_match('/^[a-f0-9]{32}$/', $token) ? InspectorCardService::find('c.verify_token = ?', [$token]) : null;
+        $this->view('public/verify_card', [
+            'title' => 'ID Card Verification',
+            'm' => $card ? InspectorCardService::model($card) : null,
+        ], 'public');
+    }
+
     /** Only issued or revoked certificates are disclosed publicly — never drafts. */
     private function lookup(string $where, string $v): ?array
     {
@@ -67,7 +87,7 @@ final class PublicController extends Controller
              FROM certificates c JOIN sub_jobs sj ON sj.id = c.sub_job_id JOIN jobs j ON j.id = sj.job_id
              JOIN clients cl ON cl.id = j.client_id JOIN inspection_types t ON t.id = sj.inspection_type_id
              LEFT JOIN equipment e ON e.id = sj.equipment_id
-             WHERE $where AND c.status IN ('issued','revoked') LIMIT 1",
+             WHERE $where AND c.status IN ('issued','revoked') AND j.status IN ('completed','cancelled') LIMIT 1",   // released by final approval
             [$v]
         );
     }

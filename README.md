@@ -34,7 +34,8 @@ All seeded accounts share the password defined as `DEMO_PASSWORD` in `database/i
 
 | Portal | Email |
 |---|---|
-| Admin | admin@tuveast.test |
+| Super Admin | admin@tuveast.test |
+| Admin (operations) | ops.admin@tuveast.test (fresh installs only) |
 | Inspector | omar.khalid@tuveast.test · faisal.rahman@tuveast.test · yousef.haddad@tuveast.test |
 | QC | sara.nasser@tuveast.test |
 | Customer | customer@alnoor.test · customer@gulfsteel.test |
@@ -42,8 +43,23 @@ All seeded accounts share the password defined as `DEMO_PASSWORD` in `database/i
 KPI scorecards: **Admin → KPI & Reports**, **Inspector → My KPIs**, **QC → QC KPIs**, each with *Export to Excel*; all list pages export to Excel or CSV.
 The installer also loads 6 months of demo history for the KPIs (`database/demo_history.php`; second QC reviewer nadia.farouk@tuveast.test).
 
+Inspector ID cards (**Admin → ID Card System**): *Issue Card* creates a CR80 card (front and back print as separate
+pages, or both for a duplex card printer); after the printed card is given to the inspector, *Mark as handed over*
+makes it valid, shows it under the inspector's **My ID Card** and revokes their previous card. *Validate Card* looks a
+card up by ID code, QR link or camera scan. The QR on the back opens `/verify/card/{token}` with a valid / not yet
+issued / expired / revoked message. ID photos can be uploaded by the inspector (My ID Card) or the admin (user page or card).
+
 The demo data contains jobs in every state: approved with issued certificates, awaiting QC, returned for rework,
 in progress, assigned, and awaiting assignment, plus website / email / phone / portal requests.
+
+## Roles
+- **Super Admin** — everything: user accounts (all roles), bulk sticker batches and allocation, ID cards, templates, settings, audit log.
+- **Admin** — client requests, jobs (create, assign, follow up) and the **final approval** that closes a job after QC;
+  certificates, stickers, ID cards, clients, equipment and users are view-only.
+- Job flow: all sub-jobs pass QC → job *Awaiting Final Approval* → an admin closes it → only then the client gets the
+  certificates (portal, notification, public verification).
+
+`php database/migrate.php` promotes existing admin accounts to Super Admin; create Admin accounts under Users & Inspectors.
 
 ## Project layout
 ```

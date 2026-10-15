@@ -15,6 +15,7 @@ final class ApiController extends Controller
     public function dashboard(): void
     {
         switch (Auth::role()) {
+            case 'superadmin':
             case 'admin':
                 $d = DB::one("SELECT (SELECT COUNT(*) FROM service_requests WHERE status IN ('new','under_review')) new_requests,
                     (SELECT COUNT(*) FROM sub_jobs WHERE status='pending') awaiting_assignment,
@@ -24,7 +25,8 @@ final class ApiController extends Controller
                     (SELECT COUNT(*) FROM certificates WHERE status='issued') certificates_issued,
                     (SELECT COUNT(*) FROM certificates WHERE status IN ('draft','pending_qc')) certificates_pending,
                     (SELECT COUNT(*) FROM stickers WHERE status='in_stock') stickers_in_stock,
-                    (SELECT COUNT(*) FROM stickers WHERE status='issued') stickers_issued,
+                    (SELECT COUNT(*) FROM stickers WHERE status='allocated') stickers_allocated,
+                    (SELECT COUNT(*) FROM stickers WHERE status='closed') stickers_closed,
                     (SELECT COUNT(*) FROM jobs WHERE status NOT IN ('completed','cancelled')) jobs_pending,
                     (SELECT COUNT(*) FROM jobs WHERE status='completed') jobs_completed");
                 break;

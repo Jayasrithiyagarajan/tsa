@@ -214,21 +214,29 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
   <?php if ($sj['requires_sticker']): ?>
   <section class="tab-panel" id="tab-sticker">
     <div class="card-b">
-      <?php if ($sticker): ?>
-        <div class="row wrap" style="gap:16px">
-          <div class="kpi" style="flex:1;min-width:240px"><span class="k-ic <?= $sticker['color'] === 'red' ? 't-red' : 't-green' ?>"><?= icon('tag') ?></span><span><div class="k-v mono" style="font-size:20px"><?= e($sticker['sticker_no']) ?></div><div class="k-l"><?= e(Workflow::label($sticker['status'])) ?> · <?= e(ucfirst($sticker['color'])) ?> sticker</div><div class="k-t"><?= $sticker['status'] === 'issued' ? 'Valid until ' . e(fmt_date($sticker['expiry_date'])) : 'Issued automatically when QC approves' ?></div></span></div>
-          <?php if ($editable && $sticker['status'] === 'reserved'): ?>
-            <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/sticker') ?>"><?= Csrf::field() ?><input type="hidden" name="action" value="release"><button class="btn btn-danger"><?= icon('rotate', 'sm') ?> Release / change sticker</button></form>
-          <?php endif; ?>
+      <?php if ($sticker): $red = $sticker['color'] === 'red'; ?>
+        <div class="row wrap" style="gap:16px;align-items:center">
+          <div class="kpi" style="flex:1;min-width:240px"><span class="k-ic <?= $red ? 't-red' : 't-blue' ?>"><?= icon('lock') ?></span><span>
+            <div class="k-v mono" style="font-size:20px"><?= e($sticker['sticker_no']) ?></div>
+            <div class="k-l"><?= badge('closed') ?> <?= $red ? 'Red · Failed' : 'Blue · Accepted' ?> sticker</div>
+            <div class="k-t">Linked <?= e(fmt_datetime($sticker['linked_at'])) ?> · locked to this job<?= $sticker['issued_at'] ? ' · valid until ' . e(fmt_date($sticker['expiry_date'])) : '' ?></div></span></div>
+          <a class="btn btn-secondary" href="<?= url('documents/sticker/' . $sticker['id']) ?>" target="_blank"><?= icon('eye', 'sm') ?> Digital sticker</a>
         </div>
+        <p class="small muted mt-1">A linked sticker cannot be changed. If it was damaged or linked by mistake, ask an administrator to void it — you can then link a new one.</p>
       <?php elseif ($editable): ?>
-        <form class="row wrap" method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/sticker') ?>" style="max-width:560px">
+        <form class="row wrap" method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/sticker') ?>" style="max-width:620px"
+              data-confirm="Link this sticker to <?= e($sj['sub_job_no']) ?>? Once linked it is closed and cannot be changed.">
           <?= Csrf::field() ?>
-          <div class="field" style="flex:1;min-width:220px"><label>Sticker number affixed to the equipment</label><input class="input mono" name="sticker_no" placeholder="TE-001003" required style="text-transform:uppercase"></div>
-          <button class="btn btn-primary" style="align-self:flex-end"><?= icon('tag', 'sm') ?> Record sticker</button>
+          <div class="field" style="flex:1;min-width:220px"><label>Sticker number affixed to the equipment</label>
+            <input class="input mono" name="sticker_no" list="my-stickers" placeholder="TE-001003" required autocomplete="off" style="text-transform:uppercase">
+            <datalist id="my-stickers"><?php foreach ($myStickers as $m): ?><option value="<?= e($m['sticker_no']) ?>"><?= $m['color'] === 'red' ? 'Red · Failed' : 'Blue · Accepted' ?></option><?php endforeach; ?></datalist></div>
+          <button class="btn btn-primary" style="align-self:flex-end"><?= icon('lock', 'sm') ?> Link sticker</button>
         </form>
-        <p class="small muted mt-1">Only stickers registered in stock can be used. Required when the result is “Accepted”.</p>
-      <?php else: View::render('partials/empty', ['icon' => 'tag', 'title' => 'No sticker recorded', 'text' => ''], null); endif; ?>
+        <p class="small muted mt-1">
+          <?php $blue = count(array_filter($myStickers, fn ($m) => $m['color'] !== 'red')); ?>
+          You hold <?= $blue ?> blue and <?= count($myStickers) - $blue ?> red sticker(s). Use <b>blue</b> for an Accepted result and <b>red</b> for Failed / repair.
+          Only stickers allocated to you can be linked, and a linked sticker is locked to this job.</p>
+      <?php else: View::render('partials/empty', ['icon' => 'tag', 'title' => 'No sticker linked', 'text' => ''], null); endif; ?>
     </div>
   </section>
   <?php endif; ?>

@@ -47,7 +47,7 @@ final class QcController extends Controller
                                          WHERE r.checklist_id = ? AND (r.result = 'fail' OR (r.remarks IS NOT NULL AND r.remarks <> '')) ORDER BY i.sort_order", [$checklist['id']]) : [];
         $issues = InspectionService::issues((int) $sj['id']);
         $attachments = DB::all('SELECT * FROM attachments WHERE sub_job_id = ? ORDER BY id', [$sj['id']]);
-        $sticker = DB::one("SELECT * FROM stickers WHERE sub_job_id = ? AND status IN ('reserved','issued') LIMIT 1", [$sj['id']]);
+        $sticker = DB::one("SELECT * FROM stickers WHERE sub_job_id = ? AND status = 'closed' LIMIT 1", [$sj['id']]);
         $reviews = DB::all('SELECT q.*, u.name reviewer FROM qc_reviews q JOIN users u ON u.id = q.reviewer_id WHERE q.sub_job_id = ? ORDER BY q.id DESC', [$sj['id']]);
         $override = $sj['override_by'] ? DB::value('SELECT name FROM users WHERE id = ?', [$sj['override_by']]) : null;
         $this->view('qc/review', compact('sj', 'cert', 'checklist', 'stats', 'failed', 'issues', 'attachments', 'sticker', 'reviews', 'override') + [
@@ -61,7 +61,7 @@ final class QcController extends Controller
         $this->attempt(function () use ($id) {
             if (input('decision') === 'approve') {
                 QcService::approve((int) $id, nullable(input('comments')));
-                flash('success', 'Approved. Certificate issued and customer notified.');
+                flash('success', 'Approved. Once every inspection of the job passes QC, an admin gives the final approval and the client receives the certificates.');
             } elseif (input('decision') === 'rework') {
                 QcService::rework((int) $id, (string) input('comments', ''));
                 flash('success', 'Returned to the inspector for rework.');

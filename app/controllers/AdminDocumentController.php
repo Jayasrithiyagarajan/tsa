@@ -36,32 +36,111 @@ final class AdminDocumentController extends Controller
         $this->attempt(fn () => CertificateService::revoke((int) $id, (string) input('reason', '')), 'Certificate revoked. Its sticker was voided and the sub-job returned for rework.');
     }
 
+    /** Bulk sticker stock: generated stickers in the office or in the inspectors' hands (not yet on a job). */
     public function stickers(): void
     {
         $status = (string) input('status', '');
         $q = trim((string) input('q', ''));
-        $where = ['1=1'];
+        $insp = (int) input('inspector', 0);
+        $where = ["(s.status IN ('in_stock','allocated') OR (s.status = 'void' AND s.sub_job_id IS NULL))"];
+        $p = [];
+        if (in_array($status, ['in_stock', 'allocated', 'void'], true)) { $where[] = 's.status = ?'; $p[] = $status; } else { $status = ''; }
+        if ($insp) { $where[] = 's.inspector_id = ?'; $p[] = $insp; }
+        if ($q !== '') { $where[] = '(s.sticker_no LIKE ? OR s.batch_no LIKE ?)'; array_push($p, "%$q%", "%$q%"); }
+        $sql = "SELECT s.*, u.name inspector_name, ab.name allocated_by_name
+                FROM stickers s LEFT JOIN users u ON u.id = s.inspector_id LEFT JOIN users ab ON ab.id = s.allocated_by
+                WHERE " . implode(' AND ', $where) . " ORDER BY FIELD(s.status,'allocated','in_stock','void'), s.sticker_no";
+        if ($this->wantsCsv()) {
+            csv_export('sticker-stock', DB::all($sql, $p), ['sticker_no' => 'Sticker No', 'batch_no' => 'Batch', 'color' => 'Color', 'status' => 'Status',
+                'inspector_name' => 'Allocated To', 'allocated_at' => 'Allocated', 'allocated_by_name' => 'Allocated By', 'created_at' => 'Generated', 'void_reason' => 'Void Reason']);
+        }
+        [$rows, $meta] = paginate($sql, $p, 50);
+        $counts = DB::one("SELECT SUM(status = 'in_stock') in_stock, SUM(status = 'allocated') allocated, SUM(status = 'void' AND sub_job_id IS NULL) void,
+                                  SUM(status = 'closed') linked FROM stickers");
+        $inspectors = DB::all("SELECT u.id, u.name, COALESCE(SUM(s.status = 'allocated'), 0) in_hand, COALESCE(SUM(s.status = 'allocated' AND s.color = 'red'), 0) in_hand_red,
+                                      COALESCE(SUM(s.status = 'closed'), 0) used, MAX(s.allocated_at) last_allocated
+                               FROM users u LEFT JOIN stickers s ON s.inspector_id = u.id
+                               WHERE u.role = 'inspector' AND u.status = 'active' GROUP BY u.id, u.name ORDER BY u.name");
+        $batches = array_column(DB::all('SELECT DISTINCT batch_no FROM stickers WHERE batch_no IS NOT NULL ORDER BY batch_no DESC'), 'batch_no');
+        $series = StickerService::series();
+        $this->view('admin/documents/stickers', compact('rows', 'meta', 'status', 'q', 'insp', 'counts', 'inspectors', 'batches', 'series')
+            + ['title' => 'Sticker Stock', 'crumbs' => ['Sticker Stock' => null]]);
+    }
+
+    /** Stickers linked to projects (jobs): closed, or voided after being linked. */
+    public function projectStickers(): void
+    {
+        $status = in_array(input('status'), ['closed', 'void'], true) ? (string) input('status') : '';
+        $result = in_array(input('result'), ['accepted', 'failed', 'pending'], true) ? (string) input('result') : '';
+        $q = trim((string) input('q', ''));
+        $insp = (int) input('inspector', 0);
+        $client = (int) input('client', 0);
+        $where = ["s.sub_job_id IS NOT NULL AND s.status IN ('closed','void')"];
         $p = [];
         if ($status !== '') { $where[] = 's.status = ?'; $p[] = $status; }
-        if ($q !== '') { $where[] = '(s.sticker_no LIKE ? OR s.batch_no LIKE ? OR c.certificate_no LIKE ? OR e.equipment_no LIKE ?)'; array_push($p, "%$q%", "%$q%", "%$q%", "%$q%"); }
-        $sql = "SELECT s.*, c.certificate_no, sj.sub_job_no, sj.job_id, e.description eq_description, e.equipment_no, cl.name client_name, u.name inspector_name
-                FROM stickers s LEFT JOIN certificates c ON c.id = s.certificate_id LEFT JOIN sub_jobs sj ON sj.id = s.sub_job_id
-                LEFT JOIN equipment e ON e.id = s.equipment_id LEFT JOIN clients cl ON cl.id = e.client_id LEFT JOIN users u ON u.id = s.inspector_id
-                WHERE " . implode(' AND ', $where) . " ORDER BY FIELD(s.status,'reserved','issued','in_stock','void'), s.sticker_no";
+        if ($insp) { $where[] = 's.inspector_id = ?'; $p[] = $insp; }
+        if ($client) { $where[] = 'j.client_id = ?'; $p[] = $client; }
+        if ($result === 'accepted') $where[] = "s.color <> 'red'";
+        if ($result === 'failed') $where[] = "s.color = 'red'";
+        if ($result === 'pending') $where[] = "sj.status <> 'approved'";
+        if ($q !== '') { $where[] = '(s.sticker_no LIKE ? OR sj.sub_job_no LIKE ? OR j.job_no LIKE ? OR c.certificate_no LIKE ? OR e.equipment_no LIKE ? OR cl.name LIKE ?)'; array_push($p, "%$q%", "%$q%", "%$q%", "%$q%", "%$q%", "%$q%"); }
+        $sql = "SELECT s.*, sj.sub_job_no, sj.job_id, sj.status sj_status, j.job_no, j.title job_title, c.certificate_no, c.result, c.status cert_status,
+                       t.name type_name, e.description eq_description, e.equipment_no, cl.name client_name, u.name inspector_name
+                FROM stickers s JOIN sub_jobs sj ON sj.id = s.sub_job_id JOIN jobs j ON j.id = sj.job_id JOIN clients cl ON cl.id = j.client_id
+                LEFT JOIN inspection_types t ON t.id = sj.inspection_type_id LEFT JOIN certificates c ON c.sub_job_id = sj.id
+                LEFT JOIN equipment e ON e.id = s.equipment_id LEFT JOIN users u ON u.id = s.inspector_id
+                WHERE " . implode(' AND ', $where) . ' ORDER BY s.linked_at DESC, s.id DESC';
         if ($this->wantsCsv()) {
-            csv_export('stickers', DB::all($sql, $p), ['sticker_no' => 'Sticker No', 'batch_no' => 'Batch', 'color' => 'Color', 'status' => 'Status', 'sub_job_no' => 'Sub-job',
-                'certificate_no' => 'Certificate', 'client_name' => 'Client', 'equipment_no' => 'Equipment ID', 'issued_at' => 'Issued', 'expiry_date' => 'Expiry', 'void_reason' => 'Void Reason']);
+            csv_export('project-stickers', DB::all($sql, $p), ['sticker_no' => 'Sticker No', 'color' => 'Color', 'status' => 'Status', 'job_no' => 'Job', 'sub_job_no' => 'Sub-job',
+                'client_name' => 'Client', 'type_name' => 'Inspection', 'eq_description' => 'Equipment', 'equipment_no' => 'Equipment ID', 'inspector_name' => 'Inspector',
+                'linked_at' => 'Linked', 'certificate_no' => 'Certificate', 'result' => 'Result', 'expiry_date' => 'Valid Until', 'void_reason' => 'Void Reason']);
         }
-        [$rows, $meta] = paginate($sql, $p, 30);
-        $counts = array_column(DB::all('SELECT status, COUNT(*) n FROM stickers GROUP BY status'), 'n', 'status');
-        $this->view('admin/documents/stickers', compact('rows', 'meta', 'status', 'q', 'counts') + ['title' => 'Stickers', 'crumbs' => ['Stickers' => null]]);
+        [$rows, $meta] = paginate($sql, $p, 50);
+        $counts = DB::one("SELECT SUM(s.status = 'closed') closed, SUM(s.status = 'void') void, SUM(s.status = 'closed' AND s.color <> 'red') accepted,
+                                  SUM(s.status = 'closed' AND s.color = 'red') failed, SUM(s.status = 'closed' AND sj.status <> 'approved') pending
+                           FROM stickers s JOIN sub_jobs sj ON sj.id = s.sub_job_id WHERE s.status IN ('closed','void')");
+        $inspectors = DB::all("SELECT id, name FROM users WHERE role = 'inspector' ORDER BY name");
+        $clients = DB::all('SELECT DISTINCT cl.id, cl.name FROM stickers s JOIN sub_jobs sj ON sj.id = s.sub_job_id JOIN jobs j ON j.id = sj.job_id JOIN clients cl ON cl.id = j.client_id ORDER BY cl.name');
+        $this->view('admin/documents/sticker_projects', compact('rows', 'meta', 'status', 'result', 'q', 'insp', 'client', 'counts', 'inspectors', 'clients')
+            + ['title' => 'Project Stickers', 'crumbs' => ['Project Stickers' => null]]);
     }
 
     public function addStickers(): void
     {
         $this->attempt(function () {
-            $n = StickerService::addBatch((string) input('prefix', 'TE-'), (int) input('from'), (int) input('to'), input('color') === 'red' ? 'red' : 'green', nullable(input('batch_no')));
-            flash('success', "$n stickers added to stock (duplicates skipped).");
+            $insp = (int) input('inspector_id', 0) ?: null;
+            $ids = StickerService::addBatch((string) input('prefix', 'TE-'), (int) input('from'), (int) input('to'), input('color') === 'red' ? 'red' : 'green', nullable(input('batch_no')), $insp);
+            flash('success', count($ids) . ' stickers generated' . ($insp ? ' and allocated' : '') . '.');
+            if ($ids && !empty($_POST['print'])) {
+                $nos = DB::one('SELECT MIN(sticker_no) a, MAX(sticker_no) b FROM stickers WHERE id IN (' . implode(',', $ids) . ')');
+                return 'admin/stickers?' . http_build_query(['print_from' => $nos['a'], 'print_to' => $nos['b']]);
+            }
+            return 'admin/stickers';
+        });
+    }
+
+    /** Selected stickers (ids[]), the next N in stock from a number (from + qty) or a number range (from / to). */
+    private function selection(): array
+    {
+        if (!empty($_POST['ids'])) return (array) $_POST['ids'];
+        if ((int) input('qty', 0) > 0) return StickerService::next((string) input('from', ''), (int) input('qty'));
+        return StickerService::range((string) input('from', ''), (string) input('to', ''));
+    }
+
+    public function allocateStickers(): void
+    {
+        $this->attempt(function () {
+            [$n, $skipped] = StickerService::allocate($this->selection(), (int) input('inspector_id', 0));
+            $name = DB::value('SELECT name FROM users WHERE id = ?', [(int) input('inspector_id', 0)]);
+            flash($n ? 'success' : 'error', "$n sticker(s) allocated to $name." . ($skipped ? " $skipped skipped (already linked to a job or void)." : ''));
+        });
+    }
+
+    public function returnStickers(): void
+    {
+        $this->attempt(function () {
+            $n = StickerService::returnToStock($this->selection());
+            flash('success', "$n sticker(s) returned to office stock.");
         });
     }
 

@@ -3,7 +3,7 @@
   <div class="ph-text"><h1>Users & inspectors</h1><div class="sub">Accounts for all four portals. Inspector qualifications control who can be assigned to which inspection type.</div></div>
   <div class="actions">
     <?php View::render('partials/export', [], null); ?>
-    <a class="btn btn-primary" href="<?= url('admin/users/new', ['role' => $role ?: 'inspector']) ?>"><?= icon('plus', 'sm') ?> New <?= e($role ? strtolower(Workflow::label($role)) : 'user') ?></a>
+    <?php if (Auth::isSuper()): ?><a class="btn btn-primary" href="<?= url('admin/users/new', ['role' => $role ?: 'inspector']) ?>"><?= icon('plus', 'sm') ?> New <?= e($role ? strtolower(Workflow::label($role)) : 'user') ?></a><?php endif; ?>
   </div>
 </div>
 <div class="card">

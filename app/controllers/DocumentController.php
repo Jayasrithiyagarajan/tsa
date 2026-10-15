@@ -6,6 +6,7 @@ final class DocumentController extends Controller
     private function backUrl(array $sj): string
     {
         switch (Auth::role()) {
+            case 'superadmin':
             case 'admin':     return url('admin/jobs/' . $sj['job_id']);
             case 'inspector': return url('inspector/subjobs/' . $sj['id']);
             case 'qc':        return url('qc/review/' . $sj['id']);
@@ -58,12 +59,40 @@ final class DocumentController extends Controller
         $this->output('documents/certificate', ['m' => $m], 'Certificate-' . $m['cert']['certificate_no'] . '.pdf', $sj, Workflow::label($m['cert']['status']));
     }
 
+    /** Digital sticker of a job: everyone who may see the job's documents (customers once QC has approved it). */
     public function sticker(string $id): void
     {
         $st = DocumentService::stickerModel((int) $id);
         if (!$st) $this->notFound();
-        if (Auth::is('inspector') && (int) $st['inspector_id'] !== Auth::id()) $this->forbid();
-        echo View::partial('documents/sticker', ['st' => $st, 'toolbar' => ['back' => $_SERVER['HTTP_REFERER'] ?? url(Auth::home())]]);
+        if ($st['sub_job_id'] && $st['status'] === 'closed') {
+            $sj = $this->load((string) $st['sub_job_id']);
+            $back = $_SERVER['HTTP_REFERER'] ?? $this->backUrl($sj);
+        } elseif (Auth::is('admin')) {
+            $back = $_SERVER['HTTP_REFERER'] ?? url('admin/stickers');
+        } else {
+            $this->notFound();
+        }
+        echo View::partial('documents/sticker', ['st' => $st, 'toolbar' => ['back' => $back]]);
+    }
+
+    /** Blank pre-printed stickers (number, colour and result only), 6 per A4 sheet, for the print shop. */
+    public function stickerSheet(): void
+    {
+        if (!empty($_POST['ids'])) {
+            $ids = array_slice(array_map('intval', (array) $_POST['ids']), 0, 2000);
+        } elseif (trim((string) input('from', '')) !== '') {
+            try { $ids = StickerService::range((string) input('from'), (string) input('to', '')); }
+            catch (DomainException $e) { flash('error', $e->getMessage()); redirect('admin/stickers'); }
+        } elseif (($b = trim((string) input('batch', ''))) !== '') {
+            $ids = array_map('intval', array_column(DB::all('SELECT id FROM stickers WHERE batch_no = ?', [$b]), 'id'));
+        } else {
+            $ids = [];
+        }
+        $rows = $ids ? DB::all('SELECT id, sticker_no, verify_token, color, status FROM stickers WHERE id IN (' . implode(',', array_fill(0, count($ids), '?')) . ") AND status <> 'void' ORDER BY sticker_no", $ids) : [];
+        if (!$rows) { flash('error', 'No printable stickers selected.'); redirect('admin/stickers'); }
+        set_time_limit(300);
+        Audit::log('sticker.printed', 'sticker', null, ['count' => count($rows), 'from' => $rows[0]['sticker_no'], 'to' => end($rows)['sticker_no']]);
+        echo View::partial('documents/sticker_sheet', ['rows' => $rows, 'back' => url('admin/stickers')]);
     }
 
     public function attachment(string $id): void

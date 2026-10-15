@@ -30,7 +30,7 @@ $mmax = max(1, ...array_values($monthsAxis));
   <a class="kpi" href="<?= url('admin/jobs', ['status' => 'in_progress']) ?>"><span class="k-ic t-indigo"><?= icon('clipboard') ?></span><span><div class="k-v"><?= (int) $k['subjobs_active'] ?></div><div class="k-l">Assigned / in progress</div><div class="k-t"><?= (int) $k['in_progress'] ?> inspections running now</div></span></a>
   <a class="kpi" href="<?= url('admin/jobs', ['status' => 'under_review']) ?>"><span class="k-ic t-violet"><?= icon('shield') ?></span><span><div class="k-v"><?= (int) $k['awaiting_qc'] ?></div><div class="k-l">Awaiting QC review</div><div class="k-t"><?= (int) $k['checklists_done'] ?> checklists completed</div></span></a>
   <a class="kpi" href="<?= url('admin/certificates') ?>"><span class="k-ic t-green"><?= icon('award') ?></span><span><div class="k-v"><?= (int) $k['certs_issued'] ?></div><div class="k-l">Certificates issued</div><div class="k-t"><?= (int) $k['certs_pending'] ?> pending (draft / QC)</div></span></a>
-  <a class="kpi" href="<?= url('admin/stickers') ?>"><span class="k-ic t-teal"><?= icon('tag') ?></span><span><div class="k-v"><?= (int) $k['stickers_stock'] ?></div><div class="k-l">Stickers in stock</div><div class="k-t"><?= (int) $k['stickers_issued'] ?> issued · <?= (int) $k['stickers_reserved'] ?> reserved</div></span></a>
+  <a class="kpi" href="<?= url('admin/stickers') ?>"><span class="k-ic t-teal"><?= icon('tag') ?></span><span><div class="k-v"><?= (int) $k['stickers_stock'] ?></div><div class="k-l">Stickers in stock</div><div class="k-t"><?= (int) $k['stickers_reserved'] ?> with inspectors · <?= (int) $k['stickers_issued'] ?> used on jobs</div></span></a>
 </div>
 
 <div class="grid grid-main">
@@ -113,7 +113,7 @@ $mmax = max(1, ...array_values($monthsAxis));
         <a class="btn btn-secondary btn-sm mt-2" href="<?= url('admin/equipment', ['due' => 30]) ?>">View equipment</a></div>
     </div>
     <div class="card">
-      <div class="card-h"><h2><?= icon('history', 'sm') ?> Recent activity</h2><a class="btn btn-ghost btn-sm" href="<?= url('admin/audit') ?>">Audit log</a></div>
+      <div class="card-h"><h2><?= icon('history', 'sm') ?> Recent activity</h2><?php if (Auth::isSuper()): ?><a class="btn btn-ghost btn-sm" href="<?= url('admin/audit') ?>">Audit log</a><?php endif; ?></div>
       <div class="card-b"><ul class="timeline">
         <?php foreach ($activity as $a): ?>
           <li><b><?= e(Workflow::label(str_replace('.', '_', $a['action']))) ?></b> <span class="muted">· <?= e($a['entity_type']) ?> #<?= (int) $a['entity_id'] ?></span><div class="tl-t"><?= e($a['user_name'] ?? 'System / website') ?> · <?= e(time_ago($a['created_at'])) ?></div></li>

@@ -54,10 +54,10 @@ echo "✓ inspection types & templates\n";
 // demo password for every seeded account — change after first login
 const DEMO_PASSWORD = 'Tuv@2026!';
 $pw = password_hash(DEMO_PASSWORD, PASSWORD_DEFAULT);
-$admin = DB::insert('users', ['name' => 'System Administrator', 'email' => 'admin@tuveast.test', 'password_hash' => $pw, 'role' => 'admin', 'phone' => '+966 13 818 5501']);
+$admin = DB::insert('users', ['name' => 'System Administrator', 'email' => 'admin@tuveast.test', 'password_hash' => $pw, 'role' => 'superadmin', 'phone' => '+966 13 818 5501']);
 
 if (!$demo) {
-    echo "✓ admin account admin@tuveast.test (password in database/install.php)\n";
+    echo "✓ super admin account admin@tuveast.test (password in database/install.php)\n";
     exit;
 }
 
@@ -92,6 +92,8 @@ $staff = [
     ['Yousef Haddad', 'yousef.haddad@tuveast.test', 'inspector', 'NDT Level II', 'Jeddah', ['MPI']],
     ['Sara Nasser', 'sara.nasser@tuveast.test', 'qc', 'Level III', null, []],
 ];
+// operations admin: creates and follows up jobs, gives the final approval; master data is view-only
+DB::insert('users', ['name' => 'Hana Al Qahtani', 'email' => 'ops.admin@tuveast.test', 'password_hash' => $pw, 'role' => 'admin', 'phone' => '+966 13 818 5502']);
 $ids = [];
 foreach ($staff as $i => [$name, $email, $role, $qual, $loc, $skills]) {
     $uid = DB::insert('users', ['name' => $name, 'email' => $email, 'password_hash' => $pw, 'role' => $role,
@@ -136,6 +138,11 @@ echo "✓ clients, customers & equipment\n";
 
 StickerService::addBatch('TE-', 1001, 1150, 'green', 'B-2026-01');
 StickerService::addBatch('TER-', 1, 20, 'red', 'B-2026-R1');
+// hand printed stickers to the inspectors (the rest stays in office stock)
+StickerService::allocate(StickerService::range('TE-001001', 'TE-001030'), $omar);
+StickerService::allocate(StickerService::range('TE-001031', 'TE-001060'), $faisal);
+StickerService::allocate(StickerService::range('TER-000001', 'TER-000005'), $omar);
+StickerService::allocate(StickerService::range('TER-000006', 'TER-000010'), $faisal);
 
 // ------------------------------------------------------------------ requests (all three channels + portal)
 $item = fn ($type, $desc, $no = null, $qty = 1) => ['inspection_type_id' => $types[$type], 'equipment_description' => $desc, 'equipment_no' => $no, 'quantity' => $qty];
@@ -186,7 +193,7 @@ act_as($omar);
 InspectionService::start($sj[0]['id']);
 $fillChecklist($sj[0]['id']);
 InspectionService::saveCertificate($sj[0]['id'], ['fields' => ['plate_no' => 'RTD 4471', 'boom_length' => '18.5 m', 'load_test' => '110% of SWL'], 'result' => 'accepted', 'inspection_date' => date('Y-m-d', strtotime('-2 days'))]);
-InspectionService::reserveSticker($sj[0]['id'], 'TE-001001');
+InspectionService::linkSticker($sj[0]['id'], 'TE-001001');
 InspectionService::submit($sj[0]['id']);
 InspectionService::start($sj[1]['id']);
 InspectionService::saveCertificate($sj[1]['id'], ['fields' => $mpiFields, 'result' => 'accepted', 'inspection_date' => date('Y-m-d', strtotime('-2 days'))]);
@@ -211,12 +218,13 @@ act_as($faisal);
 InspectionService::start($sj2[0]['id']);
 $fillChecklist($sj2[0]['id']);
 InspectionService::saveCertificate($sj2[0]['id'], ['fields' => ['lift_height' => '4.5 m'], 'result' => 'accepted']);
-InspectionService::reserveSticker($sj2[0]['id'], 'TE-001002');
+InspectionService::linkSticker($sj2[0]['id'], 'TE-001031');
 InspectionService::submit($sj2[0]['id']);
 InspectionService::start($sj2[2]['id']);
 $fillChecklist($sj2[2]['id'], 15);
 InspectionService::saveCertificate($sj2[2]['id'], ['fields' => ['plate_no' => 'JBL 2290', 'boom_length' => '21 m'], 'result' => 'repair',
     'result_statement' => 'Equipment to be repaired and re-inspected before use', 'remarks' => 'Hydraulic leak observed at slew motor seal. Re-inspection required after repair.']);
+InspectionService::linkSticker($sj2[2]['id'], 'TER-000006');   // repair result → red (Failed) sticker
 InspectionService::submit($sj2[2]['id']);
 act_as($omar);
 InspectionService::start($sj2[1]['id']);
@@ -240,7 +248,7 @@ JobService::create(['client_id' => $cl['22108'], 'title' => 'Pre-mobilisation bo
 ]);
 echo "✓ demo requests, jobs, inspections, certificates\n";
 echo "\nDemo accounts (password: " . DEMO_PASSWORD . ")\n";
-foreach (DB::all('SELECT role, email FROM users ORDER BY FIELD(role,"admin","inspector","qc","customer"), id') as $u) {
+foreach (DB::all('SELECT role, email FROM users ORDER BY FIELD(role,"superadmin","admin","inspector","qc","customer"), id') as $u) {
     printf("  %-10s %s\n", $u['role'], $u['email']);
 }
 
