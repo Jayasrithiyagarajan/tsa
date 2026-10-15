@@ -1,34 +1,55 @@
 <div class="page-head">
-  <div class="ph-text"><h1>Inspection types & templates</h1><div class="sub">Each inspection type has its own controlled checklist and certificate template. Templates are versioned — documents already filled keep the version they were created with.</div></div>
+  <div class="ph-text"><h1>Inspection types & templates</h1><div class="sub">Checklists and certificates are kept in separate folders. Templates are versioned — documents already filled keep the version they were created with.</div></div>
   <div class="actions"><button class="btn btn-primary" data-modal="type-new"><?= icon('plus', 'sm') ?> New inspection type</button></div>
 </div>
-<div class="grid grid-3">
-<?php foreach ($types as $t): ?>
-  <div class="card">
-    <div class="card-h"><h2><span class="pill"><?= e($t['code']) ?></span> <?= e($t['name']) ?></h2><?= badge($t['status']) ?></div>
-    <div class="card-b stack">
-      <dl class="kv small" style="grid-template-columns:110px 1fr">
-        <dt>Category</dt><dd><?= e($t['category']) ?></dd>
-        <dt>Procedure</dt><dd><?= e($t['procedure_ref'] ?: '—') ?></dd>
-        <dt>Standard</dt><dd><?= e($t['standard_ref'] ?: '—') ?></dd>
-        <dt>Validity</dt><dd><?= (int) $t['validity_months'] ?> months</dd>
-        <dt>Requires</dt><dd><?= implode(' · ', array_filter([$t['requires_checklist'] ? 'Checklist' : null, $t['requires_certificate'] ? 'Certificate' : null, $t['requires_sticker'] ? 'Sticker' : null])) ?: '—' ?></dd>
-      </dl>
-      <div class="row between" style="padding:10px 12px;border:1px solid var(--border);border-radius:10px">
-        <div><div class="small strong"><?= icon('clipboard', 'sm') ?> Checklist</div><div class="small muted"><?= $t['cl_id'] ? e($t['cl_label']) . ' · ' . (int) $t['cl_items'] . ' items' : ($t['requires_checklist'] ? 'Not configured' : 'Not required') ?></div></div>
-        <div class="row"><?php if ($t['cl_id']): ?><a class="btn btn-ghost btn-sm" href="<?= url('admin/templates/preview/checklist/' . $t['cl_id']) ?>" title="Preview"><?= icon('eye', 'sm') ?></a><?php endif; ?>
-          <a class="btn btn-secondary btn-sm" href="<?= url('admin/templates/checklist/' . $t['id']) ?>"><?= $t['cl_id'] ? 'Edit' : 'Create' ?></a></div>
-      </div>
-      <div class="row between" style="padding:10px 12px;border:1px solid var(--border);border-radius:10px">
-        <div><div class="small strong"><?= icon('award', 'sm') ?> Certificate</div><div class="small muted"><?= $t['ct_id'] ? e($t['ct_label']) : 'Not configured — inspectors upload certificates' ?></div></div>
-        <div class="row"><?php if ($t['ct_id']): ?><a class="btn btn-ghost btn-sm" href="<?= url('admin/templates/preview/certificate/' . $t['ct_id']) ?>" title="Preview"><?= icon('eye', 'sm') ?></a><?php endif; ?>
-          <a class="btn btn-secondary btn-sm" href="<?= url('admin/templates/certificate/' . $t['id']) ?>"><?= $t['ct_id'] ? 'Edit' : 'Create' ?></a></div>
-      </div>
+<style>
+.tpl-folder{border:1px solid var(--border);border-radius:12px;background:var(--surface,transparent);margin-bottom:16px;overflow:hidden}
+.tpl-folder>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 16px;user-select:none}
+.tpl-folder>summary::-webkit-details-marker{display:none}
+.tpl-folder>summary .chev{transition:transform .15s;display:inline-block}
+.tpl-folder[open]>summary .chev{transform:rotate(90deg)}
+.tpl-folder>summary h2{margin:0;font-size:16px}
+.tpl-folder>summary .count{margin-left:auto}
+.tpl-cat{padding:8px 16px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border-top:1px solid var(--border);opacity:.7}
+.tpl-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,2fr) auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--border)}
+.tpl-row .nm{display:flex;gap:8px;align-items:center;min-width:0}
+.tpl-row .nm span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tpl-row .acts{display:flex;gap:6px;align-items:center}
+@media (max-width:720px){.tpl-row{grid-template-columns:1fr}.tpl-row .acts{justify-content:flex-start}}
+</style>
+<?php
+$folders = [
+  'checklist' => ['label' => 'Checklists', 'icon' => 'clipboard', 'sub' => 'Field checklists completed by inspectors', 'req' => 'requires_checklist', 'id' => 'cl_id', 'lbl' => 'cl_label', 'empty' => 'Not configured'],
+  'certificate' => ['label' => 'Certificates', 'icon' => 'award', 'sub' => 'Certificate and report layouts for types without a checklist (NDT, lifts, scaffolding, thorough examination)', 'req' => 'requires_certificate', 'id' => 'ct_id', 'lbl' => 'ct_label', 'empty' => 'Not configured — inspectors upload certificates'],
+];
+foreach ($folders as $kind => $f):
+  $list = array_values(array_filter($types, fn($t) => $kind === 'checklist' ? ($t['requires_checklist'] || $t['cl_id']) : (!$t['requires_checklist'] && ($t['requires_certificate'] || $t['ct_id'])))); // equipment types with a checklist live only in Checklists
+  $done = count(array_filter($list, fn($t) => $t[$f['id']]));
+  $lastCat = null; ?>
+<details class="tpl-folder" id="folder-<?= $kind ?>" open>
+  <summary><span class="chev"><?= icon('chevron-right', 'sm') ?></span><?= icon($f['icon'], 'sm') ?>
+    <div><h2><?= e($f['label']) ?></h2><div class="small muted"><?= e($f['sub']) ?></div></div>
+    <span class="pill count"><?= $done ?> of <?= count($list) ?> configured</span></summary>
+<?php if (!$list): ?><div class="tpl-row small muted">No inspection types need a <?= strtolower(e($f['label'])) ?> template.</div><?php endif; ?>
+<?php foreach ($list as $t): ?>
+<?php if ($t['category'] !== $lastCat): $lastCat = $t['category']; ?><div class="tpl-cat"><?= e($lastCat) ?></div><?php endif; ?>
+  <div class="tpl-row">
+    <div class="nm"><span class="pill"><?= e($t['code']) ?></span><span class="t strong" title="<?= e($t['name']) ?>"><?= e($t['name']) ?></span><?= badge($t['status']) ?></div>
+    <div class="small muted"><?php if ($t[$f['id']]): ?><?= e($t[$f['lbl']]) ?><?= $kind === 'checklist' ? ' · ' . (int) $t['cl_items'] . ' items' : '' ?><?php else: ?><?= e($f['empty']) ?><?php endif; ?></div>
+    <div class="acts">
+      <?php if ($t[$f['id']]): ?><a class="btn btn-ghost btn-sm" href="<?= url('admin/templates/preview/' . $kind . '/' . $t[$f['id']]) ?>" title="Preview"><?= icon('eye', 'sm') ?></a><?php endif; ?>
+      <a class="btn btn-secondary btn-sm" href="<?= url('admin/templates/' . $kind . '/' . $t['id']) ?>"><?= $t[$f['id']] ? 'Edit' : 'Create' ?></a>
+      <button class="btn btn-ghost btn-sm" data-modal="type-<?= $t['id'] ?>" title="Inspection type settings"><?= icon('settings', 'sm') ?></button>
     </div>
-    <div class="card-f"><span class="small muted" style="flex:1">Used in <?= (int) $t['used'] ?> sub-jobs</span><button class="btn btn-ghost btn-sm" data-modal="type-<?= $t['id'] ?>"><?= icon('settings', 'sm') ?> Settings</button></div>
   </div>
 <?php endforeach; ?>
-</div>
+</details>
+<?php endforeach; ?>
+<script>
+(function(){ ['checklist','certificate'].forEach(function(k){ var d=document.getElementById('folder-'+k); if(!d) return;
+  try{ if(localStorage.getItem('tplfolder-'+k)==='closed') d.open=false; }catch(e){}
+  d.addEventListener('toggle',function(){ try{ localStorage.setItem('tplfolder-'+k, d.open?'open':'closed'); }catch(e){} }); }); })();
+</script>
 <?php foreach (array_merge([null], $types) as $t): $mid = $t ? 'type-' . $t['id'] : 'type-new'; ?>
 <dialog class="modal" id="<?= $mid ?>" style="width:min(640px,calc(100vw - 32px))"><form method="post" action="<?= url('admin/types') ?>"><?= Csrf::field() ?>
   <input type="hidden" name="id" value="<?= (int) ($t['id'] ?? 0) ?>">
