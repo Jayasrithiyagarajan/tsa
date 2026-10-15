@@ -181,7 +181,7 @@ table.f.sp img.sg { max-height: 13mm; max-width: 40mm; vertical-align: middle; }
 .stk .leea { position: absolute; left: 84.2mm; top: 81.8mm; width: 12.2mm; height: 14.4mm; }
 
 /* ---------- Scaffolding inspection report (F-7.5.1-15) ---------- */
-table.f.sc td { border: 0.5pt solid #000; padding: 0 1.8mm; font-size: 9.5pt; line-height: 1.2; vertical-align: middle; }
+table.f.sc td { border: 0.5pt solid #000; padding: 0 1.8mm; font-size: 9.5pt; line-height: 1.1; vertical-align: middle; }
 table.f.sc td.l { background: #aabee3; font-weight: bold; }
 table.f.sc td.band { background: #aabee3; font-weight: bold; font-size: 10pt; height: 6.6mm; }
 table.f.sc td.hd { font-weight: bold; text-decoration: underline; }
@@ -211,6 +211,40 @@ table.f.sc-ph td { border: 0.5pt solid #000; padding: 1mm; text-align: center; v
 table.f.sc-ph tr.r3 td { height: 72mm; }
 table.f.sc-ph tr.r2 td { height: 68mm; }
 table.f.sc-ph img { max-width: 90mm; max-height: 64mm; }
+/* ---------- Bilingual escalator inspection certificate (F-7.5.1-03) ---------- */
+.ar { font-family: "DejaVu Sans", Arial, sans-serif; direction: ltr; unicode-bidi: bidi-override; line-height: 1; }
+table.f.es td { border: 0.5pt solid #000; padding: 0 1.8mm; font-size: 9.5pt; line-height: 1.1; vertical-align: middle; }
+table.f.es td.l { background: #aabee3; font-weight: bold; }
+table.f.es td.band { background: #aabee3; font-weight: bold; font-size: 12pt; }
+table.f.es td.eng { font-weight: bold; font-size: 10.5pt; }
+table.f.es td.cn { font-size: 10.5pt; }
+table.f.es .cnv { font-size: 9pt; font-weight: bold; }
+table.f.es td.sm, table.f.es .sm2 { font-size: 9pt; font-weight: bold; }
+table.f.es td.lb { font-weight: bold; font-size: 9.5pt; }
+table.f.es td.ov { font-weight: bold; font-size: 10.5pt; }
+table.f.es .lk { color: #0563c1; text-decoration: underline; font-weight: normal; }
+table.f.es td.bl { font-weight: bold; font-size: 9pt; text-align: left; }
+table.f.es td.rt { font-weight: bold; text-align: right; }
+table.f.es td.rs { font-weight: bold; }
+table.f.es .ara { font-weight: bold; font-size: 9.5pt; line-height: 1.05; }
+table.f.es .en { font-weight: bold; font-size: 8.5pt; line-height: 1.05; }
+table.f.es td.sgn { padding: 0 1.8mm; vertical-align: top; }
+table.f.es table.in { width: 100%; border-collapse: collapse; margin-top: 1mm; }
+table.f.es table.in td { border: 0; padding: 0; font-size: 9.5pt; vertical-align: top; height: auto; }
+table.f.es table.in td.ig { text-align: center; width: 45mm; }
+table.f.es table.in img.sg { max-height: 14mm; max-width: 40mm; }
+table.f.es td.nt { padding: 1mm 2mm; }
+table.f.es .nr { text-align: right; font-weight: bold; line-height: 1.2; }
+table.f.es tr.h48 td { height: 4.8mm; }
+table.f.es tr.h53 td { height: 5.3mm; }
+table.f.es tr.h74 td { height: 7.4mm; }
+table.f.es tr.h76 td { height: 7.6mm; }
+table.f.es tr.h86 td { height: 8.6mm; }
+table.f.es tr.h90 td { height: 9mm; }
+table.f.es tr.h100 td { height: 10mm; }
+table.f.es tr.h130 td { height: 13mm; }
+table.f.es tr.h175 td { height: 17.5mm; }
+
 /* ---------- on-screen preview chrome (not in PDF) ---------- */
 @media screen {
   body.doc.preview { background: #525a6b; padding: 64px 0 32px; }
