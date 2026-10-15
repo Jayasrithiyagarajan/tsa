@@ -180,6 +180,37 @@ table.f.sp img.sg { max-height: 13mm; max-width: 40mm; vertical-align: middle; }
 .stk .addr { position: absolute; left: 3.7mm; top: 82.6mm; width: 79mm; color: var(--ink); font-size: 7.45pt; line-height: 3.22mm; white-space: nowrap; }
 .stk .leea { position: absolute; left: 84.2mm; top: 81.8mm; width: 12.2mm; height: 14.4mm; }
 
+/* ---------- Scaffolding inspection report (F-7.5.1-15) ---------- */
+table.f.sc td { border: 0.5pt solid #000; padding: 0 1.8mm; font-size: 9.5pt; line-height: 1.2; vertical-align: middle; }
+table.f.sc td.l { background: #aabee3; font-weight: bold; }
+table.f.sc td.band { background: #aabee3; font-weight: bold; font-size: 10pt; height: 6.6mm; }
+table.f.sc td.hd { font-weight: bold; text-decoration: underline; }
+table.f.sc td.c { text-align: center; }
+table.f.sc td.tx { padding: 1.4mm 2mm; vertical-align: top; }
+table.f.sc td.intro { height: 22mm; }
+table.f.sc td.concl { height: 30mm; }
+table.f.sc td.act { height: 9mm; }
+table.f.sc td.fin { height: 20mm; }
+table.f.sc tr.h66 td { height: 6.6mm; }
+table.f.sc tr.h82 td { height: 8.2mm; }
+table.f.sc tr.h86 td { height: 8.6mm; }
+table.f.sc tr.h110 td { height: 11mm; }
+table.f.sc tr.h130 td { height: 13mm; }
+table.f.sc .radio { font-family: "DejaVu Sans", "Segoe UI Symbol", sans-serif; font-size: 9pt; }
+table.f.sc .hd2 { font-weight: bold; text-decoration: underline; margin-bottom: 1.2mm; }
+table.f.sc .ni { padding-left: 6mm; text-indent: -6mm; margin-bottom: 0.8mm; }
+table.f.sc .ni span { display: inline-block; width: 5mm; text-indent: 0; }
+table.f.sc td.sgc { text-align: center; padding: 0; }
+table.f.sc img.sg { max-height: 12mm; max-width: 45mm; margin: 0 3mm; vertical-align: middle; }
+table.f.sc img.sp { width: 22mm; height: 22mm; margin: 0 3mm; vertical-align: middle; }
+.sc-h { font-weight: bold; text-decoration: underline; font-size: 10pt; height: 11mm; line-height: 7mm; }
+.sc-draw { border: 0.5pt solid #000; height: 226mm; text-align: center; padding: 2mm; }
+.sc-draw.first { height: 215mm; }
+.sc-draw img { max-width: 184mm; max-height: 210mm; vertical-align: middle; }
+table.f.sc-ph td { border: 0.5pt solid #000; padding: 1mm; text-align: center; vertical-align: middle; }
+table.f.sc-ph tr.r3 td { height: 72mm; }
+table.f.sc-ph tr.r2 td { height: 68mm; }
+table.f.sc-ph img { max-width: 90mm; max-height: 64mm; }
 /* ---------- on-screen preview chrome (not in PDF) ---------- */
 @media screen {
   body.doc.preview { background: #525a6b; padding: 64px 0 32px; }

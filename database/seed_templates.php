@@ -2167,7 +2167,7 @@ return [
         // the narrative parts (introduction, attendees, scope, activity details, conclusions) go into Remarks \ Notes
         'certificate' => [
             'code' => 'F-7.5.1-15', 'title' => 'SCAFFOLDING INSPECTION REPORT', 'doc_ref' => 'F-7.5.1-15',
-            'revision' => '03', 'revision_date' => '09/Feb./23', 'inspector_label' => 'Inspection carried out by:',
+            'revision' => '03', 'revision_date' => '09/Feb./23', 'layout' => 'sc', 'inspector_label' => 'Inspection carried out by:',
             'default_statement' => 'Reference to the examination carried out, the equipment was found satisfactory at time of inspection and safe for use',
             'fields' => [
                 ['key' => 'client', 'label' => 'Client', 'source' => 'client.name'],
@@ -2186,8 +2186,20 @@ return [
                     'options' => ['Before Manufacturing', 'During Manufacturing', 'Final', 'Packing', 'After Installed', 'In-Service Inspection']],
                 ['key' => 'type_insp', 'label' => 'Type of Inspection', 'type' => 'select', 'required' => true,
                     'options' => ['Pre-Inspection', 'Document and QC Record Review', 'Visual Examination/Checks', 'Witnessing Tests', 'Final Inspection']],
+                ['key' => 'type_insp2', 'label' => 'Type of Inspection (second, optional)', 'type' => 'select', 'required' => false,
+                    'options' => ['Pre-Inspection', 'Document and QC Record Review', 'Visual Examination/Checks', 'Witnessing Tests', 'Final Inspection']],
+                ['key' => 'intro', 'label' => 'Introduction', 'type' => 'textarea', 'required' => true],
+                ['key' => 'ncr_issued', 'label' => 'NCRs issued during report', 'type' => 'text', 'required' => false],
+                ['key' => 'ncr_outstanding', 'label' => 'List of outstanding NCRs', 'type' => 'text', 'required' => false],
+                ['key' => 'conclusions', 'label' => 'Conclusions and remarks (one numbered point per line)', 'type' => 'textarea', 'required' => true],
+                ['key' => 'attendees', 'label' => 'Attendees (one per line: Name | Designation | Representative)', 'type' => 'textarea', 'required' => true],
+                ['key' => 'scope_method', 'label' => 'Scope - inspection method', 'type' => 'text', 'required' => false],
+                ['key' => 'scope_scope', 'label' => 'Scope - scope', 'type' => 'text', 'required' => false],
+                ['key' => 'scope_remarks', 'label' => 'Scope - remarks', 'type' => 'text', 'required' => false],
+                ['key' => 'gen_desc', 'label' => 'General description (visual inspection)', 'type' => 'text', 'required' => false],
+                ['key' => 'activities', 'label' => 'Inspection activities detail', 'type' => 'textarea', 'required' => false],
             ],
-            'notes' => '',
+            'notes' => "Scaffolding - Safety Requirements | ANSI A10.8 | American National Standard\nPlanning, design, setting up and use of temporary suspended access equipment | BS 5974:2017 | Britsh Standard\nScaffolding - Safety Requirements | 29 CFR 1910.28 OSHA | United States Code of Federal Regulations",
         ],
     ],
 
