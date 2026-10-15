@@ -151,11 +151,13 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <?php if ($editable): ?><span class="save-state" id="cf-save-state">Autosave on</span><?php endif; ?></div>
           <div class="form-grid">
             <?php foreach ($fields as $f): ?>
-              <div class="field col-6"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && !$f['bound'] ? ' <span class="req">*</span>' : '' ?></label>
+              <div class="field <?= ($f['type'] ?? '') === 'textarea' ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && !$f['bound'] ? ' <span class="req">*</span>' : '' ?></label>
                 <?php if ($f['bound']): ?>
                   <div class="bound" title="From job record"><?= icon('lock', 'sm') ?><?= e($f['value'] !== '' ? $f['value'] : ($f['source'] === 'cert.issue_date' ? 'Set when QC issues' : '—')) ?></div>
                 <?php elseif (($f['type'] ?? 'text') === 'select'): ?>
                   <select class="select" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><option value="">Select…</option><?php foreach ($f['options'] ?? [] as $o): ?><option<?= selected($o, $f['value']) ?>><?= e($o) ?></option><?php endforeach; ?></select>
+                <?php elseif (($f['type'] ?? 'text') === 'textarea'): ?>
+                  <textarea class="input" rows="6" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><?= e($f['value']) ?></textarea>
                 <?php else: ?>
                   <input class="input" type="<?= ($f['type'] ?? '') === 'date' ? 'date' : (($f['type'] ?? '') === 'number' ? 'number' : 'text') ?>" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['value']) ?>"<?= $dis ?>>
                 <?php endif; ?>

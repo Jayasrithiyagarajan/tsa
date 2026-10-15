@@ -12,7 +12,7 @@ $row = function ($i, $f) { $isOpt = ($f['type'] ?? 'text') === 'select'; ?>
       <select class="select" style="flex:2;min-width:200px" name="fields[<?= $i ?>][source]" aria-label="Value source">
         <?php foreach (CertificateService::SOURCES as $k => $l): ?><option value="<?= e($k) ?>"<?= selected($k, $f['source'] ?? '') ?>><?= e($l) ?></option><?php endforeach; ?>
       </select>
-      <select class="select" style="flex:1;min-width:110px" name="fields[<?= $i ?>][type]" aria-label="Input type"><?php foreach (['text' => 'Text', 'date' => 'Date', 'number' => 'Number', 'select' => 'Dropdown'] as $k => $l): ?><option value="<?= $k ?>"<?= selected($k, $f['type'] ?? 'text') ?>><?= $l ?></option><?php endforeach; ?></select>
+      <select class="select" style="flex:1;min-width:110px" name="fields[<?= $i ?>][type]" aria-label="Input type"><?php foreach (['text' => 'Text', 'date' => 'Date', 'textarea' => 'Multi-line text', 'number' => 'Number', 'select' => 'Dropdown'] as $k => $l): ?><option value="<?= $k ?>"<?= selected($k, $f['type'] ?? 'text') ?>><?= $l ?></option><?php endforeach; ?></select>
       <label class="check small"><input type="checkbox" name="fields[<?= $i ?>][required]" value="1"<?= checked(!empty($f['required'])) ?>> Required</label>
       <label class="check small" title="Pre-fill from the inspector's previous certificate (equipment / consumables)"><input type="checkbox" name="fields[<?= $i ?>][carry]" value="1"<?= checked(!empty($f['carry'])) ?>> Carry over</label>
       <button type="button" class="icon-btn" data-repeat-remove title="Remove"><?= icon('trash', 'sm') ?></button>

@@ -121,7 +121,7 @@ final class AdminTemplateController extends Controller
             'sj' => $sample, 'cert' => $cert, 'template' => $tpl, 'fields' => $fields,
             'notes' => array_values(array_filter(array_map('trim', explode("\n", (string) $tpl['notes'])))),
             'options' => explode(',', $tpl['result_options']), 'inspector' => ['name' => 'Inspector Name', 'qualification' => 'Level II', 'signature' => null],
-            'reviewer' => null, 'photos' => [], 'issued' => false, 'qr' => null, 'verify_url' => '',
+            'reviewer' => null, 'photos' => [], 'issued' => false, 'qr' => DocumentService::qr(abs_url('verify/SAMPLE')), 'verify_url' => '',
         ], 'toolbar' => empty($_GET['pdf']) ? ['back' => url('admin/templates/certificate/' . $tpl['inspection_type_id']), 'pdf' => '?pdf=1', 'status' => 'Template preview'] : null]);
         empty($_GET['pdf']) ? print($html) : DocumentService::pdf($html, $tpl['doc_ref'] . ' sample.pdf', false);
     }

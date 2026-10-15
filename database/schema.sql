@@ -134,6 +134,7 @@ CREATE TABLE certificate_templates (
   notes              TEXT NULL,                            -- legal / standard notes (one per line)
   inspector_label    VARCHAR(60) NOT NULL DEFAULT 'Inspector:',
   show_image_area    TINYINT(1) NOT NULL DEFAULT 1,
+  layout             VARCHAR(20) NULL,                     -- print layout variant (NULL = standard F-7.5.1-06, 'ec' = F-7.5.1-09)
   version            SMALLINT UNSIGNED NOT NULL DEFAULT 1,
   is_active          TINYINT(1) NOT NULL DEFAULT 1,
   created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

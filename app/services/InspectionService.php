@@ -183,7 +183,7 @@ final class InspectionService
             foreach ($tpl ? (json_decode($tpl['fields'], true) ?: []) : [] as $f) {
                 if (!empty($f['source'])) continue;                 // bound to system data, not editable
                 if (array_key_exists($f['key'], $in['fields'] ?? [])) {
-                    $v = mb_substr(trim((string) $in['fields'][$f['key']]), 0, 190);
+                    $v = mb_substr(trim((string) $in['fields'][$f['key']]), 0, ($f['type'] ?? '') === 'textarea' ? 1500 : 190);
                     if (($f['type'] ?? '') === 'select' && $v !== '' && !in_array($v, $f['options'] ?? [], true)) continue;
                     $data[$f['key']] = $v;
                 }

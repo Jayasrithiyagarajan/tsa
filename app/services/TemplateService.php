@@ -191,7 +191,7 @@ final class TemplateService
                 if ($src) {
                     $row['source'] = $src;
                 } else {
-                    $row['type'] = in_array($f['type'] ?? 'text', ['text', 'date', 'select', 'number'], true) ? $f['type'] : 'text';
+                    $row['type'] = in_array($f['type'] ?? 'text', ['text', 'textarea', 'date', 'select', 'number'], true) ? $f['type'] : 'text';
                     $row['required'] = !empty($f['required']);
                     $row['carry'] = !empty($f['carry']);
                     if ($row['type'] === 'select') {
@@ -218,6 +218,9 @@ final class TemplateService
                 'show_image_area'   => !empty($h['show_image_area']) ? 1 : 0,
             ];
             $old = $templateId ? DB::one('SELECT * FROM certificate_templates WHERE id = ?', [$templateId]) : null;
+            if (DB::one("SHOW COLUMNS FROM certificate_templates LIKE 'layout'")) {
+                $row['layout'] = nullable($h['layout'] ?? ($old['layout'] ?? null));
+            }
             $inUse = $old && DB::value('SELECT COUNT(*) FROM certificates WHERE template_id = ?', [$old['id']]);
             if ($old && !$inUse) {
                 DB::update('certificate_templates', $row, 'id = ?', [$old['id']]);

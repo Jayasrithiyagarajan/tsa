@@ -82,7 +82,8 @@ final class DocumentService
             $f['value'] = CertificateService::fieldValue($f, $sj, $cert, $data);
             $fields[] = $f;
         }
-        $photos = DB::all("SELECT * FROM attachments WHERE sub_job_id = ? AND on_certificate = 1 AND mime LIKE 'image/%' ORDER BY id LIMIT 4", [$subJobId]);
+        $photoLimit = (($tpl['layout'] ?? '') === 'ec') ? 12 : 4;
+        $photos = DB::all("SELECT * FROM attachments WHERE sub_job_id = ? AND on_certificate = 1 AND mime LIKE 'image/%' ORDER BY id LIMIT $photoLimit", [$subJobId]);
         foreach ($photos as &$p) {
             $p['src'] = upload_data_uri($p['file_path']);
         }

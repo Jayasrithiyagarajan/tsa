@@ -16,6 +16,11 @@ if (!DB::one("SHOW COLUMNS FROM checklist_templates LIKE 'layout'")) {
     echo "✓ added checklist_templates.layout\n";
 }
 
+if (!DB::one("SHOW COLUMNS FROM certificate_templates LIKE 'layout'")) {
+    DB::pdo()->exec("ALTER TABLE certificate_templates ADD layout VARCHAR(20) NULL AFTER show_image_area");
+    echo "✓ added certificate_templates.layout\n";
+}
+
 if (DB::value("SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'checklist_template_items' AND COLUMN_NAME = 'label'") !== 'text') {
     DB::pdo()->exec('ALTER TABLE checklist_template_items MODIFY label TEXT NOT NULL');
     echo "✓ checklist item labels widened to TEXT\n";
@@ -68,6 +73,21 @@ foreach (require __DIR__ . '/seed_templates.php' as $def) {
     if ($def['certificate'] && !InspectionService::activeCertificateTemplate($typeId)) {
         TemplateService::saveCertificate(null, $typeId, $def['certificate'] + ['show_image_area' => 1, 'result_options' => ['accepted', 'rejected', 'repair']], $def['certificate']['fields']);
         echo "✓ $code certificate template created\n";
+    }
+    // certificates that declare a print layout: keep the stored template in step with the seed (versioned when already in use)
+    elseif ($def['certificate'] && !empty($def['certificate']['layout'])) {
+        $cur = InspectionService::activeCertificateTemplate($typeId);
+        $c = $def['certificate'];
+        $norm = fn (array $fs) => array_map(fn ($f) => [$f['key'], $f['label'], $f['source'] ?? '', $f['type'] ?? '', array_values($f['options'] ?? []), !empty($f['required']), !empty($f['carry'])], $fs);
+        $same = (string) $cur['layout'] === (string) $c['layout'] && $cur['title'] === $c['title'] && $cur['revision'] === $c['revision']
+            && $cur['inspector_label'] === $c['inspector_label'] && (string) $cur['default_statement'] === (string) $c['default_statement']
+            && (string) $cur['notes'] === (string) ($c['notes'] ?? '') && $norm(json_decode($cur['fields'], true) ?: []) === $norm($c['fields']);
+        if (!$same) {
+            TemplateService::saveCertificate($cur['id'], $typeId, $c + ['show_image_area' => (int) $cur['show_image_area'], 'result_options' => explode(',', $cur['result_options'])], $c['fields']);
+            echo "✓ $code certificate template updated ({$c['doc_ref']}, layout {$c['layout']})\n";
+        } else {
+            echo "· $code certificate up to date\n";
+        }
     }
 }
 echo "Done. Remember to grant inspectors the new qualifications (Users & Inspectors → Qualified to inspect).\n";

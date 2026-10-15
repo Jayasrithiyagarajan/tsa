@@ -1,6 +1,7 @@
 <?php
 /** Certificate / report in the exact F-7.5.1-06 pattern. @var array $m  @var ?array $toolbar */
 $tpl = $m['template'];
+if (in_array($tpl['layout'] ?? '', ['ec', 'ut', 'sp'], true)) { echo View::partial('documents/certificate_' . $tpl['layout'], ['m' => $m, 'toolbar' => $toolbar ?? null]); return; }
 $c = $m['cert'];
 $brand = DocumentService::brand();
 
@@ -64,7 +65,7 @@ echo View::partial('documents/frame', [
         'extra' => '<div class="cert-title">' . e($tpl['title']) . '</div>' . $stamp,
     ]],
     'sidetext'  => 'Doc Ref.  ' . $tpl['doc_ref'] . '   l   Rev. ' . $tpl['revision'] . '   l   Date: ' . $tpl['revision_date'],
-    'qr'        => $m['issued'] ? $m['qr'] : null,
+    'qr'        => $m['qr'] ?? null,
     'toolbar'   => $toolbar ?? null,
     'watermark' => $wm,
 ]);
