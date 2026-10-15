@@ -1,0 +1,12 @@
+Options -Indexes
+RewriteEngine On
+
+# Block direct access to source, config, database scripts and private storage
+RewriteRule ^(app|config|database|storage|vendor|docs/src)(/|$) - [F,L]
+RewriteRule (^|/)\.(?!well-known) - [F,L]
+RewriteRule \.(sql|md|lock|json|ini|log)$ - [F,L]
+
+# Front controller
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]

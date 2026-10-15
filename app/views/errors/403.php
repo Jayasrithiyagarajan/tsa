@@ -1,0 +1,1 @@
+<div class="card"><?php View::render('partials/empty', ['icon' => 'lock', 'title' => 'Access denied', 'text' => 'Your role does not have permission to open this page.', 'action' => '<a class="btn btn-primary" href="' . url(Auth::home()) . '">Back to my portal</a>'], null); ?></div>

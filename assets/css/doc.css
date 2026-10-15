@@ -1,0 +1,111 @@
+/* ==========================================================================
+   TUV EAST controlled documents — A4 sheets reproduced from the Word forms
+   F-7.5.1-CL 01 (checklist) and F-7.5.1-06 (report / certificate).
+   Used for both the on-screen preview and the Dompdf PDF, so keep to CSS 2.1.
+   ========================================================================== */
+@page { size: A4 portrait; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body.doc { font-family: Calibri, Carlito, "DejaVu Sans", Arial, sans-serif; font-size: 10.5pt; color: #000; }
+
+.sheet { position: relative; width: 210mm; height: 296.5mm; overflow: hidden; background: #fff; page-break-after: always; }
+.sheet:last-child { page-break-after: auto; }
+.sheet .hdr { position: absolute; left: 15mm; top: 6.5mm; width: 181mm; }
+.sheet .ftr { position: absolute; left: 15mm; top: 277.5mm; width: 180mm; }
+.sheet .ftr img.band { width: 180mm; display: block; }
+.sheet .pageno { position: absolute; top: 284mm; left: 0; width: 210mm; text-align: center; font-family: "Times New Roman", serif; font-size: 8.5pt; }
+.sheet .pageno span { padding: 0 1mm; border-top: 0.5pt solid #d9d9d9; }
+.sheet .qr { position: absolute; top: 278mm; left: 95mm; width: 16mm; height: 16mm; }
+.sheet .pageno.with-qr { left: 113mm; width: 30mm; text-align: left; top: 288mm; }
+.sheet .sidetext { position: absolute; left: -36mm; top: 150mm; width: 90mm; text-align: center; font-size: 7.5pt; font-weight: bold; color: #7f7f7f;
+  transform: rotate(-90deg); -webkit-transform: rotate(-90deg); white-space: nowrap; }
+.sheet .body { position: absolute; left: 15mm; width: 181mm; }
+
+/* ---------- tables ---------- */
+table.f { width: 100%; border-collapse: collapse; }
+table.f td { word-wrap: break-word; }
+table.f tr.sz td { height: 0 !important; padding: 0 !important; border: 0 !important; line-height: 0; font-size: 0; }
+table.f, table.f td, table.f th, .cl td, .sig td { font-family: Calibri, Carlito, "DejaVu Sans", Arial, sans-serif; }
+table.f td, table.f th { border: 0.75pt solid #bfbfbf; padding: 0 2mm; vertical-align: middle; }
+.shade { background: #aabee3; }
+.b { font-weight: bold; }
+.c { text-align: center; }
+
+/* ---------- checklist (F-7.5.1-CL 01) ---------- */
+.cl td { font-weight: bold; line-height: 1.02; padding-top: 0.15mm; padding-bottom: 0.15mm; }
+.cl .title td { height: 10.4mm; font-size: 13.5pt; text-align: center; }
+.cl .head td { height: 7.75mm; }
+.cl .box { font-family: "DejaVu Sans", "Segoe UI Symbol", sans-serif; font-weight: normal; font-size: 10pt; text-align: center; color: #333; }
+.cl td.rem { font-weight: normal; font-size: 9pt; }
+.cl .sec td { background: #aabee3; }
+.sig { margin-top: 7.4mm; }
+.sig td { text-align: center; }
+.sig .h td { height: 10.6mm; font-weight: bold; font-size: 11pt; }
+.sig .v td { height: 20.3mm; font-size: 10.5pt; }
+.sig img { max-height: 15mm; max-width: 45mm; }
+.muted { color: #7f7f7f; }
+
+/* ---------- report / certificate (F-7.5.1-06) ---------- */
+.cert-title { position: absolute; left: 0; top: 28.5mm; width: 210mm; text-align: center; font-weight: bold; font-size: 12.5pt; text-decoration: underline; }
+.grid td { height: 6.55mm; font-size: 10.5pt; padding: 0 1.8mm; line-height: 1.1; }
+.grid td.l { font-size: 10.2pt; }
+.grid td.l { font-weight: bold; background: #aabee3; }
+.imgarea { margin-top: 5.3mm; border: 0.75pt solid #bfbfbf; height: 60mm; text-align: center; padding: 2mm; }
+.imgarea img { max-height: 55mm; max-width: 58mm; margin: 0 1mm; vertical-align: middle; }
+.imgarea .cap { font-size: 7.5pt; color: #555; }
+.result { margin-top: 4mm; }
+.result td { height: 6.6mm; }
+.result .h td { font-weight: bold; text-align: center; font-size: 11pt; height: 6mm; }
+.result .opt td { text-align: center; height: 7mm; }
+.result .opt span.o { display: inline-block; padding: 0.6mm 2.5mm; font-size: 11pt; color: #222; min-width: 21mm; }
+.result .o.accepted { background: #d9d9d9; }
+.result .o.rejected { background: #ffc7ce; }
+.result .o.repair { background: #fde9d9; color: #7a4a00; }
+.result .radio { font-family: "DejaVu Sans", "Segoe UI Symbol", sans-serif; font-size: 9pt; color: #555; }
+.result .stmt td { text-align: center; font-weight: bold; font-size: 11pt; height: 7.2mm; }
+.remarks { margin-top: 5mm; }
+.remarks td.l { width: 35.5mm; font-weight: bold; font-size: 11pt; height: 5.4mm; background: #aabee3; }
+.remarks td.v { font-size: 9pt; }
+.remarks .notes td { padding: 0.5mm 2mm 1mm 2mm; }
+.remarks ul { margin: 0; padding-left: 13mm; font-size: 7.4pt; line-height: 1.3; }
+.signblock { margin-top: 3.3mm; }
+.signblock td { height: 13mm; text-align: center; font-size: 10.5pt; }
+.signblock td.l { font-weight: bold; background: #aabee3; font-size: 11pt; }
+.signblock .sigcell { position: relative; }
+.signblock .sigimg { max-height: 11mm; max-width: 30mm; }
+.stamp { position: absolute; width: 27mm; height: 27mm; }
+.watermark { position: absolute; top: 120mm; left: 0; width: 210mm; text-align: center; font-size: 70pt; font-weight: bold; color: #e3e8f4;
+  transform: rotate(-30deg); -webkit-transform: rotate(-30deg); }
+.watermark.revoked { color: #f6d0d0; }
+
+/* ---------- sticker ---------- */
+.sticker { width: 90mm; border: 1.2pt solid #24418f; border-radius: 3mm; overflow: hidden; margin: 10mm auto; font-family: Calibri, Carlito, "DejaVu Sans", sans-serif; }
+.sticker .top { background: #24418f; color: #fff; text-align: center; padding: 2mm; font-weight: bold; font-size: 12pt; letter-spacing: .5pt; }
+.sticker.red .top { background: #c62828; }
+.sticker table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+.sticker td { padding: 1mm 2.5mm; border-top: 0.5pt solid #d5dbea; }
+.sticker td.k { color: #555; width: 34mm; }
+.sticker td.v { font-weight: bold; }
+
+/* ---------- on-screen preview chrome (not in PDF) ---------- */
+@media screen {
+  body.doc.preview { background: #525a6b; padding: 64px 0 32px; }
+  body.doc.preview .sheet { margin: 0 auto 16px; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+  .doc-toolbar { position: fixed; top: 0; left: 0; right: 0; height: 52px; background: #1b2540; color: #fff; display: flex; align-items: center;
+    gap: 10px; padding: 0 16px; font-family: Inter, "Segoe UI", sans-serif; font-size: 14px; z-index: 10; }
+  .doc-toolbar .t { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .doc-toolbar a, .doc-toolbar button { color: #fff; background: rgba(255,255,255,.12); border: 0; border-radius: 8px; padding: 8px 12px;
+    text-decoration: none; font: inherit; cursor: pointer; }
+  .doc-toolbar a.primary { background: #3b82f6; }
+  .doc-toolbar .st { font-size: 12px; padding: 3px 8px; border-radius: 99px; background: rgba(255,255,255,.15); }
+  @media (max-width: 860px) {
+    body.doc.preview { padding-top: 60px; overflow-x: auto; }
+    body.doc.preview .sheet { zoom: .45; }
+    .doc-toolbar .hide-sm { display: none; }
+  }
+}
+@media print {
+  .doc-toolbar { display: none; }
+  body.doc.preview { background: #fff; padding: 0; }
+  body.doc.preview .sheet { margin: 0; box-shadow: none; }
+}
