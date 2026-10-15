@@ -204,7 +204,8 @@ final class JobService
         Workflow::assert('sub_job', $sj['status'], 'cancelled');
         DB::tx(function () use ($sj, $subJobId, $reason) {
             DB::update('sub_jobs', ['status' => 'cancelled'], 'id = ?', [$subJobId]);
-            DB::update('stickers', ['status' => 'in_stock', 'sub_job_id' => null, 'equipment_id' => null, 'inspector_id' => null], "sub_job_id = ? AND status = 'reserved'", [$subJobId]);
+            // a linked sticker is already on the equipment, so it cannot go back to stock
+            DB::update('stickers', ['status' => 'void', 'void_reason' => 'Sub-job cancelled: ' . $reason], "sub_job_id = ? AND status = 'closed'", [$subJobId]);
             Audit::log('subjob.cancelled', 'sub_job', $subJobId, ['reason' => $reason]);
             self::recompute((int) $sj['job_id']);
         });
@@ -238,7 +239,8 @@ final class JobService
         if ($total === 0 || $n('pending') === $total) {
             $s = 'pending_assignment';
         } elseif ($n('approved') === $total) {
-            $s = 'completed';
+            // every sub-job passed QC: the job waits for an admin's final approval (close()); a closed job stays closed
+            $s = $job['status'] === 'completed' ? 'completed' : 'awaiting_approval';
         } elseif ($n('submitted') + $n('approved') === $total) {
             $s = 'under_review';
         } elseif ($n('in_progress') + $n('submitted') + $n('approved') + $n('rework') > 0) {
@@ -249,14 +251,34 @@ final class JobService
             $s = 'assigned';
         }
         if ($s !== $job['status']) {
-            DB::update('jobs', ['status' => $s, 'completed_at' => $s === 'completed' ? now() : null], 'id = ?', [$jobId]);
+            DB::update('jobs', ['status' => $s] + ($s === 'completed' ? [] : ['completed_at' => null, 'closed_by' => null]), 'id = ?', [$jobId]);
             Audit::log('job.status', 'job', $jobId, ['from' => $job['status'], 'to' => $s]);
-            if ($s === 'completed') {
-                $j = DB::one('SELECT job_no, client_id FROM jobs WHERE id = ?', [$jobId]);
-                Notify::client((int) $j['client_id'], "Job {$j['job_no']} completed", 'All certificates are available for download.', 'portal/jobs/' . $jobId);
+            if ($s === 'awaiting_approval') {
+                $no = DB::value('SELECT job_no FROM jobs WHERE id = ?', [$jobId]);
+                Notify::role('admin', "Job $no ready for final approval", 'All inspections passed QC review.', 'admin/jobs/' . $jobId);
             }
         }
         return $s;
+    }
+
+    /**
+     * Final approval: an admin closes a job whose sub-jobs all passed QC. Only now are the certificates and
+     * reports released to the client (portal, notifications, public verification).
+     */
+    public static function close(int $jobId, string $note = ''): void
+    {
+        $job = DB::one('SELECT * FROM jobs WHERE id = ?', [$jobId]);
+        if (!$job) throw new DomainException('Job not found.');
+        if ($job['status'] !== 'awaiting_approval') {
+            throw new DomainException('Only a job whose inspections all passed QC review (Awaiting Final Approval) can be closed.');
+        }
+        DB::tx(function () use ($job, $note) {
+            DB::update('jobs', ['status' => 'completed', 'completed_at' => now(), 'closed_by' => Auth::id()], 'id = ?', [$job['id']]);
+            Audit::log('job.closed', 'job', (int) $job['id'], ['note' => trim($note)]);
+            $certs = (int) DB::value("SELECT COUNT(*) FROM certificates c JOIN sub_jobs s ON s.id = c.sub_job_id WHERE s.job_id = ? AND c.status = 'issued'", [$job['id']]);
+            Notify::client((int) $job['client_id'], "Job {$job['job_no']} completed",
+                $certs ? "$certs certificate(s) are available for download." : 'All reports are available for download.', 'portal/jobs/' . $job['id']);
+        });
     }
 
     /** Progress numbers for a job card. */

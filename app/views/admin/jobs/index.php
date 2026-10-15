@@ -14,6 +14,7 @@
       <?= $tab('assigned', 'Assigned', $counts['assigned'] ?? 0) ?>
       <?= $tab('in_progress', 'In progress', $counts['in_progress'] ?? 0) ?>
       <?= $tab('under_review', 'Under review', $counts['under_review'] ?? 0) ?>
+      <?= $tab('awaiting_approval', 'Awaiting final approval', $counts['awaiting_approval'] ?? 0) ?>
       <?= $tab('completed', 'Completed', $counts['completed'] ?? 0) ?>
     </div>
     <span class="grow"></span>

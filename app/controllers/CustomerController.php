@@ -16,7 +16,7 @@ final class CustomerController extends Controller
         $k = DB::one("SELECT
             (SELECT COUNT(*) FROM service_requests WHERE client_id = ? AND status IN ('new','under_review','quoted')) open_requests,
             (SELECT COUNT(*) FROM jobs WHERE client_id = ? AND status NOT IN ('completed','cancelled')) active_jobs,
-            (SELECT COUNT(*) FROM certificates ce JOIN sub_jobs s ON s.id = ce.sub_job_id JOIN jobs j ON j.id = s.job_id WHERE j.client_id = ? AND ce.status = 'issued') certs,
+            (SELECT COUNT(*) FROM certificates ce JOIN sub_jobs s ON s.id = ce.sub_job_id JOIN jobs j ON j.id = s.job_id WHERE j.client_id = ? AND ce.status = 'issued' AND j.status = 'completed') certs,
             (SELECT COUNT(*) FROM equipment WHERE client_id = ? AND next_inspection_date <= CURDATE() + INTERVAL 30 DAY) due,
             (SELECT COUNT(*) FROM equipment WHERE client_id = ? AND next_inspection_date < CURDATE()) overdue", [$c, $c, $c, $c, $c]);
         $jobs = DB::all("SELECT * FROM jobs WHERE client_id = ? AND status NOT IN ('cancelled') ORDER BY FIELD(status,'completed') , id DESC LIMIT 5", [$c]);
@@ -33,7 +33,7 @@ final class CustomerController extends Controller
         return DB::all("SELECT ce.*, s.sub_job_no, s.job_id, t.name type_name, e.description eq_description, e.equipment_no
                         FROM certificates ce JOIN sub_jobs s ON s.id = ce.sub_job_id JOIN jobs j ON j.id = s.job_id
                         JOIN inspection_types t ON t.id = s.inspection_type_id LEFT JOIN equipment e ON e.id = s.equipment_id
-                        WHERE j.client_id = ? AND ce.status IN ('issued','revoked') AND s.status = 'approved' $w $tail", array_merge([$c], $p));
+                        WHERE j.client_id = ? AND ce.status IN ('issued','revoked') AND s.status = 'approved' AND j.status = 'completed' $w $tail", array_merge([$c], $p));
     }
 
     public function requests(): void
@@ -86,7 +86,12 @@ final class CustomerController extends Controller
         $job = DB::one('SELECT j.*, u.name lead_name FROM jobs j LEFT JOIN users u ON u.id = j.lead_inspector_id WHERE j.id = ? AND j.client_id = ?', [(int) $id, $c]);
         if (!$job) $this->notFound();
         $subs = JobService::subJobsOf((int) $job['id']);
-        foreach ($subs as &$s) $s['cert'] = DB::one("SELECT certificate_no, status, next_inspection_date FROM certificates WHERE sub_job_id = ?", [$s['id']]);
+        $released = $job['status'] === 'completed';           // documents appear after the admin's final approval
+        foreach ($subs as &$s) {
+            if (!$released && $s['status'] === 'approved') $s['status'] = 'submitted';   // shown as "Quality review" until then
+            $s['cert'] = $released ? DB::one("SELECT certificate_no, status, next_inspection_date FROM certificates WHERE sub_job_id = ?", [$s['id']]) : null;
+            $s['sticker_id'] = $released && $s['status'] === 'approved' ? DB::value("SELECT id FROM stickers WHERE sub_job_id = ? AND status = 'closed'", [$s['id']]) : null;
+        }
         unset($s);
         $this->view('customer/job', ['job' => $job, 'subs' => $subs, 'progress' => JobService::progress((int) $job['id']),
             'title' => $job['job_no'], 'crumbs' => ['Jobs & Progress' => 'portal/jobs', $job['job_no'] => null]]);
@@ -110,8 +115,8 @@ final class CustomerController extends Controller
     {
         $c = $this->cid();
         $rows = DB::all("SELECT e.*, t.name type_name,
-                           (SELECT ce.sub_job_id FROM certificates ce JOIN sub_jobs s ON s.id = ce.sub_job_id WHERE s.equipment_id = e.id AND ce.status = 'issued' ORDER BY ce.issue_date DESC LIMIT 1) last_cert_sj,
-                           (SELECT ce.certificate_no FROM certificates ce JOIN sub_jobs s ON s.id = ce.sub_job_id WHERE s.equipment_id = e.id AND ce.status = 'issued' ORDER BY ce.issue_date DESC LIMIT 1) last_cert
+                           (SELECT ce.sub_job_id FROM certificates ce JOIN sub_jobs s ON s.id = ce.sub_job_id JOIN jobs j ON j.id = s.job_id WHERE s.equipment_id = e.id AND ce.status = 'issued' AND j.status = 'completed' ORDER BY ce.issue_date DESC LIMIT 1) last_cert_sj,
+                           (SELECT ce.certificate_no FROM certificates ce JOIN sub_jobs s ON s.id = ce.sub_job_id JOIN jobs j ON j.id = s.job_id WHERE s.equipment_id = e.id AND ce.status = 'issued' AND j.status = 'completed' ORDER BY ce.issue_date DESC LIMIT 1) last_cert
                          FROM equipment e LEFT JOIN inspection_types t ON t.id = e.inspection_type_id WHERE e.client_id = ?
                          ORDER BY e.next_inspection_date IS NULL, e.next_inspection_date, e.description", [$c]);
         if ($this->wantsCsv()) {

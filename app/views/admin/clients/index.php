@@ -2,7 +2,7 @@
   <div class="ph-text"><h1>Clients</h1><div class="sub">Registered companies, their equipment and portal users.</div></div>
   <div class="actions">
     <?php View::render('partials/export', [], null); ?>
-    <a class="btn btn-primary" href="<?= url('admin/clients/new') ?>"><?= icon('plus', 'sm') ?> New client</a>
+    <?php if (Auth::isSuper()): ?><a class="btn btn-primary" href="<?= url('admin/clients/new') ?>"><?= icon('plus', 'sm') ?> New client</a><?php endif; ?>
   </div>
 </div>
 <div class="card">

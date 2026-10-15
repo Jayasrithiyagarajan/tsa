@@ -8,18 +8,21 @@ final class AdminUserController extends Controller
         $q = trim((string) input('q', ''));
         $where = ['1=1'];
         $p = [];
-        if (in_array($role, ['admin', 'inspector', 'qc', 'customer'], true)) { $where[] = 'u.role = ?'; $p[] = $role; }
+        if ($role === 'admin') { $where[] = "u.role IN ('superadmin','admin')"; }
+        elseif (in_array($role, ['inspector', 'qc', 'customer'], true)) { $where[] = 'u.role = ?'; $p[] = $role; }
         if ($q !== '') { $where[] = '(u.name LIKE ? OR u.email LIKE ?)'; array_push($p, "%$q%", "%$q%"); }
         $sql = "SELECT u.*, c.name client_name, pr.qualification, pr.cert_expiry, pr.employee_no,
                   (SELECT GROUP_CONCAT(t.code ORDER BY t.code SEPARATOR ', ') FROM inspector_skills k JOIN inspection_types t ON t.id = k.inspection_type_id WHERE k.user_id = u.id) skills,
                   (SELECT COUNT(*) FROM sub_jobs s WHERE s.inspector_id = u.id AND s.status IN ('assigned','in_progress','rework')) open_load
                 FROM users u LEFT JOIN clients c ON c.id = u.client_id LEFT JOIN inspector_profiles pr ON pr.user_id = u.id
-                WHERE " . implode(' AND ', $where) . " ORDER BY FIELD(u.role,'admin','qc','inspector','customer'), u.name";
+                WHERE " . implode(' AND ', $where) . " ORDER BY FIELD(u.role,'superadmin','admin','qc','inspector','customer'), u.name";
         if ($this->wantsCsv()) {
             csv_export('users', DB::all($sql, $p), ['name' => 'Name', 'email' => 'Email', 'role' => 'Role', 'client_name' => 'Client', 'qualification' => 'Qualification', 'skills' => 'Qualified For', 'status' => 'Status', 'last_login_at' => 'Last Login']);
         }
         [$rows, $meta] = paginate($sql, $p, 25);
         $counts = array_column(DB::all('SELECT role, COUNT(*) n FROM users GROUP BY role'), 'n', 'role');
+        $counts['admin'] = (int) ($counts['admin'] ?? 0) + (int) ($counts['superadmin'] ?? 0);   // "Admins" tab lists both
+        unset($counts['superadmin']);
         $this->view('admin/users/index', compact('rows', 'meta', 'role', 'q', 'counts') + ['title' => 'Users', 'crumbs' => ['Users & Inspectors' => null]]);
     }
 
@@ -62,13 +65,13 @@ final class AdminUserController extends Controller
 
     private function save(?int $id): void
     {
-        $rules = ['name' => 'required|max:120', 'email' => 'required|email|max:190', 'role' => 'required|in:admin,inspector,qc,customer', 'phone' => 'phone', 'cert_expiry' => 'date'];
+        $rules = ['name' => 'required|max:120', 'email' => 'required|email|max:190', 'role' => 'required|in:superadmin,admin,inspector,qc,customer', 'phone' => 'phone', 'cert_expiry' => 'date'];
         if (!$id || input('password')) $rules['password'] = ($id ? '' : 'required|') . 'min:8';
         $errors = validate($_POST, $rules);
         $email = strtolower((string) input('email'));
         if (DB::value('SELECT id FROM users WHERE email = ? AND id <> ?', [$email, $id ?? 0])) $errors['email'] = 'This email is already registered.';
         if (input('role') === 'customer' && !input('client_id')) $errors['client_id'] = 'Customer users must belong to a client.';
-        if ($id === Auth::id() && (input('role') !== 'admin' || input('status') === 'inactive')) $errors['role'] = 'You cannot demote or deactivate your own account.';
+        if ($id === Auth::id() && (input('role') !== 'superadmin' || input('status') === 'inactive')) $errors['role'] = 'You cannot demote or deactivate your own account.';
         if ($errors) $this->failValidation($errors);
 
         $this->attempt(function () use ($id, $email) {
@@ -103,6 +106,10 @@ final class AdminUserController extends Controller
             if (!empty($_FILES['signature']['name'])) {
                 $f = store_upload($_FILES['signature'], 'signatures', ['image/png', 'image/jpeg']);
                 DB::update('users', ['signature_path' => $f['path']], 'id = ?', [$id]);
+            }
+            if (!empty($_FILES['id_photo']['name']) && in_array(input('role'), ['inspector', 'qc'], true)) {
+                $f = store_upload($_FILES['id_photo'], 'id-photos', ['image/jpeg', 'image/png', 'image/webp']);
+                InspectorCardService::setProfilePhoto($id, $f['path']);
             }
             return 'admin/users/' . $id;
         }, 'User saved.');

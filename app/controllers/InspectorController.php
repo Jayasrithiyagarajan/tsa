@@ -63,11 +63,12 @@ final class InspectorController extends Controller
             $fields[] = $f;
         }
         $attachments = DB::all('SELECT a.*, u.name uploader FROM attachments a LEFT JOIN users u ON u.id = a.uploaded_by WHERE a.sub_job_id = ? ORDER BY a.id DESC', [$sj['id']]);
-        $sticker = DB::one("SELECT * FROM stickers WHERE sub_job_id = ? AND status IN ('reserved','issued') ORDER BY id DESC LIMIT 1", [$sj['id']]);
+        $sticker = DB::one("SELECT * FROM stickers WHERE sub_job_id = ? AND status = 'closed' ORDER BY id DESC LIMIT 1", [$sj['id']]);
+        $myStickers = $sticker ? [] : DB::all("SELECT sticker_no, color FROM stickers WHERE status = 'allocated' AND inspector_id = ? ORDER BY color, sticker_no LIMIT 300", [(int) ($sj['inspector_id'] ?: Auth::id())]);
         $reviews = DB::all('SELECT q.*, u.name reviewer FROM qc_reviews q JOIN users u ON u.id = q.reviewer_id WHERE q.sub_job_id = ? ORDER BY q.id DESC', [$sj['id']]);
         $issues = in_array($sj['status'], ['in_progress'], true) ? InspectionService::issues((int) $sj['id']) : [];
         $editable = $sj['status'] === 'in_progress';
-        $this->view('inspector/workspace', compact('sj', 'checklist', 'items', 'clStats', 'cert', 'certTpl', 'fields', 'attachments', 'sticker', 'reviews', 'issues', 'editable') + [
+        $this->view('inspector/workspace', compact('sj', 'checklist', 'items', 'clStats', 'cert', 'certTpl', 'fields', 'attachments', 'sticker', 'myStickers', 'reviews', 'issues', 'editable') + [
             'title' => $sj['sub_job_no'],
             'crumbs' => Auth::is('admin')
                 ? ['Jobs & Sub-jobs' => 'admin/jobs', $sj['job_no'] => 'admin/jobs/' . $sj['job_id'], 'Sub-job ' . $sj['seq'] => null]
@@ -91,16 +92,13 @@ final class InspectorController extends Controller
         $this->attempt(fn () => InspectionService::saveCertificate((int) $id, $_POST), 'Certificate details saved.');
     }
 
+    /** Links an allocated sticker to the sub-job. Once linked the sticker is closed and cannot be changed. */
     public function sticker(string $id): void
     {
         $this->attempt(function () use ($id) {
-            if (input('action') === 'release') {
-                InspectionService::releaseSticker((int) $id);
-                flash('success', 'Sticker released back to stock.');
-            } else {
-                InspectionService::reserveSticker((int) $id, (string) input('sticker_no', ''));
-                flash('success', 'Sticker recorded against this inspection.');
-            }
+            InspectionService::linkSticker((int) $id, (string) input('sticker_no', ''));
+            flash('success', 'Sticker linked to this job and closed.');
+            return 'inspector/subjobs/' . (int) $id . '#tab-sticker';
         });
     }
 
@@ -149,5 +147,42 @@ final class InspectorController extends Controller
         foreach ($rows as &$r) $r['cert'] = DB::one('SELECT certificate_no, status FROM certificates WHERE sub_job_id = ?', [$r['id']]);
         unset($r);
         $this->view('inspector/history', compact('rows', 'meta') + ['title' => 'Submitted & Approved', 'crumbs' => ['Submitted & Approved' => null]]);
+    }
+
+    /** Stickers handed to me (unused) and the ones I have linked to jobs. */
+    public function stickers(): void
+    {
+        $tab = input('tab') === 'used' ? 'used' : 'hand';
+        $hand = DB::all("SELECT * FROM stickers WHERE inspector_id = ? AND status = 'allocated' ORDER BY color, sticker_no", [Auth::id()]);
+        [$used, $meta] = paginate("SELECT s.*, sj.sub_job_no, sj.status sj_status, e.description eq_description, e.equipment_no, cl.name client_name, c.result
+            FROM stickers s JOIN sub_jobs sj ON sj.id = s.sub_job_id LEFT JOIN equipment e ON e.id = s.equipment_id LEFT JOIN clients cl ON cl.id = e.client_id
+            LEFT JOIN certificates c ON c.sub_job_id = sj.id
+            WHERE s.inspector_id = ? AND s.status IN ('closed','void') ORDER BY s.linked_at DESC", [Auth::id()], 30);
+        $this->view('inspector/stickers', compact('tab', 'hand', 'used', 'meta') + ['title' => 'My Stickers', 'crumbs' => ['My Stickers' => null]]);
+    }
+
+    /**
+     * The inspector's ID card — only once the admin has marked the printed card as handed over —
+     * plus the ID photo the inspector uploads for the next card.
+     */
+    public function card(): void
+    {
+        $card = InspectorCardService::find("c.user_id = ? AND c.handed_over_at IS NOT NULL ORDER BY c.status = 'active' DESC, c.handed_over_at DESC", [Auth::id()]);
+        $this->view('inspector/card', [
+            'm' => $card ? InspectorCardService::model($card) : null,
+            'photo' => InspectorCardService::profilePhoto(Auth::id()),
+            'pending' => (bool) DB::value("SELECT id FROM inspector_cards WHERE user_id = ? AND status = 'active' AND handed_over_at IS NULL LIMIT 1", [Auth::id()]),
+            'title' => 'My ID Card', 'crumbs' => ['My ID Card' => null],
+        ]);
+    }
+
+    public function cardPhoto(): void
+    {
+        $this->attempt(function () {
+            $f = store_upload($_FILES['photo'] ?? [], 'id-photos', ['image/jpeg', 'image/png', 'image/webp']);
+            InspectorCardService::setProfilePhoto(Auth::id(), $f['path']);
+            Audit::log('id_photo.uploaded', 'user', Auth::id());
+            Notify::role('admin', 'ID photo uploaded', Auth::user()['name'] . ' uploaded a new ID card photo.', 'admin/users/' . Auth::id());
+        }, 'Photo uploaded. The administrator will use it for your ID card.', 'inspector/card');
     }
 }

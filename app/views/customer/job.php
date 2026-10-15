@@ -29,6 +29,8 @@ $tone = ['pending' => 'amber', 'assigned' => 'blue', 'in_progress' => 'indigo', 
           <a class="btn btn-ghost btn-sm" href="<?= url('documents/certificate/' . $s['id']) ?>" title="View"><?= icon('eye', 'sm') ?></a>
           <a class="btn btn-secondary btn-sm" href="<?= url('documents/certificate/' . $s['id'], ['download' => 1]) ?>"><?= icon('download', 'sm') ?> PDF</a>
           <?php if ($s['requires_checklist']): ?><a class="btn btn-ghost btn-sm" href="<?= url('documents/checklist/' . $s['id']) ?>" title="Checklist"><?= icon('clipboard', 'sm') ?></a><?php endif; ?>
+        <?php endif; ?><?php if ($s['sticker_id']): ?>
+          <a class="btn btn-ghost btn-sm" href="<?= url('documents/sticker/' . $s['sticker_id']) ?>" title="Digital sticker"><?= icon('tag', 'sm') ?></a>
         <?php endif; ?></td>
       </tr>
     <?php endforeach; ?></tbody>

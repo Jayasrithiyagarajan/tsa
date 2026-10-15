@@ -204,32 +204,37 @@ final class InspectionService
         });
     }
 
-    public static function reserveSticker(int $subJobId, string $stickerNo): void
+    /**
+     * Links a physical sticker to the sub-job. The sticker must be allocated to the inspector doing the job
+     * (an admin may use any sticker from stock). Linking closes the sticker: it can no longer be changed,
+     * released or moved to another job — only an administrator can void it.
+     */
+    public static function linkSticker(int $subJobId, string $stickerNo): void
     {
         DB::tx(function () use ($subJobId, $stickerNo) {
             $sj = JobService::subJob($subJobId);
             if (!$sj) throw new DomainException('Sub-job not found.');
             self::authorizeWork($sj);
             self::assertEditable($sj);
-            $st = DB::one('SELECT * FROM stickers WHERE sticker_no = ? FOR UPDATE', [strtoupper(trim($stickerNo))]);
-            if (!$st) throw new DomainException("Sticker $stickerNo is not registered in stock.");
-            if ($st['status'] !== 'in_stock') throw new DomainException("Sticker {$st['sticker_no']} is " . Workflow::label($st['status']) . '.');
-            foreach (DB::all("SELECT id FROM stickers WHERE sub_job_id = ? AND status = 'reserved'", [$subJobId]) as $old) {
-                DB::update('stickers', ['status' => 'in_stock', 'sub_job_id' => null, 'equipment_id' => null, 'inspector_id' => null], 'id = ?', [$old['id']]);
+            if (!$sj['requires_sticker']) throw new DomainException('This inspection type does not use stickers.');
+            if ($cur = DB::value("SELECT sticker_no FROM stickers WHERE sub_job_id = ? AND status = 'closed'", [$subJobId])) {
+                throw new DomainException("Sticker $cur is already linked to this job and is locked.");
             }
+            $no = strtoupper(trim($stickerNo));
+            $st = DB::one('SELECT * FROM stickers WHERE sticker_no = ? FOR UPDATE', [$no]);
+            if (!$st) throw new DomainException("Sticker $no is not registered.");
+            if (!Auth::is('admin') && ($st['status'] !== 'allocated' || (int) $st['inspector_id'] !== Auth::id())) {
+                throw new DomainException("Sticker {$st['sticker_no']} is not allocated to you" . ($st['status'] === 'allocated' ? '' : ' (' . Workflow::label($st['status']) . ')') . '.');
+            }
+            Workflow::assert('sticker', $st['status'], 'closed');
+            $result = DB::value('SELECT result FROM certificates WHERE sub_job_id = ?', [$subJobId]);
+            if ($msg = StickerService::colourMismatch($st['color'], $result)) throw new DomainException(ucfirst($msg));
             DB::update('stickers', [
-                'status' => 'reserved', 'sub_job_id' => $subJobId, 'equipment_id' => $sj['equipment_id'], 'inspector_id' => Auth::id(),
+                'status' => 'closed', 'linked_at' => now(), 'sub_job_id' => $subJobId, 'equipment_id' => $sj['equipment_id'],
+                'inspector_id' => $sj['inspector_id'] ?: Auth::id(),
             ], 'id = ?', [$st['id']]);
-            Audit::log('sticker.reserved', 'sticker', (int) $st['id'], ['sub_job_id' => $subJobId]);
+            Audit::log('sticker.linked', 'sticker', (int) $st['id'], ['sub_job_id' => $subJobId, 'sub_job_no' => $sj['sub_job_no']]);
         });
-    }
-
-    public static function releaseSticker(int $subJobId): void
-    {
-        $sj = JobService::subJob($subJobId);
-        self::authorizeWork($sj);
-        self::assertEditable($sj);
-        DB::update('stickers', ['status' => 'in_stock', 'sub_job_id' => null, 'equipment_id' => null, 'inspector_id' => null], "sub_job_id = ? AND status = 'reserved'", [$subJobId]);
     }
 
     /** Completeness rules applied on submit. Returns human-readable issues; empty = ready. */
@@ -270,9 +275,10 @@ final class InspectionService
                 $issues[] = 'Upload the signed certificate (no template is configured for this inspection type).';
             }
         }
-        if ($sj['requires_sticker'] && ($cert['result'] ?? null) === 'accepted'
-            && !DB::value("SELECT id FROM stickers WHERE sub_job_id = ? AND status = 'reserved'", [$subJobId])) {
-            $issues[] = 'Sticker: record the sticker number affixed to the equipment.';
+        if ($sj['requires_sticker']) {
+            $colour = DB::value("SELECT color FROM stickers WHERE sub_job_id = ? AND status = 'closed'", [$subJobId]);
+            if (!$colour) $issues[] = 'Sticker: link the sticker number affixed to the equipment.';
+            elseif ($msg = StickerService::colourMismatch($colour, $cert['result'] ?? null)) $issues[] = 'Sticker: ' . $msg;
         }
         return $issues;
     }

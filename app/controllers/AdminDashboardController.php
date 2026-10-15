@@ -16,8 +16,8 @@ final class AdminDashboardController extends Controller
             (SELECT COUNT(*) FROM certificates WHERE status IN ('draft','pending_qc')) certs_pending,
             (SELECT COUNT(*) FROM checklists WHERE status = 'completed') checklists_done,
             (SELECT COUNT(*) FROM stickers WHERE status = 'in_stock') stickers_stock,
-            (SELECT COUNT(*) FROM stickers WHERE status = 'issued') stickers_issued,
-            (SELECT COUNT(*) FROM stickers WHERE status = 'reserved') stickers_reserved,
+            (SELECT COUNT(*) FROM stickers WHERE status = 'closed') stickers_issued,
+            (SELECT COUNT(*) FROM stickers WHERE status = 'allocated') stickers_reserved,
             (SELECT COUNT(*) FROM jobs WHERE status = 'completed') jobs_completed,
             (SELECT COUNT(*) FROM jobs WHERE status NOT IN ('completed','cancelled')) jobs_open,
             (SELECT COUNT(*) FROM equipment WHERE next_inspection_date BETWEEN CURDATE() AND CURDATE() + INTERVAL 30 DAY) due_soon");

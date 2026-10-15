@@ -9,12 +9,21 @@
     </form>
     <?php if ($searched): ?>
       <div class="mt-3">
-      <?php if ($cert && $cert['status'] === 'issued'):
+      <?php if (isset($sticker) && !$cert): ?>
+        <div class="verify-result bad"><div class="vr-ic"><?= icon($sticker['sticker_no'] ? 'info' : 'alert', 'lg') ?></div>
+          <div><?php if (!$sticker['sticker_no']): ?>
+            <h3 style="font-size:18px">Unknown sticker</h3><p class="mt-1">This QR code does not belong to a TUV EAST sticker. Contact <?= e(setting('company_email')) ?>.</p>
+          <?php elseif ($sticker['status'] === 'void'): ?>
+            <h3 style="font-size:18px">Sticker <?= e($sticker['sticker_no']) ?> is void</h3><p class="mt-1">This sticker has been cancelled and must not be relied on.</p>
+          <?php else: ?>
+            <h3 style="font-size:18px">Sticker <?= e($sticker['sticker_no']) ?> — not yet issued</h3><p class="mt-1">This sticker is registered, but no certificate has been issued for it yet. The equipment is not certified until TUV EAST QC approves the inspection.</p>
+          <?php endif; ?></div></div>
+      <?php elseif ($cert && $cert['status'] === 'issued'):
           $expired = $cert['next_inspection_date'] && $cert['next_inspection_date'] < date('Y-m-d'); ?>
-        <div class="verify-result <?= $expired ? 'bad' : 'ok' ?>">
+        <div class="verify-result <?= $expired || $cert['result'] !== 'accepted' ? 'bad' : 'ok' ?>">
           <div class="vr-ic"><?= icon($expired ? 'alert' : 'check', 'lg') ?></div>
           <div style="flex:1">
-            <h3 style="font-size:18px"><?= $expired ? 'Certificate expired' : 'Valid certificate' ?></h3>
+            <h3 style="font-size:18px"><?= isset($sticker) && $sticker['sticker_no'] ? 'Sticker ' . e($sticker['sticker_no']) . ' · ' : '' ?><?= $expired ? 'Certificate expired' : ($cert['result'] === 'accepted' ? 'Valid certificate' : 'Inspection failed — do not use') ?></h3>
             <p class="muted mt-1">Issued by TUV EAST after QC review.</p>
             <dl class="kv mt-2">
               <dt>Certificate No.</dt><dd class="mono"><?= e($cert['certificate_no']) ?></dd>

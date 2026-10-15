@@ -15,6 +15,7 @@ final class DocumentService
     public static function canView(array $sj, string $doc = 'certificate'): bool
     {
         switch (Auth::role()) {
+            case 'superadmin':
             case 'admin':
             case 'qc':
                 return true;
@@ -22,7 +23,7 @@ final class DocumentService
                 return (int) $sj['inspector_id'] === Auth::id();
             case 'customer':
                 if ((int) $sj['client_id'] !== Auth::clientId()) return false;
-                return $sj['status'] === 'approved';
+                return $sj['status'] === 'approved' && $sj['job_status'] === 'completed';   // released by the admin's final approval
         }
         return false;
     }
@@ -105,15 +106,35 @@ final class DocumentService
     public static function stickerModel(int $stickerId): ?array
     {
         $st = DB::one(
-            "SELECT s.*, c.certificate_no, c.verify_token, c.inspection_date, e.description eq_description, e.equipment_no,
-                    cl.name client_name, u.name inspector_name
-             FROM stickers s LEFT JOIN certificates c ON c.id = s.certificate_id LEFT JOIN equipment e ON e.id = s.equipment_id
+            "SELECT s.*, c.certificate_no, c.result, c.inspection_date, c.next_inspection_date,
+                    e.description eq_description, e.equipment_no, e.serial_no, e.capacity, t.name type_name,
+                    cl.name client_name, u.name inspector_name, sj.sub_job_no
+             FROM stickers s LEFT JOIN sub_jobs sj ON sj.id = s.sub_job_id LEFT JOIN certificates c ON c.sub_job_id = s.sub_job_id LEFT JOIN equipment e ON e.id = s.equipment_id
+             LEFT JOIN inspection_types t ON t.id = e.inspection_type_id
              LEFT JOIN clients cl ON cl.id = e.client_id LEFT JOIN users u ON u.id = s.inspector_id WHERE s.id = ?",
             [$stickerId]
         );
         if (!$st) return null;
-        $st['qr'] = $st['verify_token'] ? self::qr(abs_url('verify/' . $st['verify_token'])) : null;
+        // Blue = Accepted. Red = Failed: a red (rejected) sticker, or a certificate that did not pass outright.
+        $st['passed'] = $st['color'] !== 'red' && !in_array($st['result'], ['rejected', 'repair'], true);
+        $st['next_date'] = $st['next_inspection_date'] ?: $st['expiry_date'];
         return $st;
+    }
+
+    /** QR printed on a sticker: opens the public sticker check (/s/{token}). SVG keeps it sharp and fast in bulk. */
+    public static function stickerQr(?string $token): ?string
+    {
+        if (!$token) return null;
+        $o = new QROptions(['outputType' => QRCode::OUTPUT_MARKUP_SVG, 'quietzoneSize' => 1, 'eccLevel' => QRCode::ECC_M, 'addQuietzone' => true]);
+        $base = rtrim((string) config('public_url', ''), '/');
+        return (new QRCode($o))->render(($base !== '' ? $base . '/s/' . $token : abs_url('s/' . $token)));
+    }
+
+    /** Sticker artwork (logo, UAF mark, LEEA full member) as data URIs. */
+    public static function stickerArt(): array
+    {
+        $img = fn ($f) => 'data:image/png;base64,' . base64_encode(file_get_contents(ROOT_PATH . '/assets/img/' . $f));
+        return ['logo' => $img('sticker-tuv.png'), 'uaf' => $img('sticker-uaf.png'), 'leea' => $img('sticker-leea.png')];
     }
 
     public static function qr(string $text): string
@@ -166,7 +187,8 @@ final class DocumentService
         return $cache[$key];
     }
 
-    public static function pdf(string $html, string $filename, bool $download): void
+    /** @param string|float[] $paper Dompdf paper name or [0, 0, width_pt, height_pt] */
+    public static function pdf(string $html, string $filename, bool $download, $paper = 'A4'): void
     {
         // The forms are set in Calibri. Use a project copy of Carlito (metric-compatible, OFL) if present in
         // storage/fonts, otherwise the Calibri installed on a Windows host; Dompdf falls back to DejaVu Sans.
@@ -187,7 +209,7 @@ final class DocumentService
             $fm->registerFont(['family' => 'Calibri', 'weight' => 'bold', 'style' => 'normal'], $fontSet[1]);
         }
         $pdf->loadHtml($html, 'UTF-8');
-        $pdf->setPaper('A4', 'portrait');
+        $pdf->setPaper($paper, 'portrait');
         $pdf->render();
         $pdf->stream($filename, ['Attachment' => $download]);
         exit;

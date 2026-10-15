@@ -5,6 +5,7 @@ final class Auth
     private static ?array $user = null;
 
     public const HOME = [
+        'superadmin' => 'admin',
         'admin'     => 'admin',
         'inspector' => 'inspector',
         'qc'        => 'qc',
@@ -60,7 +61,14 @@ final class Auth
     public static function check(): bool { return self::user() !== null; }
     public static function id(): ?int    { return self::user()['id'] ?? null; }
     public static function role(): ?string { return self::user()['role'] ?? null; }
-    public static function is(string ...$roles): bool { return in_array(self::role(), $roles, true); }
+    /** A Super Admin also passes every 'admin' check — admin routes and screens are shared, Super Admin has extra rights. */
+    public static function is(string ...$roles): bool
+    {
+        $r = self::role();
+        return in_array($r, $roles, true) || ($r === 'superadmin' && in_array('admin', $roles, true));
+    }
+    /** Full control: user accounts, sticker stock, ID cards, templates, settings. */
+    public static function isSuper(): bool { return self::role() === 'superadmin'; }
     public static function clientId(): ?int { $c = self::user()['client_id'] ?? null; return $c ? (int) $c : null; }
 
     public static function home(): string

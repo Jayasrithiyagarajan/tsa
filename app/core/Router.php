@@ -54,7 +54,7 @@ final class Router
         if ($roles === 'auth') {
             return;
         }
-        if (!in_array(Auth::role(), (array) $roles, true)) {
+        if (!Auth::is(...(array) $roles)) {
             if (is_ajax()) {
                 json_out(['error' => 'Forbidden'], 403);
             }

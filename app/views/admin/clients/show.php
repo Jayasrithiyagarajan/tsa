@@ -2,8 +2,8 @@
   <div class="ph-text"><div class="eyebrow">Client · <?= e($client['code']) ?></div><h1 class="row wrap"><?= e($client['name']) ?> <?= badge($client['status']) ?></h1>
     <div class="sub"><span><?= icon('user', 'sm') ?> <?= e($client['contact_person'] ?: '—') ?></span><span><?= icon('mail', 'sm') ?> <?= e($client['email'] ?: '—') ?></span><span><?= icon('phone', 'sm') ?> <?= e($client['phone'] ?: '—') ?></span></div></div>
   <div class="actions">
-    <button class="btn btn-secondary" data-modal="edit-client"><?= icon('edit', 'sm') ?> Edit</button>
-    <a class="btn btn-secondary" href="<?= url('admin/users/new', ['role' => 'customer', 'client' => $client['id']]) ?>"><?= icon('user', 'sm') ?> Add portal user</a>
+    <?php if (Auth::isSuper()): ?><button class="btn btn-secondary" data-modal="edit-client"><?= icon('edit', 'sm') ?> Edit</button><?php endif; ?>
+    <?php if (Auth::isSuper()): ?><a class="btn btn-secondary" href="<?= url('admin/users/new', ['role' => 'customer', 'client' => $client['id']]) ?>"><?= icon('user', 'sm') ?> Add portal user</a><?php endif; ?>
     <a class="btn btn-primary" href="<?= url('admin/jobs/new') ?>"><?= icon('plus', 'sm') ?> New job</a>
   </div>
 </div>
