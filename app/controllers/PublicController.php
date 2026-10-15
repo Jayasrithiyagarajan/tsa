@@ -58,6 +58,16 @@ final class PublicController extends Controller
         $this->view('public/verify', ['title' => 'Certificate Verification', 'q' => $cert['certificate_no'] ?? '', 'cert' => $cert, 'searched' => true], 'public');
     }
 
+    /** Target of the QR code on the back of an inspector ID card: the card online + a validity message. */
+    public function verifyCard(string $token): void
+    {
+        $card = preg_match('/^[a-f0-9]{32}$/', $token) ? InspectorCardService::find('c.verify_token = ?', [$token]) : null;
+        $this->view('public/verify_card', [
+            'title' => 'Inspector ID Verification',
+            'm' => $card ? InspectorCardService::model($card) : null,
+        ], 'public');
+    }
+
     /** Only issued or revoked certificates are disclosed publicly — never drafts. */
     private function lookup(string $where, string $v): ?array
     {

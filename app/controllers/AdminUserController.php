@@ -104,6 +104,10 @@ final class AdminUserController extends Controller
                 $f = store_upload($_FILES['signature'], 'signatures', ['image/png', 'image/jpeg']);
                 DB::update('users', ['signature_path' => $f['path']], 'id = ?', [$id]);
             }
+            if (!empty($_FILES['id_photo']['name']) && in_array(input('role'), ['inspector', 'qc'], true)) {
+                $f = store_upload($_FILES['id_photo'], 'id-photos', ['image/jpeg', 'image/png', 'image/webp']);
+                InspectorCardService::setProfilePhoto($id, $f['path']);
+            }
             return 'admin/users/' . $id;
         }, 'User saved.');
     }

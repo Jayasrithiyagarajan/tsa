@@ -9,7 +9,8 @@ $notes = DB::all('SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC
 $c = [];
 if ($role === 'admin') {
     $c = DB::one("SELECT (SELECT COUNT(*) FROM service_requests WHERE status IN ('new','under_review')) req,
-                         (SELECT COUNT(*) FROM sub_jobs WHERE status='pending') unassigned");
+                         (SELECT COUNT(*) FROM sub_jobs WHERE status='pending') unassigned,
+                         (SELECT COUNT(*) FROM inspector_cards WHERE status='active' AND handed_over_at IS NULL) cards_pending");
 } elseif ($role === 'inspector') {
     $c = DB::one("SELECT SUM(status IN ('assigned','in_progress')) open, SUM(status='rework') rework FROM sub_jobs WHERE inspector_id = ?", [$u['id']]);
 } elseif ($role === 'qc') {
@@ -30,6 +31,11 @@ $nav = [
             ['admin/stickers', 'tag', 'Stickers', ''],
             ['admin/templates', 'layers', 'Templates', ''],
         ]],
+        ['ID Card System', [
+            ['admin/cards', 'qr', 'Inspector ID Cards', $cnt($c['cards_pending'] ?? 0)],
+            ['admin/cards/new', 'plus', 'Issue Card', ''],
+            ['admin/cards/validate', 'shield', 'Validate Card', ''],
+        ]],
         ['Master Data', [
             ['admin/clients', 'building', 'Clients', ''],
             ['admin/equipment', 'truck', 'Equipment', ''],
@@ -46,6 +52,7 @@ $nav = [
             ['inspector/jobs', 'briefcase', 'Assigned Jobs', $cnt(($c['open'] ?? 0) + ($c['rework'] ?? 0), (int) ($c['rework'] ?? 0) > 0)],
             ['inspector/history', 'history', 'Submitted & Approved', ''],
             ['inspector/kpi', 'chart', 'My KPIs', ''],
+            ['inspector/card', 'qr', 'My ID Card', ''],
         ]],
     ],
     'qc' => [
@@ -68,6 +75,14 @@ $nav = [
     ],
 ][$role];
 $homeKey = Auth::home();
+// highlight only the most specific matching link (admin/cards/new must not also light up admin/cards)
+$activeHref = '';
+foreach ($nav as [, $links]) {
+    foreach ($links as [$href]) {
+        $hit = $href === $homeKey ? trim(request_path(), '/') === $href : is_active_nav($href);
+        if ($hit && strlen($href) > strlen($activeHref)) $activeHref = $href;
+    }
+}
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -92,7 +107,7 @@ $homeKey = Auth::home();
       <?php foreach ($nav as [$group, $links]): ?>
         <div class="nav-label"><?= e($group) ?></div>
         <?php foreach ($links as [$href, $ic, $label, $extra]):
-            $active = $href === $homeKey ? trim(request_path(), '/') === $href : is_active_nav($href); ?>
+            $active = $href === $activeHref; ?>
           <a href="<?= url($href) ?>" class="<?= $active ? 'active' : '' ?>"><?= icon($ic) ?><span><?= e($label) ?></span><?= $extra ?></a>
         <?php endforeach; ?>
       <?php endforeach; ?>
