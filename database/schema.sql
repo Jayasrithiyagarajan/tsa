@@ -371,13 +371,16 @@ CREATE TABLE stickers (
   CONSTRAINT fk_st_insp FOREIGN KEY (inspector_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Inspector ID card (CR80, printed front + back) shown to clients on site. The QR on the back opens
--- /verify/card/{token}, which shows the card online with a valid / expired / revoked message.
--- A card is valid (and visible in the inspector portal) only once it is physically handed over;
+-- ID / competence card (CR80, printed front + back) for a TUV EAST inspector (holder_type inspector, user_id set)
+-- or for an assessed client worker such as a rigger or scaffolding erector (holder_type worker, no login).
+-- The QR on the back opens /verify/card/{token}, which shows the card online with a valid / expired / revoked message.
+-- A card is valid (and, for inspectors, visible in the inspector portal) only once it is physically handed over;
 -- handing over a new card revokes the holder's previous active one.
 CREATE TABLE inspector_cards (
   id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  user_id         INT UNSIGNED NOT NULL,
+  holder_type     ENUM('inspector','worker') NOT NULL DEFAULT 'inspector',
+  user_id         INT UNSIGNED NULL,                       -- inspector cards
+  client_id       INT UNSIGNED NULL,                       -- worker cards: the worker's company, when it is a client
   card_no         VARCHAR(40)  NOT NULL UNIQUE,            -- printed as "ID CODE"
   verify_token    CHAR(32)     NOT NULL UNIQUE,
   holder_name     VARCHAR(120) NOT NULL,
@@ -399,7 +402,9 @@ CREATE TABLE inspector_cards (
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_ic_user (user_id, status),
+  KEY idx_ic_idno (id_number),
   CONSTRAINT fk_ic_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ic_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL,
   CONSTRAINT fk_ic_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT fk_ic_hand FOREIGN KEY (handed_over_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,12 +1,16 @@
 <?php
-/** Issue / edit an inspector ID card. @var ?array $card @var ?array $renew @var array $people @var int $userId */
+/**
+ * Issue / edit an ID card for a TUV EAST inspector or a client worker.
+ * @var ?array $card @var ?array $renew @var array $people @var array $clients @var int $userId @var string $type inspector|worker
+ */
+$type = old('holder_type', $type);
 $src = $card ?? $renew ?? [];
 $person = null;
 foreach ($people as $p) if ((int) $p['id'] === $userId) $person = $p;
 $defaults = [
     'user_id' => $userId ?: '',
     'holder_name' => $person ? mb_strtoupper($person['name']) : '',
-    'company' => 'TUV EAST',
+    'company' => $type === 'worker' ? '' : 'TUV EAST',
     'title' => $person && $person['qualification'] ? mb_strtoupper($person['qualification']) : '',
     'certification' => $person['qualification'] ?? '',
     'job_ref' => $person['employee_no'] ?? '',
@@ -32,11 +36,13 @@ $state = $card ? InspectorCardService::state($card) : null;
 .idc-faces { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 18px; background: #eef1f6; border-radius: 12px; }
 .idc-faces .cap { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
 .idc-faces .idc { zoom: 1.35; box-shadow: 0 2px 10px rgba(15,23,42,.18); }
+.seg-tabs label { padding: 6px 12px; border-radius: 7px; color: var(--text-2); font-weight: 600; font-size: 13px; white-space: nowrap; display: flex; align-items: center; }
+.seg-tabs label.on { background: #fff; color: var(--text); box-shadow: var(--shadow-sm); }
 @media (max-width: 760px) { .idc-faces { padding: 10px; } .idc-faces .idc { zoom: .95; } }
 </style>
 <div class="page-head">
-  <div class="ph-text"><h1><?= $card ? e($card['holder_name']) : 'Issue inspector ID card' ?></h1>
-    <div class="sub"><?php if ($card): ?><span class="mono"><?= e($card['card_no']) ?></span>
+  <div class="ph-text"><h1><?= $card ? e($card['holder_name']) : 'Issue ID card' ?></h1>
+    <div class="sub"><?php if ($card): ?><span class="pill"><?= $card['holder_type'] === 'worker' ? 'Client worker' : 'Inspector' ?></span> <span class="mono"><?= e($card['card_no']) ?></span>
       <?= InspectorCardService::badge($state) ?>
       <?= $card['handed_over_at'] ? '<span>Handed over ' . e(fmt_datetime($card['handed_over_at'])) . '</span>' : '' ?>
       <?= $card['revoked_reason'] ? '<span>' . e($card['revoked_reason']) . '</span>' : '' ?>
@@ -49,8 +55,8 @@ $state = $card ? InspectorCardService::state($card) : null;
 </div>
 
 <?php if ($card && $state === 'pending'): ?>
-  <div class="alert alert-warning"><?= icon('clock') ?><div style="flex:1"><b>Awaiting hand-over.</b> Print the front and back, give the card to the inspector, then mark it as handed over.
-    Until then the QR shows "not yet issued" and the inspector cannot see the card in their portal.</div>
+  <div class="alert alert-warning"><?= icon('clock') ?><div style="flex:1"><b>Awaiting hand-over.</b> Print the front and back, give the card to <?= e($card['holder_name']) ?>, then mark it as handed over.
+    Until then the QR shows "not yet issued"<?= $card['user_id'] ? ' and the inspector cannot see the card in their portal' : '' ?>.</div>
     <form method="post" action="<?= url('admin/cards/' . $card['id'] . '/handover') ?>" onsubmit="return confirm('Confirm card <?= e($card['card_no']) ?> was handed to <?= e($card['holder_name']) ?>?')">
       <?= Csrf::field() ?><button class="btn btn-primary btn-sm"><?= icon('check', 'sm') ?> Mark as handed over</button></form></div>
 <?php endif; ?>
@@ -69,20 +75,31 @@ $state = $card ? InspectorCardService::state($card) : null;
     <div class="stack">
       <div class="card"><div class="card-h"><h2><?= icon('user', 'sm') ?> Front side</h2></div>
         <div class="card-b"><div class="form-grid">
-          <div class="field col-6"><label>Inspector <span class="req">*</span></label>
-            <select class="select" name="user_id" id="card-user" required<?= $card ? ' disabled' : '' ?>><option value="">Select…</option>
+          <div class="field col-12"><label>Card for</label>
+            <?php if ($card || $renew): ?><input type="hidden" name="holder_type" value="<?= e($type) ?>"><?php endif; ?>
+            <div class="seg-tabs" role="radiogroup">
+              <?php foreach (['inspector' => 'TUV EAST inspector', 'worker' => 'Client worker (rigger, operator …)'] as $k => $label): ?>
+                <label class="<?= $type === $k ? 'on' : '' ?>" style="cursor:pointer"><input type="radio" name="holder_type" value="<?= $k ?>"<?= checked($type === $k) ?><?= $card || $renew ? ' disabled' : '' ?> style="margin-right:6px"><?= e($label) ?></label>
+              <?php endforeach; ?>
+            </div></div>
+          <div class="field col-6" data-holder="worker"><label>Client company</label>
+            <select class="select" name="client_id" id="card-client"><option value="">Not a client / type below</option>
+              <?php foreach ($clients as $cl): ?><option value="<?= $cl['id'] ?>"<?= selected($cl['id'], $v('client_id')) ?> data-name="<?= e(mb_strtoupper($cl['name'])) ?>"><?= e($cl['name']) ?></option><?php endforeach; ?>
+            </select></div>
+          <div class="field col-6" data-holder="inspector"><label>Inspector <span class="req">*</span></label>
+            <select class="select" name="user_id" id="card-user"<?= $type === 'inspector' ? ' required' : '' ?><?= $card ? ' disabled' : '' ?>><option value="">Select…</option>
               <?php foreach ($people as $p): ?><option value="<?= $p['id'] ?>"<?= selected($p['id'], $v('user_id')) ?>
                 data-name="<?= e(mb_strtoupper($p['name'])) ?>" data-qual="<?= e($p['qualification']) ?>" data-emp="<?= e($p['employee_no']) ?>" data-skills="<?= e(mb_strtoupper((string) $p['skills'])) ?>" data-photo="<?= $p['photo_path'] ? e(url('id-photo/' . $p['id'])) : '' ?>"><?= e($p['name']) ?><?= $p['role'] === 'qc' ? ' (QC)' : '' ?></option><?php endforeach; ?>
-            </select><?php if ($card): ?><input type="hidden" name="user_id" value="<?= (int) $card['user_id'] ?>"><?php endif; ?><?= field_error('user_id') ?></div>
+            </select><?php if ($card && $card['user_id']): ?><input type="hidden" name="user_id" value="<?= (int) $card['user_id'] ?>"><?php endif; ?><?= field_error('user_id') ?></div>
           <div class="field col-6"><label>Name on card <span class="req">*</span></label><input class="input" name="holder_name" value="<?= e($v('holder_name')) ?>" required maxlength="120"><?= field_error('holder_name') ?></div>
-          <div class="field col-6"><label>Iqama / ID No.</label><input class="input mono" name="id_number" value="<?= e($v('id_number')) ?>" maxlength="30"><?= field_error('id_number') ?></div>
+          <div class="field col-6"><label>Iqama / ID No.<span class="req" data-holder="worker"> *</span></label><input class="input mono" name="id_number" value="<?= e($v('id_number')) ?>" maxlength="30"<?= $type === 'worker' ? ' required' : '' ?>><?= field_error('id_number') ?></div>
           <div class="field col-6"><label>Company <span class="req">*</span></label><input class="input" name="company" value="<?= e($v('company')) ?>" required maxlength="120"><?= field_error('company') ?></div>
           <div class="field col-6"><label>ID code</label><input class="input mono" name="card_no" value="<?= e($card ? $card['card_no'] : old('card_no')) ?>" maxlength="40" placeholder="Auto, e.g. TE-IC-<?= date('Y') ?>-0001"><?= field_error('card_no') ?></div>
-          <div class="field col-6"><label>Title (blue band) <span class="req">*</span></label><input class="input" name="title" value="<?= e($v('title')) ?>" required maxlength="80" placeholder="e.g. LIFTING EQUIPMENT INSPECTOR"><?= field_error('title') ?></div>
+          <div class="field col-6"><label>Title (blue band) <span class="req">*</span></label><input class="input" name="title" value="<?= e($v('title')) ?>" required maxlength="80" placeholder="e.g. RIGGER LEVEL - III"><?= field_error('title') ?></div>
           <div class="field col-6"><label>Issue date <span class="req">*</span></label><input class="input" type="date" name="issue_date" value="<?= e($v('issue_date')) ?>" required><?= field_error('issue_date') ?></div>
           <div class="field col-6"><label>Expiry date <span class="req">*</span></label><input class="input" type="date" name="expiry_date" value="<?= e($v('expiry_date')) ?>" required><?= field_error('expiry_date') ?></div>
           <div class="field col-12"><label>Photo (passport style, JPG / PNG)</label><input class="input" type="file" name="photo" id="card-photo" accept="image/jpeg,image/png,image/webp" style="padding-top:7px">
-            <div class="help"><?= $card ? 'Leave empty to keep the current photo.' : ($profilePhoto ? 'Leave empty to use the photo from the inspector profile.' : 'Portrait 3 : 4, plain background. The inspector can also upload it from their portal.') ?></div>
+            <div class="help"><?= $card ? 'Leave empty to keep the current photo.' : ($profilePhoto ? 'Leave empty to use the photo from the inspector profile.' : ($renew && $renew['photo_path'] ? 'Leave empty to reuse the photo of the card being replaced.' : 'Portrait 3 : 4, plain background.<span data-holder="inspector"> The inspector can also upload it from their portal.</span>')) ?></div>
             <?php if ($card && $profilePhoto && $profilePhoto !== $card['photo_path']): ?>
               <div class="row mt-1" style="gap:10px;align-items:center;padding:8px;border:1px dashed var(--border-strong);border-radius:10px">
                 <img src="<?= url('id-photo/' . $card['user_id']) ?>" alt="" style="width:42px;height:56px;object-fit:cover;border-radius:4px">
@@ -103,12 +120,12 @@ $state = $card ? InspectorCardService::state($card) : null;
       <div class="card"><div class="card-b">
         <button class="btn btn-primary btn-block"><?= icon('check', 'sm') ?> <?= $card ? 'Save changes' : 'Issue card' ?></button>
         <a class="btn btn-ghost btn-block mt-1" href="<?= url('admin/cards') ?>">Cancel</a>
-        <?php if (!$card): ?><p class="small muted mt-1">Issuing a new card revokes the inspector's previous active card, so a lost or old card no longer verifies.</p><?php endif; ?>
+        <?php if (!$card): ?><p class="small muted mt-1">Handing over a new card revokes the holder's previous active card (same inspector, or same Iqama for workers), so a lost or old card no longer verifies.</p><?php endif; ?>
       </div></div>
       <?php if ($card): ?>
       <div class="card"><div class="card-h"><h2><?= icon('rotate', 'sm') ?> Renew / replace</h2></div><div class="card-b">
-        <p class="small muted">Issue a new card with the same details and new dates. This card is revoked automatically.</p>
-        <a class="btn btn-secondary btn-block mt-1" href="<?= url('admin/cards/new', ['user' => $card['user_id']]) ?>">Issue replacement card</a>
+        <p class="small muted">Issue a new card with the same details and new dates. This card is revoked when the new one is handed over.</p>
+        <a class="btn btn-secondary btn-block mt-1" href="<?= url('admin/cards/new', ['renew' => $card['id']]) ?>">Issue replacement card</a>
       </div></div>
       <?php endif; ?>
     </div>
@@ -125,7 +142,8 @@ $state = $card ? InspectorCardService::state($card) : null;
 <script>
 (function () {
   const form = document.getElementById('card-form'), box = document.getElementById('idc-preview');
-  const fmt = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ''); return m ? m[3] + '-' + m[2] + '-' + m[1] : ''; };
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const fmt = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ''); return m ? m[3] + '-' + MON[+m[2] - 1] + '-' + m[1] : ''; };
   const upper = ['holder_name', 'company', 'title'];
   const paint = (name) => {
     const el = form.elements[name]; if (!el) return;
@@ -188,6 +206,24 @@ $state = $card ? InspectorCardService::state($card) : null;
     set('holder_name', o.dataset.name); set('certification', o.dataset.qual); set('title', (o.dataset.qual || '').toUpperCase());
     set('job_ref', o.dataset.emp); set('competence', o.dataset.skills);
     if (o.dataset.photo) showPhoto(o.dataset.photo);
+  });
+  // inspector ↔ client worker: show the matching fields; workers need an Iqama, inspectors an account
+  const applyType = () => {
+    const t = (form.querySelector('[name=holder_type]:checked') || form.querySelector('[name=holder_type]')).value;
+    form.querySelectorAll('[data-holder]').forEach((el) => { el.hidden = el.dataset.holder !== t; });
+    form.querySelectorAll('[name=holder_type]').forEach((r) => r.closest('label') && r.closest('label').classList.toggle('on', r.checked));
+    if (!user.disabled) user.required = t === 'inspector';
+    form.elements.id_number.required = t === 'worker';
+  };
+  form.querySelectorAll('[name=holder_type]').forEach((r) => r.addEventListener('change', () => {
+    applyType();
+    if (r.checked && r.value === 'worker' && form.elements.company.value === 'TUV EAST') { form.elements.company.value = ''; paint('company'); }
+    if (r.checked && r.value === 'inspector' && !form.elements.company.value) { form.elements.company.value = 'TUV EAST'; paint('company'); }
+  }));
+  applyType();
+  document.getElementById('card-client').addEventListener('change', (e) => {
+    const o = e.target.selectedOptions[0];
+    if (o && o.value) { form.elements.company.value = o.dataset.name; paint('company'); }
   });
   function showPhoto(src) {
     box.querySelectorAll('[data-f="photo"]').forEach((p) => { p.innerHTML = '<img alt="" style="left:0;top:0;width:14.2mm;height:18.6mm;object-fit:cover">'; p.firstChild.src = src; });

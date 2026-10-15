@@ -1,11 +1,13 @@
 <?php
 
 /**
- * Inspector ID cards: CR80 (85.6 × 54 mm) plastic card the inspector shows on the client site.
+ * ID / competence cards: CR80 (85.6 × 54 mm) plastic card shown on site, issued either to a TUV EAST inspector
+ * (holder_type inspector, linked to the user account) or to an assessed client worker — rigger, scaffolding
+ * erector, operator … (holder_type worker, no login).
  * Front = photo / name / Iqama / company / ID code / dates; back = job ref, certification, competence and a QR
  * that opens the public verification page (/verify/card/{token}).
- * Life cycle: created (printed, "pending") → handed over to the inspector (valid; shown in the inspector portal)
- * → expired / revoked. Handing over a card revokes the holder's previous active card.
+ * Life cycle: created (printed, "pending") → handed over (valid; inspectors also see it in their portal)
+ * → expired / revoked. Handing over a card revokes the holder's previous active card (same account, or same Iqama).
  */
 final class InspectorCardService
 {
@@ -21,15 +23,27 @@ final class InspectorCardService
     /** Create or edit a card. A new card starts as pending until it is physically handed over. */
     public static function save(?int $id, array $in, ?array $photo): int
     {
-        $user = DB::one("SELECT id, role FROM users WHERE id = ? AND role IN ('inspector','qc','admin')", [(int) ($in['user_id'] ?? 0)]);
-        if (!$user) throw new DomainException('Select the inspector the card is issued to.');
+        $worker = ($in['holder_type'] ?? 'inspector') === 'worker';
+        $user = null;
+        $clientId = null;
+        if ($worker) {
+            if (trim((string) ($in['id_number'] ?? '')) === '') throw new DomainException('Enter the worker\'s Iqama / ID number.');
+            if (!empty($in['client_id'])) {
+                $clientId = (int) DB::value('SELECT id FROM clients WHERE id = ?', [(int) $in['client_id']]) ?: null;
+            }
+        } else {
+            $user = DB::one("SELECT id, role FROM users WHERE id = ? AND role IN ('inspector','qc','admin')", [(int) ($in['user_id'] ?? 0)]);
+            if (!$user) throw new DomainException('Select the inspector the card is issued to.');
+        }
         if ($in['expiry_date'] < $in['issue_date']) throw new DomainException('The expiry date must be after the issue date.');
         $cardNo = strtoupper(trim((string) ($in['card_no'] ?? '')));
         if ($cardNo !== '' && DB::value('SELECT id FROM inspector_cards WHERE card_no = ? AND id <> ?', [$cardNo, $id ?? 0])) {
             throw new DomainException("ID code $cardNo is already used by another card.");
         }
         $data = [
-            'user_id' => (int) $user['id'],
+            'holder_type' => $worker ? 'worker' : 'inspector',
+            'user_id' => $user ? (int) $user['id'] : null,
+            'client_id' => $clientId,
             'holder_name' => mb_strtoupper(trim($in['holder_name'])),
             'id_number' => nullable($in['id_number'] ?? null),
             'company' => mb_strtoupper(trim($in['company'])),
@@ -43,11 +57,14 @@ final class InspectorCardService
         ];
         if ($photo) {                                       // admin upload also becomes the inspector's profile photo
             $data['photo_path'] = $photo['path'];
-            self::setProfilePhoto($data['user_id'], $photo['path']);
-        } elseif (!$id || !empty($in['use_profile_photo'])) { // otherwise the photo the inspector / admin uploaded to the profile
-            $data['photo_path'] = self::profilePhoto($data['user_id']);
+            if ($user) self::setProfilePhoto($data['user_id'], $photo['path']);
+        } elseif (!$id || (!empty($in['use_profile_photo']) && $user)) {
+            // inspectors: the photo on their profile; replacement cards: the photo of the card being replaced
+            $data['photo_path'] = $user ? self::profilePhoto($data['user_id']) : null;
             if (!$data['photo_path'] && !$id && !empty($in['renew_from'])) {
-                $data['photo_path'] = DB::value('SELECT photo_path FROM inspector_cards WHERE id = ? AND user_id = ?', [(int) $in['renew_from'], $data['user_id']]);
+                $data['photo_path'] = $user
+                    ? DB::value('SELECT photo_path FROM inspector_cards WHERE id = ? AND user_id = ?', [(int) $in['renew_from'], $data['user_id']])
+                    : DB::value("SELECT photo_path FROM inspector_cards WHERE id = ? AND holder_type = 'worker'", [(int) $in['renew_from']]);
             }
             if (!$data['photo_path']) unset($data['photo_path']);
         }
@@ -63,12 +80,12 @@ final class InspectorCardService
             $data['verify_token'] = bin2hex(random_bytes(16));
             $data['created_by'] = Auth::id();
             $newId = DB::insert('inspector_cards', $data);
-            Audit::log('id_card.created', 'inspector_card', $newId, ['card_no' => $data['card_no'], 'user_id' => $data['user_id']]);
+            Audit::log('id_card.created', 'inspector_card', $newId, ['card_no' => $data['card_no'], 'holder' => $data['holder_type'], 'user_id' => $data['user_id']]);
             return $newId;
         });
     }
 
-    /** The printed card was given to the inspector: it becomes valid and appears in the inspector portal. */
+    /** The printed card was given to its holder: it becomes valid (and appears in the inspector portal). */
     public static function handOver(int $id): void
     {
         $card = self::find('c.id = ?', [$id]);
@@ -76,13 +93,24 @@ final class InspectorCardService
         if ($card['handed_over_at']) throw new DomainException('This card was already handed over on ' . fmt_datetime($card['handed_over_at']) . '.');
         DB::tx(function () use ($card) {
             DB::update('inspector_cards', ['handed_over_at' => now(), 'handed_over_by' => Auth::id()], 'id = ?', [$card['id']]);
+            [$same, $p] = self::sameHolder($card);
             DB::run(
-                "UPDATE inspector_cards SET status = 'revoked', revoked_reason = ? WHERE user_id = ? AND status = 'active' AND id <> ?",
-                ['Replaced by card ' . $card['card_no'], $card['user_id'], $card['id']]
+                "UPDATE inspector_cards SET status = 'revoked', revoked_reason = ? WHERE $same AND status = 'active' AND id <> ?",
+                array_merge(['Replaced by card ' . $card['card_no']], $p, [$card['id']])
             );
             Audit::log('id_card.handed_over', 'inspector_card', (int) $card['id'], ['card_no' => $card['card_no'], 'user_id' => $card['user_id']]);
-            Notify::user((int) $card['user_id'], 'ID card issued', 'Your inspector ID card ' . $card['card_no'] . ' has been issued to you.', 'inspector/card');
+            if ($card['user_id']) {
+                Notify::user((int) $card['user_id'], 'ID card issued', 'Your inspector ID card ' . $card['card_no'] . ' has been issued to you.', 'inspector/card');
+            }
         });
+    }
+
+    /** SQL condition (+ params) matching every card of the same person: same account, or for workers the same Iqama. */
+    public static function sameHolder(array $card): array
+    {
+        if ($card['user_id']) return ['user_id = ?', [$card['user_id']]];
+        if ($card['id_number']) return ["holder_type = 'worker' AND id_number = ?", [$card['id_number']]];
+        return ['id = ?', [$card['id']]];
     }
 
     public static function profilePhoto(int $userId): ?string
@@ -108,7 +136,7 @@ final class InspectorCardService
     public static function state(array $card): string
     {
         if ($card['status'] === 'revoked') return 'revoked';
-        if (($card['user_status'] ?? 'active') !== 'active') return 'inactive';
+        if (!empty($card['user_id']) && ($card['user_status'] ?? 'active') !== 'active') return 'inactive';
         if (empty($card['handed_over_at'])) return 'pending';
         if ($card['expiry_date'] < date('Y-m-d')) return 'expired';
         return 'valid';
@@ -116,7 +144,9 @@ final class InspectorCardService
 
     public static function find(string $where, array $p): ?array
     {
-        return DB::one("SELECT c.*, u.status user_status, u.email user_email, u.role user_role FROM inspector_cards c JOIN users u ON u.id = c.user_id WHERE $where LIMIT 1", $p);
+        return DB::one("SELECT c.*, u.status user_status, u.email user_email, u.role user_role, cl.name client_name
+                        FROM inspector_cards c LEFT JOIN users u ON u.id = c.user_id LEFT JOIN clients cl ON cl.id = c.client_id
+                        WHERE $where LIMIT 1", $p);
     }
 
     /** Badge for a card state (admin screens). */
@@ -150,11 +180,21 @@ final class InspectorCardService
             'qr' => DocumentService::qr($verifyUrl),
             'verify_url' => $verifyUrl,
             'logo' => self::brandCrop('tuv'),
-            'logos' => setting('card_logos_path') ? upload_data_uri(setting('card_logos_path')) : self::brandCrop('accreditation'),
+            'logos' => setting('card_logos_path') ? [upload_data_uri(setting('card_logos_path'))] : self::accreditationLogos(),
             'emails' => setting('card_emails', 'info@tuv-east.com - operations@tuv-east.com'),
             'address' => setting('card_address', 'Main Office:  Eastern Province - Dhahran, King Abdulaziz Rd – Al Waleedi Business Tower, Saudi Arabia'),
             'state' => self::state($card),
         ];
+    }
+
+    /** Default marks under the photo, as on the printed cards: UAF + LEEA Full Member (Saudi Accreditation as fallback). */
+    private static function accreditationLogos(): array
+    {
+        $img = fn ($f) => is_file(ROOT_PATH . '/assets/img/' . $f)
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents(ROOT_PATH . '/assets/img/' . $f)) : null;
+        $uaf = $img('sticker-uaf.png');
+        $leea = $img('sticker-leea.png');
+        return $uaf && $leea ? [$uaf, $leea] : array_filter([self::brandCrop('accreditation')]);
     }
 
     /** The TUV EAST mark and the Saudi Accreditation mark are both in assets/img/logo.png — cut them apart once. */

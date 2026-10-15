@@ -1,11 +1,12 @@
 <?php
 
-/** Inspector ID cards: issue, print (front / back as separate CR80 pages), hand over, validate, revoke. */
+/** ID cards for inspectors and client workers: issue, print (front / back as separate CR80 pages), hand over, validate, revoke. */
 final class AdminCardController extends Controller
 {
     public function index(): void
     {
         $status = (string) input('status', '');
+        $type = in_array(input('type'), ['inspector', 'worker'], true) ? input('type') : '';
         $q = trim((string) input('q', ''));
         $today = date('Y-m-d');
         $where = ['1=1'];
@@ -14,11 +15,12 @@ final class AdminCardController extends Controller
         if ($status === 'valid') { $where[] = "c.status = 'active' AND c.handed_over_at IS NOT NULL AND c.expiry_date >= ?"; $p[] = $today; }
         if ($status === 'expired') { $where[] = "c.status = 'active' AND c.handed_over_at IS NOT NULL AND c.expiry_date < ?"; $p[] = $today; }
         if ($status === 'revoked') { $where[] = "c.status = 'revoked'"; }
-        if ($q !== '') { $where[] = '(c.card_no LIKE ? OR c.holder_name LIKE ? OR c.id_number LIKE ? OR c.title LIKE ?)'; array_push($p, "%$q%", "%$q%", "%$q%", "%$q%"); }
-        $sql = "SELECT c.*, u.status user_status, u.email user_email FROM inspector_cards c JOIN users u ON u.id = c.user_id
+        if ($type !== '') { $where[] = 'c.holder_type = ?'; $p[] = $type; }
+        if ($q !== '') { $where[] = '(c.card_no LIKE ? OR c.holder_name LIKE ? OR c.id_number LIKE ? OR c.title LIKE ? OR c.company LIKE ?)'; array_push($p, "%$q%", "%$q%", "%$q%", "%$q%", "%$q%"); }
+        $sql = "SELECT c.*, u.status user_status, u.email user_email FROM inspector_cards c LEFT JOIN users u ON u.id = c.user_id
                 WHERE " . implode(' AND ', $where) . " ORDER BY c.status = 'revoked', c.handed_over_at IS NOT NULL, c.id DESC";
         if ($this->wantsCsv()) {
-            csv_export('inspector-id-cards', DB::all($sql, $p), ['card_no' => 'ID Code', 'holder_name' => 'Name', 'id_number' => 'Iqama / ID', 'company' => 'Company', 'title' => 'Title',
+            csv_export('id-cards', DB::all($sql, $p), ['card_no' => 'ID Code', 'holder_type' => 'Holder Type', 'holder_name' => 'Name', 'id_number' => 'Iqama / ID', 'company' => 'Company', 'title' => 'Title',
                 'certification' => 'Certification', 'issue_date' => 'Issue Date', 'expiry_date' => 'Expiry Date', 'handed_over_at' => 'Handed Over', 'status' => 'Status', 'revoked_reason' => 'Revoked Reason']);
         }
         [$rows, $meta] = paginate($sql, $p, 25);
@@ -29,7 +31,8 @@ final class AdminCardController extends Controller
                     SUM(status = 'active' AND handed_over_at IS NOT NULL AND expiry_date BETWEEN ? AND ?) expiring FROM inspector_cards",
             [$today, $today, $today, date('Y-m-d', strtotime('+30 days'))]
         );
-        $this->view('admin/cards/index', compact('rows', 'meta', 'status', 'q', 'counts') + ['title' => 'Inspector ID Cards', 'crumbs' => ['Inspector ID Cards' => null]]);
+        $types = array_column(DB::all('SELECT holder_type, COUNT(*) n FROM inspector_cards GROUP BY holder_type'), 'n', 'holder_type');
+        $this->view('admin/cards/index', compact('rows', 'meta', 'status', 'type', 'types', 'q', 'counts') + ['title' => 'ID Cards', 'crumbs' => ['ID Cards' => null]]);
     }
 
     private function people(): array
@@ -42,12 +45,21 @@ final class AdminCardController extends Controller
         );
     }
 
+    private function clients(): array
+    {
+        return DB::all("SELECT id, name FROM clients WHERE status = 'active' ORDER BY name");
+    }
+
+    /** ?user= renews an inspector's card, ?renew= (card id) copies any card as a replacement, ?type=worker for client workers. */
     public function create(): void
     {
-        $last = (int) input('user') ? DB::one("SELECT * FROM inspector_cards WHERE user_id = ? ORDER BY id DESC LIMIT 1", [(int) input('user')]) : null;
+        $last = (int) input('user') ? DB::one('SELECT * FROM inspector_cards WHERE user_id = ? ORDER BY id DESC LIMIT 1', [(int) input('user')]) : null;
+        $last ??= (int) input('renew') ? DB::one('SELECT * FROM inspector_cards WHERE id = ?', [(int) input('renew')]) : null;
+        $type = $last['holder_type'] ?? (input('type') === 'worker' ? 'worker' : 'inspector');
         $this->view('admin/cards/form', [
-            'card' => null, 'renew' => $last, 'people' => $this->people(), 'userId' => (int) input('user'),
-            'title' => 'Issue ID card', 'crumbs' => ['Inspector ID Cards' => 'admin/cards', 'Issue' => null],
+            'card' => null, 'renew' => $last, 'people' => $this->people(), 'clients' => $this->clients(), 'type' => $type,
+            'userId' => (int) ($last['user_id'] ?? input('user')),
+            'title' => 'Issue ID card', 'crumbs' => ['ID Cards' => 'admin/cards', 'Issue' => null],
         ]);
     }
 
@@ -56,9 +68,9 @@ final class AdminCardController extends Controller
         $card = InspectorCardService::find('c.id = ?', [(int) $id]);
         if (!$card) $this->notFound();
         $this->view('admin/cards/form', [
-            'card' => $card, 'renew' => null, 'people' => $this->people(), 'userId' => (int) $card['user_id'],
-            'model' => InspectorCardService::model($card),
-            'title' => $card['card_no'], 'crumbs' => ['Inspector ID Cards' => 'admin/cards', $card['card_no'] => null],
+            'card' => $card, 'renew' => null, 'people' => $this->people(), 'clients' => $this->clients(), 'type' => $card['holder_type'],
+            'userId' => (int) $card['user_id'], 'model' => InspectorCardService::model($card),
+            'title' => $card['card_no'], 'crumbs' => ['ID Cards' => 'admin/cards', $card['card_no'] => null],
         ]);
     }
 
@@ -74,8 +86,9 @@ final class AdminCardController extends Controller
 
     private function save(?int $id): void
     {
+        $worker = input('holder_type') === 'worker';
         $errors = validate($_POST, [
-            'user_id' => 'required|int', 'holder_name' => 'required|max:120', 'id_number' => 'max:30', 'company' => 'required|max:120',
+            'user_id' => $worker ? 'int' : 'required|int', 'client_id' => 'int', 'holder_name' => 'required|max:120', 'id_number' => 'max:30', 'company' => 'required|max:120',
             'title' => 'required|max:80', 'card_no' => 'max:40', 'job_ref' => 'max:60', 'certification' => 'max:120', 'assessor' => 'max:120',
             'competence' => 'max:1000', 'issue_date' => 'required|date', 'expiry_date' => 'required|date',
         ]);
@@ -89,7 +102,7 @@ final class AdminCardController extends Controller
 
     public function handover(string $id): void
     {
-        $this->attempt(fn () => InspectorCardService::handOver((int) $id), 'Card marked as handed over. It is now valid and visible in the inspector portal.');
+        $this->attempt(fn () => InspectorCardService::handOver((int) $id), 'Card marked as handed over. It is now valid' . (DB::value('SELECT user_id FROM inspector_cards WHERE id = ?', [(int) $id]) ? ' and visible in the inspector portal.' : '.'));
     }
 
     /** Staff check of a card: scan the QR / paste its link, or type the ID code. Shows everything, unmasked. */
@@ -98,13 +111,14 @@ final class AdminCardController extends Controller
         $q = trim((string) input('q', ''));
         $card = $q !== '' ? InspectorCardService::lookup($q) : null;
         if ($card) Audit::log('id_card.validated', 'inspector_card', (int) $card['id']);
+        [$same, $sp] = $card ? InspectorCardService::sameHolder($card) : ['1=0', []];
         $this->view('admin/cards/validate', [
             'q' => $q, 'searched' => $q !== '',
             'm' => $card ? InspectorCardService::model($card) : null,
-            'history' => $card ? DB::all('SELECT c.*, h.name handed_by FROM inspector_cards c LEFT JOIN users h ON h.id = c.handed_over_by WHERE c.user_id = ? ORDER BY c.id DESC', [$card['user_id']]) : [],
-            'profile' => $card ? DB::one('SELECT u.name, u.email, u.phone, u.role, u.status, p.employee_no, p.qualification, p.cert_no, p.cert_expiry, p.base_location
+            'history' => $card ? DB::all("SELECT c.*, h.name handed_by FROM inspector_cards c LEFT JOIN users h ON h.id = c.handed_over_by WHERE c.$same ORDER BY c.id DESC", $sp) : [],
+            'profile' => $card && $card['user_id'] ? DB::one('SELECT u.name, u.email, u.phone, u.role, u.status, p.employee_no, p.qualification, p.cert_no, p.cert_expiry, p.base_location
                                          FROM users u LEFT JOIN inspector_profiles p ON p.user_id = u.id WHERE u.id = ?', [$card['user_id']]) : null,
-            'title' => 'Validate ID Card', 'crumbs' => ['Inspector ID Cards' => 'admin/cards', 'Validate' => null],
+            'title' => 'Validate ID Card', 'crumbs' => ['ID Cards' => 'admin/cards', 'Validate' => null],
         ]);
     }
 

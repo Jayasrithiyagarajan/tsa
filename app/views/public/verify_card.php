@@ -1,14 +1,16 @@
 <?php
-/** Public page opened by the QR code on an inspector ID card. @var ?array $m */
+/** Public page opened by the QR code on an ID card. @var ?array $m */
 $c = $m['card'] ?? null;
 $state = $m['state'] ?? null;
 $msg = [
-    'valid'    => ['ok', 'check', 'Valid inspector ID card', 'This card is genuine and active. The holder is an authorized ' . ($c ? e(mb_strtolower($c['title'])) : 'inspector') . ' of TUV EAST.'],
+    'valid'    => ['ok', 'check', 'Valid ID card', 'This card is genuine and active. ' . ($c && $c['holder_type'] === 'worker'
+        ? 'TUV EAST certifies the holder as ' . e($c['title']) . '.'
+        : 'The holder is an authorized ' . ($c ? e(mb_strtolower($c['title'])) : 'inspector') . ' of TUV EAST.')],
     'expired'  => ['bad', 'alert', 'ID card expired', 'This card expired on ' . ($c ? e(fmt_date($c['expiry_date'])) : '') . '. Do not accept it for site access — ask the holder for a current card.'],
     'revoked'  => ['bad', 'x', 'ID card revoked', 'This card has been withdrawn by TUV EAST and is no longer valid.'],
     'pending'  => ['bad', 'clock', 'ID card not yet issued', 'This card has not been issued to its holder yet, so it is not valid for site access.'],
     'inactive' => ['bad', 'x', 'Holder no longer authorized', 'The holder of this card is no longer an active TUV EAST inspector.'],
-][$state] ?? ['bad', 'alert', 'ID card not found', 'This QR code does not match any TUV EAST inspector card. The card may be forged.'];
+][$state] ?? ['bad', 'alert', 'ID card not found', 'This QR code does not match any TUV EAST ID card. The card may be forged.'];
 ?>
 <style><?= file_get_contents(ROOT_PATH . '/assets/css/idcard.css') ?>
 .idc * { box-sizing: content-box; }
@@ -20,8 +22,8 @@ $msg = [
 </style>
 <section class="section" style="padding-top:40px">
   <div class="pub-wrap" style="max-width:860px">
-    <div class="eyebrow">Inspector identity verification</div>
-    <h2>TUV EAST inspector ID card</h2>
+    <div class="eyebrow">ID card verification</div>
+    <h2>TUV EAST ID card</h2>
     <div class="verify-result <?= $msg[0] ?> mt-2">
       <div class="vr-ic"><?= icon($msg[1], 'lg') ?></div>
       <div style="flex:1">

@@ -66,6 +66,15 @@ $msg = [
         <?php if ($c['revoked_reason']): ?><dt>Revoked</dt><dd><?= e($c['revoked_reason']) ?></dd><?php endif; ?>
       </dl>
     </div></div>
+    <?php if (!$profile): ?>
+    <div class="card"><div class="card-h"><h2><?= icon('building', 'sm') ?> Holder</h2></div><div class="card-b">
+      <dl class="kv">
+        <dt>Type</dt><dd>Client worker (no login)</dd>
+        <dt>Company</dt><dd><?= $c['client_id'] ? '<a href="' . url('admin/clients/' . $c['client_id']) . '">' . e($c['client_name']) . '</a>' : e($c['company']) ?></dd>
+        <dt>Iqama / ID No.</dt><dd class="mono"><?= e($c['id_number'] ?: '—') ?></dd>
+      </dl>
+    </div></div>
+    <?php else: ?>
     <div class="card"><div class="card-h"><h2><?= icon('user', 'sm') ?> Holder account</h2></div><div class="card-b">
       <dl class="kv">
         <dt>User</dt><dd><a href="<?= url('admin/users/' . $c['user_id']) ?>"><?= e($profile['name']) ?></a> <?= badge($profile['role']) ?></dd>
@@ -78,6 +87,7 @@ $msg = [
         <dt>Base</dt><dd><?= e($profile['base_location'] ?: '—') ?></dd>
       </dl>
     </div></div>
+    <?php endif; ?>
   </div>
   <div class="card mt-2"><div class="card-h"><h2><?= icon('history', 'sm') ?> All cards of this holder</h2></div>
     <div class="table-wrap"><table class="t stack-sm">

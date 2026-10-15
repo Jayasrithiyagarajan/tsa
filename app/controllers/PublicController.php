@@ -63,7 +63,7 @@ final class PublicController extends Controller
     {
         $card = preg_match('/^[a-f0-9]{32}$/', $token) ? InspectorCardService::find('c.verify_token = ?', [$token]) : null;
         $this->view('public/verify_card', [
-            'title' => 'Inspector ID Verification',
+            'title' => 'ID Card Verification',
             'm' => $card ? InspectorCardService::model($card) : null,
         ], 'public');
     }

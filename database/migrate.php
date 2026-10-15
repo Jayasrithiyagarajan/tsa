@@ -48,6 +48,14 @@ if (!DB::one("SHOW COLUMNS FROM inspector_profiles LIKE 'photo_path'")) {
     echo "✓ added inspector_profiles.photo_path\n";
 }
 
+if (!DB::one("SHOW COLUMNS FROM inspector_cards LIKE 'holder_type'")) {
+    // cards for client workers (riggers, operators …) who have no login
+    DB::pdo()->exec("ALTER TABLE inspector_cards ADD holder_type ENUM('inspector','worker') NOT NULL DEFAULT 'inspector' AFTER id,
+                     MODIFY user_id INT UNSIGNED NULL, ADD client_id INT UNSIGNED NULL AFTER user_id, ADD KEY idx_ic_idno (id_number),
+                     ADD CONSTRAINT fk_ic_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL");
+    echo "✓ inspector_cards: client worker cards (holder_type, client_id)\n";
+}
+
 $sig = fn (array $sections) => md5(json_encode(array_map(fn ($items) => array_values($items), $sections)));
 
 foreach (require __DIR__ . '/seed_templates.php' as $def) {

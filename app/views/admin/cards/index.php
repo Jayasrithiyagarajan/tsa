@@ -1,10 +1,14 @@
-<?php $tab = fn ($s, $label, $n) => '<a class="' . ($status === $s ? 'on' : '') . '" href="' . url('admin/cards', ['status' => $s]) . '">' . e($label) . '<span class="n">' . (int) $n . '</span></a>'; ?>
+<?php
+$tab = fn ($s, $label, $n) => '<a class="' . ($status === $s ? 'on' : '') . '" href="' . url('admin/cards', array_filter(['status' => $s, 'type' => $type])) . '">' . e($label) . '<span class="n">' . (int) $n . '</span></a>';
+$ttab = fn ($t, $label, $n) => '<a class="' . ($type === $t ? 'on' : '') . '" href="' . url('admin/cards', array_filter(['type' => $t, 'status' => $status])) . '">' . e($label) . '<span class="n">' . (int) $n . '</span></a>';
+?>
 <div class="page-head">
-  <div class="ph-text"><h1>Inspector ID cards</h1><div class="sub">Identity cards inspectors show on the client site. The QR code on the back opens the card online with a live valid / expired / revoked message.</div></div>
+  <div class="ph-text"><h1>ID cards</h1><div class="sub">Cards for TUV EAST inspectors and for assessed client workers (riggers, operators …). The QR code on the back opens the card online with a live valid / expired / revoked message.</div></div>
   <div class="actions">
     <?php View::render('partials/export', [], null); ?>
     <button class="btn btn-secondary" data-modal="card-settings"><?= icon('settings', 'sm') ?> Card settings</button>
-    <a class="btn btn-primary" href="<?= url('admin/cards/new') ?>"><?= icon('plus', 'sm') ?> Issue ID card</a>
+    <a class="btn btn-secondary" href="<?= url('admin/cards/new', ['type' => 'worker']) ?>"><?= icon('plus', 'sm') ?> Client worker card</a>
+    <a class="btn btn-primary" href="<?= url('admin/cards/new') ?>"><?= icon('plus', 'sm') ?> Inspector card</a>
   </div>
 </div>
 <div class="kpis">
@@ -16,16 +20,18 @@
 <div class="card">
   <div class="toolbar">
     <div class="seg-tabs"><?= $tab('', 'All', array_sum([(int) $counts['pending'], (int) $counts['valid'], (int) $counts['expired'], (int) $counts['revoked']])) ?><?= $tab('pending', 'Awaiting hand-over', $counts['pending']) ?><?= $tab('valid', 'Valid', $counts['valid']) ?><?= $tab('expired', 'Expired', $counts['expired']) ?><?= $tab('revoked', 'Revoked', $counts['revoked']) ?></div>
+    <div class="seg-tabs"><?= $ttab('', 'Everyone', array_sum($types)) ?><?= $ttab('inspector', 'Inspectors', $types['inspector'] ?? 0) ?><?= $ttab('worker', 'Client workers', $types['worker'] ?? 0) ?></div>
     <span class="grow"></span>
-    <form class="search" method="get"><input type="hidden" name="status" value="<?= e($status) ?>"><?= icon('search', 'sm') ?><input class="input" name="q" value="<?= e($q) ?>" placeholder="ID code, name, Iqama, title…"></form>
+    <form class="search" method="get"><input type="hidden" name="status" value="<?= e($status) ?>"><input type="hidden" name="type" value="<?= e($type) ?>"><?= icon('search', 'sm') ?><input class="input" name="q" value="<?= e($q) ?>" placeholder="ID code, name, Iqama, title…"></form>
   </div>
   <div class="table-wrap"><table class="t stack-sm">
-    <thead><tr><th>Holder</th><th>ID code</th><th>Title</th><th>Issued</th><th>Expires</th><th>Handed over</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>Holder</th><th>Company</th><th>ID code</th><th>Title</th><th>Issued</th><th>Expires</th><th>Handed over</th><th>Status</th><th></th></tr></thead>
     <tbody><?php foreach ($rows as $c): $st = InspectorCardService::state($c); ?>
       <tr class="row-link" data-href="<?= url('admin/cards/' . $c['id']) ?>">
         <td data-label="Holder"><span class="person">
           <?php if ($c['photo_path']): ?><img src="<?= url('admin/cards/' . $c['id'] . '/photo') ?>" alt="" style="width:32px;height:40px;object-fit:cover;border-radius:6px;border:1px solid var(--border)"><?php else: ?><span class="avatar sm"><?= e(initials($c['holder_name'])) ?></span><?php endif; ?>
           <span><span class="p-n"><?= e($c['holder_name']) ?></span><br><span class="p-s"><?= e($c['id_number'] ?: $c['user_email']) ?></span></span></span></td>
+        <td data-label="Company" class="small"><?= e($c['company']) ?><div class="sub"><?= $c['holder_type'] === 'worker' ? 'Client worker' : 'Inspector' ?></div></td>
         <td data-label="ID code" class="mono small"><?= e($c['card_no']) ?></td>
         <td data-label="Title" class="small"><?= e($c['title']) ?></td>
         <td data-label="Issued" class="nowrap"><?= e(fmt_date($c['issue_date'])) ?></td>
