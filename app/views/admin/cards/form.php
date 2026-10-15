@@ -95,8 +95,8 @@ $state = $card ? InspectorCardService::state($card) : null;
           <div class="field col-6"><label>Job Ref</label><input class="input mono" name="job_ref" value="<?= e($v('job_ref')) ?>" maxlength="60"></div>
           <div class="field col-6"><label>Certification</label><input class="input" name="certification" value="<?= e($v('certification')) ?>" maxlength="120"></div>
           <div class="field col-6"><label>Assessor</label><input class="input" name="assessor" value="<?= e($v('assessor')) ?>" maxlength="120"></div>
-          <div class="field col-12"><label>Certificate of Competence</label><textarea class="textarea" name="competence" rows="3" maxlength="400"><?= e($v('competence')) ?></textarea>
-            <div class="help">One line per competence; up to 3 lines fit in the box.</div></div>
+          <div class="field col-12"><label>Certificate of Competence</label><textarea class="textarea" name="competence" rows="5" maxlength="1000"><?= e($v('competence')) ?></textarea>
+            <div class="help">One line per competence. The text shrinks (or splits into two columns) so every line fits in the box.</div></div>
         </div></div></div>
     </div>
     <div class="stack">
@@ -133,8 +133,53 @@ $state = $card ? InspectorCardService::state($card) : null;
     if (upper.includes(name)) val = val.toUpperCase();
     if (name === 'card_no' && !val) return;
     if (name.endsWith('_date')) val = fmt(val);
-    box.querySelectorAll('[data-f="' + name + '"]').forEach((t) => { t.textContent = val; if (name === 'competence') t.innerHTML = t.innerHTML.replace(/\n/g, '<br>'); });
+    if (name === 'competence') return fitCompetence(val);
+    box.querySelectorAll('[data-f="' + name + '"]').forEach((t) => { t.textContent = val; });
   };
+  // same rules as InspectorCardService::fitCompetence()
+  function fitCompetence(text) {
+    const lines = text.toUpperCase().split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const layouts = [[{ left: 2.2, width: 56.6, lines }]];
+    if (lines.length > 1) {
+      const n = Math.ceil(lines.length / 2);
+      layouts.push([{ left: 2.2, width: 27.3, lines: lines.slice(0, n) }, { left: 31.5, width: 27.3, lines: lines.slice(n) }]);
+    }
+    const rows = (c, pt, wrap) => {
+      const per = Math.max(1, Math.floor(c.width / (pt * 0.3528 * 0.64)));
+      let n = 0;
+      for (const l of c.lines) { if (!wrap && l.length > per) return null; n += Math.ceil(l.length / per); }
+      return n;
+    };
+    let best = null;
+    for (const wrap of [false, true]) {
+      layouts.forEach((cols) => {
+        let pt = 5.4;
+        for (; pt >= 3.0; pt = Math.round((pt - 0.1) * 10) / 10) {
+          const need = cols.map((c) => rows(c, pt, wrap));
+          if (!need.includes(null) && Math.max(0, ...need) * pt * 0.3528 * 1.3 <= 15.4) break;
+        }
+        if (pt < 3.0) return;
+        if (!best || pt >= best.pt + 0.5) best = { pt, cols };
+      });
+      if (best) break;
+    }
+    if (!best) best = { pt: 3.0, cols: layouts[layouts.length - 1] };
+    box.querySelectorAll('[data-f="competence"]').forEach((b) => {
+      b.querySelectorAll('.bc').forEach((el) => el.remove());
+      const lh = best.pt * 0.3528 * 1.3;
+      best.cols.forEach((c) => {
+        let row = 0;
+        c.lines.forEach((l) => {
+          const sp = document.createElement('span');
+          sp.className = 'bc';
+          sp.style.cssText = 'left:' + c.left + 'mm;top:' + (5.2 + row * lh).toFixed(2) + 'mm;width:' + c.width + 'mm;font-size:' + best.pt + 'pt;line-height:1.3';
+          sp.textContent = l;
+          b.appendChild(sp);
+          row += rows({ width: c.width, lines: [l] }, best.pt, true);
+        });
+      });
+    });
+  }
   form.addEventListener('input', (e) => e.target.name && paint(e.target.name));
   const user = document.getElementById('card-user');
   user.addEventListener('change', () => {

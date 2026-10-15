@@ -77,7 +77,7 @@ final class AdminCardController extends Controller
         $errors = validate($_POST, [
             'user_id' => 'required|int', 'holder_name' => 'required|max:120', 'id_number' => 'max:30', 'company' => 'required|max:120',
             'title' => 'required|max:80', 'card_no' => 'max:40', 'job_ref' => 'max:60', 'certification' => 'max:120', 'assessor' => 'max:120',
-            'competence' => 'max:400', 'issue_date' => 'required|date', 'expiry_date' => 'required|date',
+            'competence' => 'max:1000', 'issue_date' => 'required|date', 'expiry_date' => 'required|date',
         ]);
         if ($errors) $this->failValidation($errors);
         $this->attempt(function () use ($id) {

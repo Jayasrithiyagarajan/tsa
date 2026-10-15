@@ -27,15 +27,16 @@
 
 /* ---------- back ---------- */
 .idc-back .ring { border-color: #e3e9f2; }
-.idc-back .line { left: 5mm; font-size: 6.6pt; font-weight: bold; white-space: nowrap; width: 58mm; overflow: hidden; }
-.idc-back .box { left: 2.6mm; top: 23mm; width: 50mm; height: 14.4mm; border: .35mm solid #3557a0; border-radius: 2.2mm; background: #e4e7ec; overflow: hidden; }
-.idc-back .box .shade { left: 0; width: 50mm; }
-.idc-back .box .s1 { top: 0; height: 4.4mm; background: #f5f6f8; }
-.idc-back .box .s2 { top: 4.4mm; height: 3.6mm; background: #eceef2; }
-.idc-back .box .bt { left: 2.6mm; top: 1.6mm; font-size: 5.4pt; font-weight: bold; text-decoration: underline; white-space: nowrap; }
-.idc-back .box .bc { left: 2.2mm; top: 5.6mm; width: 46mm; font-size: 5pt; line-height: 1.45; text-transform: uppercase; }
-.idc-back .qr { left: 69mm; top: 22.6mm; width: 14.4mm; height: 14.4mm; background: #fff; }
-.idc-back .qr img { left: 0; top: 0; width: 14.4mm; height: 14.4mm; }
+.idc-back .band-top { height: 4.6mm; }
+.idc-back .line { left: 5mm; font-size: 6.4pt; font-weight: bold; white-space: nowrap; width: 62mm; overflow: hidden; }
+.idc-back .box { left: 2.6mm; top: 16.6mm; width: 61mm; height: 22.4mm; border: .35mm solid #3557a0; border-radius: 2.2mm; background: #e4e7ec; overflow: hidden; }
+.idc-back .box .shade { left: 0; width: 61mm; }
+.idc-back .box .s1 { top: 0; height: 4.6mm; background: #f5f6f8; }
+.idc-back .box .s2 { top: 4.6mm; height: 4.4mm; background: #eceef2; }
+.idc-back .box .bt { left: 2.4mm; top: 1.2mm; font-size: 5.4pt; font-weight: bold; text-decoration: underline; white-space: nowrap; }
+.idc-back .box .bc { top: 5.2mm; line-height: 1.3; text-transform: uppercase; white-space: normal; }
+.idc-back .qr { left: 67.2mm; top: 19.6mm; width: 16mm; height: 16mm; background: #fff; }
+.idc-back .qr img { left: 0; top: 0; width: 16mm; height: 16mm; }
 .idc-back .note { left: 6.2mm; top: 40.6mm; width: 77mm; font-size: 4.6pt; font-weight: bold; line-height: 1.5; color: #111; }
 .idc-back .note a { color: #2549a5; text-decoration: underline; }
 .idc-back .band-bottom { top: 47.6mm; height: 6.4mm; }

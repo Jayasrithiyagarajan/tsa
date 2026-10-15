@@ -174,6 +174,59 @@ final class InspectorCardService
         return $cache[$part] = 'data:image/png;base64,' . base64_encode($png);
     }
 
+    /**
+     * Fit the "Certificate of Competence" lines into the box on the back: the largest font (5.4 → 3 pt) at which
+     * every line shows without wrapping, in one column — or two columns when that allows a clearly larger font.
+     * Only if nothing fits unwrapped at 3 pt are long lines allowed to wrap.
+     * Returns ['pt' => float, 'cols' => [['left' => mm, 'width' => mm, 'lines' => string[]], …]].
+     * Mirrored in JS for the live preview on the admin card form (keep both in sync).
+     */
+    public static function fitCompetence(?string $text): array
+    {
+        $lines = array_values(array_filter(array_map('trim', preg_split('/\R/', mb_strtoupper((string) $text))), 'strlen'));
+        $height = 15.4;                                              // mm below the box title
+        $layouts = [[['left' => 2.2, 'width' => 56.6, 'lines' => $lines]]];
+        if (count($lines) > 1) {
+            [$a, $b] = array_chunk($lines, (int) ceil(count($lines) / 2));
+            $layouts[] = [['left' => 2.2, 'width' => 27.3, 'lines' => $a], ['left' => 31.5, 'width' => 27.3, 'lines' => $b]];
+        }
+        // rows a column needs at $pt (capitals ≈ 0.64 em wide), or null when $wrap is off and a line is too long
+        $rows = function (array $col, float $pt, bool $wrap): ?int {
+            $perLine = max(1, (int) floor($col['width'] / ($pt * 0.3528 * 0.64)));
+            $n = 0;
+            foreach ($col['lines'] as $l) {
+                if (!$wrap && mb_strlen($l) > $perLine) return null;
+                $n += (int) ceil(mb_strlen($l) / $perLine);
+            }
+            return $n;
+        };
+        foreach ([false, true] as $wrap) {
+            $best = null;
+            foreach ($layouts as $cols) {
+                for ($pt = 5.4; $pt >= 3.0; $pt = round($pt - 0.1, 1)) {
+                    $need = array_map(fn ($c) => $rows($c, $pt, $wrap), $cols);
+                    if (!in_array(null, $need, true) && max($need ?: [0]) * $pt * 0.3528 * 1.3 <= $height) break;
+                }
+                if ($pt < 3.0) continue;
+                if (!$best || $pt >= $best['pt'] + 0.5) $best = ['pt' => $pt, 'cols' => $cols];
+            }
+            if ($best) break;
+        }
+        $best ??= ['pt' => 3.0, 'cols' => end($layouts)];
+        // each line gets its own top (mm): Dompdf does not honour line-height for these tiny absolutely-placed blocks
+        $lh = $best['pt'] * 0.3528 * 1.3;
+        foreach ($best['cols'] as &$col) {
+            $row = 0;
+            $col['tops'] = [];
+            foreach ($col['lines'] as $l) {
+                $col['tops'][] = round(5.2 + $row * $lh, 2);
+                $row += $rows(['width' => $col['width'], 'lines' => [$l]], $best['pt'], true);
+            }
+        }
+        unset($col);
+        return $best;
+    }
+
     /** Iqama shown on the public page with the middle digits hidden. */
     public static function maskId(?string $id): string
     {

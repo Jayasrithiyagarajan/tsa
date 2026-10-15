@@ -36,15 +36,18 @@ $rings = fn (float $x, float $y, array $radii, float $w) => implode('', array_ma
 </div>
 <?php else: ?>
 <div class="idc idc-back">
-  <?= $rings(72.5, 30, [9.5, 14.5, 19.5], 2.6) ?>
+  <?= $rings(75.2, 27.6, [9.5, 14.5, 19.5], 2.6) ?>
   <div class="band band-top"></div>
-  <span class="line" style="top:10.6mm">Job Ref: <b data-f="job_ref"><?= e($c['job_ref']) ?></b></span>
-  <span class="line" style="top:14.6mm">Certification: <b data-f="certification"><?= e($c['certification']) ?></b></span>
-  <span class="line" style="top:18.6mm">Assessor: <b data-f="assessor"><?= e($c['assessor']) ?></b></span>
-  <div class="box">
+  <span class="line" style="top:6.2mm">Job Ref: <b data-f="job_ref"><?= e($c['job_ref']) ?></b></span>
+  <span class="line" style="top:9.6mm">Certification: <b data-f="certification"><?= e($c['certification']) ?></b></span>
+  <span class="line" style="top:13mm">Assessor: <b data-f="assessor"><?= e($c['assessor']) ?></b></span>
+  <div class="box" data-f="competence">
     <span class="shade s1"></span><span class="shade s2"></span>
     <span class="bt">Certificate of Competence:</span>
-    <span class="bc" data-f="competence"><?= nl2br(e($c['competence'])) ?></span>
+    <?php $fitC = InspectorCardService::fitCompetence($c['competence']);
+    foreach ($fitC['cols'] as $col): foreach ($col['lines'] as $i => $line): ?>
+      <span class="bc" style="left:<?= $col['left'] ?>mm;top:<?= $col['tops'][$i] ?>mm;width:<?= $col['width'] ?>mm;font-size:<?= $fitC['pt'] ?>pt;line-height:1.3"><?= e($line) ?></span>
+    <?php endforeach; endforeach; ?>
   </div>
   <div class="qr"><img src="<?= $m['qr'] ?>" alt="Verify"></div>
   <div class="note">The person is Certified for the job mentioned above, to verify this card please scan the QR code or Through E-Mails:<?php
