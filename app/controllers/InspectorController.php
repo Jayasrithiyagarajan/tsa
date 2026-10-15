@@ -150,4 +150,29 @@ final class InspectorController extends Controller
         unset($r);
         $this->view('inspector/history', compact('rows', 'meta') + ['title' => 'Submitted & Approved', 'crumbs' => ['Submitted & Approved' => null]]);
     }
+
+    /**
+     * The inspector's ID card — only once the admin has marked the printed card as handed over —
+     * plus the ID photo the inspector uploads for the next card.
+     */
+    public function card(): void
+    {
+        $card = InspectorCardService::find("c.user_id = ? AND c.handed_over_at IS NOT NULL ORDER BY c.status = 'active' DESC, c.handed_over_at DESC", [Auth::id()]);
+        $this->view('inspector/card', [
+            'm' => $card ? InspectorCardService::model($card) : null,
+            'photo' => InspectorCardService::profilePhoto(Auth::id()),
+            'pending' => (bool) DB::value("SELECT id FROM inspector_cards WHERE user_id = ? AND status = 'active' AND handed_over_at IS NULL LIMIT 1", [Auth::id()]),
+            'title' => 'My ID Card', 'crumbs' => ['My ID Card' => null],
+        ]);
+    }
+
+    public function cardPhoto(): void
+    {
+        $this->attempt(function () {
+            $f = store_upload($_FILES['photo'] ?? [], 'id-photos', ['image/jpeg', 'image/png', 'image/webp']);
+            InspectorCardService::setProfilePhoto(Auth::id(), $f['path']);
+            Audit::log('id_photo.uploaded', 'user', Auth::id());
+            Notify::role('admin', 'ID photo uploaded', Auth::user()['name'] . ' uploaded a new ID card photo.', 'admin/users/' . Auth::id());
+        }, 'Photo uploaded. The administrator will use it for your ID card.', 'inspector/card');
+    }
 }

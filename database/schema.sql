@@ -7,7 +7,7 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS audit_logs, notifications, settings, number_sequences,
+DROP TABLE IF EXISTS audit_logs, notifications, settings, number_sequences, inspector_cards,
   attachments, stickers, qc_reviews, certificates, checklist_responses, checklists,
   job_assignments, sub_jobs, jobs, service_request_items, service_requests,
   equipment, certificate_templates, checklist_template_items, checklist_templates,
@@ -73,6 +73,7 @@ CREATE TABLE inspector_profiles (
   cert_no         VARCHAR(60) NULL,
   cert_expiry     DATE NULL,
   base_location   VARCHAR(80) NULL,
+  photo_path      VARCHAR(255) NULL,                     -- ID photo, uploaded by the inspector or admin
   CONSTRAINT fk_ip_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -368,6 +369,39 @@ CREATE TABLE stickers (
   CONSTRAINT fk_st_eq FOREIGN KEY (equipment_id) REFERENCES equipment(id) ON DELETE SET NULL,
   CONSTRAINT fk_st_cert FOREIGN KEY (certificate_id) REFERENCES certificates(id) ON DELETE SET NULL,
   CONSTRAINT fk_st_insp FOREIGN KEY (inspector_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Inspector ID card (CR80, printed front + back) shown to clients on site. The QR on the back opens
+-- /verify/card/{token}, which shows the card online with a valid / expired / revoked message.
+-- A card is valid (and visible in the inspector portal) only once it is physically handed over;
+-- handing over a new card revokes the holder's previous active one.
+CREATE TABLE inspector_cards (
+  id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id         INT UNSIGNED NOT NULL,
+  card_no         VARCHAR(40)  NOT NULL UNIQUE,            -- printed as "ID CODE"
+  verify_token    CHAR(32)     NOT NULL UNIQUE,
+  holder_name     VARCHAR(120) NOT NULL,
+  id_number       VARCHAR(30)  NULL,                       -- Iqama / national ID
+  company         VARCHAR(120) NOT NULL,
+  title           VARCHAR(80)  NOT NULL,                   -- bottom band of the front, e.g. LIFTING EQUIPMENT INSPECTOR
+  photo_path      VARCHAR(255) NULL,
+  job_ref         VARCHAR(60)  NULL,
+  certification   VARCHAR(120) NULL,
+  assessor        VARCHAR(120) NULL,
+  competence      TEXT         NULL,                       -- "Certificate of Competence" box, one line per item
+  issue_date      DATE         NOT NULL,
+  expiry_date     DATE         NOT NULL,
+  status          ENUM('active','revoked') NOT NULL DEFAULT 'active',
+  revoked_reason  VARCHAR(255) NULL,
+  handed_over_at  DATETIME NULL,                           -- NULL = printed, not yet given to the inspector
+  handed_over_by  INT UNSIGNED NULL,
+  created_by      INT UNSIGNED NULL,
+  created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_ic_user (user_id, status),
+  CONSTRAINT fk_ic_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ic_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ic_hand FOREIGN KEY (handed_over_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE attachments (

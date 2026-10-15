@@ -165,7 +165,8 @@ final class DocumentService
         return $cache[$key];
     }
 
-    public static function pdf(string $html, string $filename, bool $download): void
+    /** @param string|float[] $paper Dompdf paper name or [0, 0, width_pt, height_pt] */
+    public static function pdf(string $html, string $filename, bool $download, $paper = 'A4'): void
     {
         // The forms are set in Calibri. Use a project copy of Carlito (metric-compatible, OFL) if present in
         // storage/fonts, otherwise the Calibri installed on a Windows host; Dompdf falls back to DejaVu Sans.
@@ -186,7 +187,7 @@ final class DocumentService
             $fm->registerFont(['family' => 'Calibri', 'weight' => 'bold', 'style' => 'normal'], $fontSet[1]);
         }
         $pdf->loadHtml($html, 'UTF-8');
-        $pdf->setPaper('A4', 'portrait');
+        $pdf->setPaper($paper, 'portrait');
         $pdf->render();
         $pdf->stream($filename, ['Attachment' => $download]);
         exit;

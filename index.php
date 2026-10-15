@@ -14,6 +14,7 @@ $r->get('/request',               [PublicController::class, 'requestForm']);
 $r->post('/request',              [PublicController::class, 'requestSubmit']);
 $r->get('/request/thanks/{no}',   [PublicController::class, 'requestThanks']);
 $r->get('/verify',                [PublicController::class, 'verify']);
+$r->get('/verify/card/{token}',   [PublicController::class, 'verifyCard']);
 $r->get('/verify/{token}',        [PublicController::class, 'verifyToken']);
 $r->get('/login',                 [AuthController::class, 'form']);
 $r->post('/login',                [AuthController::class, 'login']);
@@ -31,6 +32,7 @@ $r->get('/documents/checklist/{id}',        [DocumentController::class, 'checkli
 $r->get('/documents/certificate/{id}',      [DocumentController::class, 'certificate'], 'auth');
 $r->get('/documents/sticker/{id}',          [DocumentController::class, 'sticker'], ['admin', 'inspector', 'qc']);
 $r->get('/documents/attachment/{id}',       [DocumentController::class, 'attachment'], 'auth');
+$r->get('/id-photo/{id}',                   [AdminCardController::class, 'userPhoto'], ['admin', 'inspector', 'qc']);
 $r->get('/documents/signature/{id}',        [DocumentController::class, 'signature'], 'auth');
 
 // ---------------------------------------------------------------- admin portal
@@ -83,6 +85,17 @@ $r->post('/admin/certificates/{id}/revoke', [AdminDocumentController::class, 're
 $r->get('/admin/stickers',                  [AdminDocumentController::class, 'stickers'], $A);
 $r->post('/admin/stickers',                 [AdminDocumentController::class, 'addStickers'], $A);
 $r->post('/admin/stickers/{id}/void',       [AdminDocumentController::class, 'voidSticker'], $A);
+$r->get('/admin/cards',                     [AdminCardController::class, 'index'], $A);
+$r->get('/admin/cards/new',                 [AdminCardController::class, 'create'], $A);
+$r->post('/admin/cards',                    [AdminCardController::class, 'store'], $A);
+$r->post('/admin/cards/settings',           [AdminCardController::class, 'settings'], $A);
+$r->get('/admin/cards/validate',            [AdminCardController::class, 'validate'], $A);
+$r->get('/admin/cards/{id}',                [AdminCardController::class, 'edit'], $A);
+$r->post('/admin/cards/{id}',               [AdminCardController::class, 'update'], $A);
+$r->post('/admin/cards/{id}/revoke',        [AdminCardController::class, 'revoke'], $A);
+$r->post('/admin/cards/{id}/handover',      [AdminCardController::class, 'handover'], $A);
+$r->get('/admin/cards/{id}/print',          [AdminCardController::class, 'print'], $A);
+$r->get('/admin/cards/{id}/photo',          [AdminCardController::class, 'photo'], $A);
 $r->get('/admin/audit',                     [AdminDocumentController::class, 'audit'], $A);
 $r->get('/admin/settings',                  [AdminDocumentController::class, 'settings'], $A);
 $r->post('/admin/settings',                 [AdminDocumentController::class, 'saveSettings'], $A);
@@ -100,6 +113,8 @@ $r->post('/inspector/subjobs/{id}/upload',     [InspectorController::class, 'upl
 $r->post('/inspector/attachments/{id}/delete', [InspectorController::class, 'deleteAttachment'], ['inspector', 'admin']);
 $r->post('/inspector/subjobs/{id}/submit',     [InspectorController::class, 'submit'], ['inspector', 'admin']);
 $r->get('/inspector/history',                  [InspectorController::class, 'history'], $I);
+$r->get('/inspector/card',                     [InspectorController::class, 'card'], $I);
+$r->post('/inspector/card/photo',              [InspectorController::class, 'cardPhoto'], $I);
 $r->get('/inspector/kpi',                      [KpiController::class, 'inspector'], $I);
 
 // ---------------------------------------------------------------- QC portal

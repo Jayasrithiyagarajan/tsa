@@ -42,6 +42,12 @@ All seeded accounts share the password defined as `DEMO_PASSWORD` in `database/i
 KPI scorecards: **Admin → KPI & Reports**, **Inspector → My KPIs**, **QC → QC KPIs**, each with *Export to Excel*; all list pages export to Excel or CSV.
 The installer also loads 6 months of demo history for the KPIs (`database/demo_history.php`; second QC reviewer nadia.farouk@tuveast.test).
 
+Inspector ID cards (**Admin → ID Card System**): *Issue Card* creates a CR80 card (front and back print as separate
+pages, or both for a duplex card printer); after the printed card is given to the inspector, *Mark as handed over*
+makes it valid, shows it under the inspector's **My ID Card** and revokes their previous card. *Validate Card* looks a
+card up by ID code, QR link or camera scan. The QR on the back opens `/verify/card/{token}` with a valid / not yet
+issued / expired / revoked message. ID photos can be uploaded by the inspector (My ID Card) or the admin (user page or card).
+
 The demo data contains jobs in every state: approved with issued certificates, awaiting QC, returned for rework,
 in progress, assigned, and awaiting assignment, plus website / email / phone / portal requests.
 
