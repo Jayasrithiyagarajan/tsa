@@ -1,7 +1,7 @@
 <?php
 /** Certificate / report in the exact F-7.5.1-06 pattern. @var array $m  @var ?array $toolbar */
 $tpl = $m['template'];
-if (in_array($tpl['layout'] ?? '', ['ec', 'ut', 'sp', 'sc', 'es', 'ss'], true)) { echo View::partial('documents/certificate_' . $tpl['layout'], ['m' => $m, 'toolbar' => $toolbar ?? null]); return; }
+if (in_array($tpl['layout'] ?? '', ['ec', 'ut', 'sp', 'sc', 'es', 'ss', 'li', 'df'], true)) { echo View::partial('documents/certificate_' . $tpl['layout'], ['m' => $m, 'toolbar' => $toolbar ?? null]); return; }
 $c = $m['cert'];
 $brand = DocumentService::brand();
 
@@ -17,7 +17,10 @@ foreach (array_chunk($m['fields'], 2) as $pair) {
 }
 $grid .= '</table>';
 
-$img = '<div class="imgarea">';
+$pt = ($tpl['layout'] ?? '') === 'pt';   // F-7.5.1-07 (PT) differs slightly in spacing from F-7.5.1-06 (MPI)
+$gridRows = (int) ceil(count($m['fields']) / 2);
+$imgH = max(40, 60 + (10 - $gridRows) * ($pt ? 10.8 : 11.67)) - 4.4 - $gridRows * 0.09;   // outer height of the image box follows the number of header rows (10 rows = 60 mm, 7 rows = 95 mm)
+$img = '<div class="imgarea" style="height:' . round($imgH, 1) . 'mm">';
 foreach ($m['photos'] as $p) {
     $img .= '<img src="' . $p['src'] . '" alt="">';
 }
@@ -37,32 +40,36 @@ $result = '<table class="f result">' . doc_sizer(array_fill(0, $n, 188.6 / $n)) 
     . '<tr class="stmt"><td colspan="' . $n . '">' . e($c['result_statement']) . '</td></tr></table>';
 
 $notes = '';
-foreach ($m['notes'] as $line) $notes .= '<li>' . e($line) . '</li>';
+foreach ($m['notes'] as $line) $notes .= '<div class="nl"><span class="bu">&bull;</span>' . e($line) . '</div>';
 $remarks = '<table class="f remarks">' . doc_sizer([35.5, 153.1]) . '<tr><td class="l">Remarks \ Notes</td><td class="v">' . nl2br(e($c['remarks'])) . '</td></tr>'
-    . ($notes ? '<tr class="notes"><td colspan="2"><ul>' . $notes . '</ul></td></tr>' : '') . '</table>';
+    . ($notes ? '<tr class="notes"><td colspan="2">' . $notes . '</td></tr>' : '') . '</table>';
 
 $insp = $m['inspector'];
 $rev = $m['reviewer'];
 $who = fn ($p) => $p ? e($p['name'] . ($p['qualification'] ? ' - ' . $p['qualification'] : '')) : '';
 $sigImg = fn ($p, $show) => ($show && $p && $p['signature']) ? '<img class="sigimg" src="' . $p['signature'] . '" alt="">' : '';
 $signed = in_array($c['status'], ['pending_qc', 'issued'], true);
+$merged = ($tpl['layout'] ?? '') === 'mp';   // F-7.5.1-06 has one signature cell for both people, F-7.5.1-07 has one each
+$revName = $m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>';
 $sign = '<table class="f signblock">' . doc_sizer([35.5, 59, 36, 58.1])
-    . '<tr><td class="l">' . e($tpl['inspector_label']) . '</td><td>' . $who($insp) . '</td><td class="l" rowspan="2">Signature</td><td class="sigcell">' . $sigImg($insp, $signed) . '</td></tr>'
-    . '<tr><td class="l">Reviewed By:</td><td>' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td><td class="sigcell">' . $sigImg($rev, $m['issued']) . '</td></tr></table>';
+    . '<tr><td class="l">' . e($tpl['inspector_label']) . '</td><td>' . $who($insp) . '</td><td class="l" rowspan="2">Signature</td>'
+    . ($merged
+        ? '<td class="sigcell" rowspan="2">' . str_replace('class="sigimg"', 'class="sigimg two"', $sigImg($insp, $signed) . $sigImg($rev, $m['issued'])) . '</td></tr><tr><td class="l">Reviewed By:</td><td>' . $revName . '</td></tr></table>'
+        : '<td class="sigcell">' . $sigImg($insp, $signed) . '</td></tr><tr><td class="l">Reviewed By:</td><td>' . $revName . '</td><td class="sigcell">' . $sigImg($rev, $m['issued']) . '</td></tr></table>');
 
-$stamp = $m['issued'] ? '<img class="stamp" style="left:175mm; top:246mm" src="' . $brand['stamp'] . '" alt="">' : '';
+$stamp = $m['issued'] ? '<img class="stamp" style="left:178mm; top:' . ($merged ? 236 : 249) . 'mm" src="' . $brand['stamp'] . '" alt="">' : '';
 
-$body = $grid . $img . $result . $remarks . $sign;
+$body = '<div class="' . ($pt ? 'v07' : 'v06') . '"><div class="gridwrap">' . $grid . '</div>' . $img . $result . $remarks . $sign . '</div>';
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;
 
 echo View::partial('documents/frame', [
     'title'     => $tpl['title'] . ' · ' . ($c['certificate_no'] ?? ''),
     'pages'     => [[
         'body'  => $body,
-        'top'   => 39.7,
+        'top'   => 37.3,
         'left'  => 14,
         'width' => 188.6,
-        'extra' => '<div class="cert-title">' . e($tpl['title']) . '</div>' . $stamp,
+        'extra' => '<div class="cert-title t06' . ($pt ? ' v07' : '') . '">' . e($tpl['title']) . '</div>' . $stamp,
     ]],
     'sidetext'  => 'Doc Ref.  ' . $tpl['doc_ref'] . '   l   Rev. ' . $tpl['revision'] . '   l   Date: ' . $tpl['revision_date'],
     'qr'        => $m['qr'] ?? null,

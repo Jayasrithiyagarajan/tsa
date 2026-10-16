@@ -72,7 +72,7 @@ return [
         // F-7.5.1-06 · Rev. 03 · 09/Feb./23 — field order exactly as on the report
         'certificate' => [
             'code' => 'F-7.5.1-06', 'title' => 'MAGNETIC PARTICLE INSPECTION REPORT', 'doc_ref' => 'F-7.5.1-06',
-            'revision' => '03', 'revision_date' => '09/Feb./23', 'inspector_label' => 'NDT Inspector:',
+            'revision' => '03', 'revision_date' => '09/Feb./23', 'layout' => 'mp', 'inspector_label' => 'NDT Inspector:',
             'default_statement' => 'Available areas for above description were found free from any defects at the time of Inspection',
             'fields' => [
                 ['key' => 'client', 'label' => 'Client Name', 'source' => 'client.name'],
@@ -1936,7 +1936,7 @@ return [
         // F-7.5.1-07 · Rev. 03 · 09/Feb./23 — field order exactly as on the report (two label/value pairs per row)
         'certificate' => [
             'code' => 'F-7.5.1-07', 'title' => 'LIQUID PENETRANT INSPECTION REPORT', 'doc_ref' => 'F-7.5.1-07',
-            'revision' => '03', 'revision_date' => '09/Feb./23', 'inspector_label' => 'NDT Inspector:',
+            'revision' => '03', 'revision_date' => '09/Feb./23', 'layout' => 'pt', 'inspector_label' => 'NDT Inspector:',
             'default_statement' => 'Available areas for above description were found free from any defects at the time of Inspection',
             'fields' => [
                 ['key' => 'client', 'label' => 'Client Name', 'source' => 'client.name'],
@@ -2254,17 +2254,58 @@ Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States C
     ],
 
     [
+        'type' => [
+            'code' => 'DEFR', 'name' => 'Defect Report', 'category' => 'Lifting Equipment',
+            'procedure_ref' => 'TUV.LE.724.01', 'standard_ref' => 'BS ISO 20474-3-2017 / SASO ISO 20474-3', 'validity_months' => 12,
+            'requires_checklist' => 0, 'requires_certificate' => 1, 'requires_sticker' => 0,
+        ],
+        'checklist' => null,
+        // F-7.5.1-D 01 · Rev. 03 · 09/Feb./23 - defect (rejection) report: header data, one item table, result, notes, sign-off; page 2 = four photo boxes
+        'certificate' => [
+            'code' => 'F-7.5.1-D 01', 'title' => 'Defect Report', 'doc_ref' => 'F-7.5.1-D 01',
+            'revision' => '03', 'revision_date' => '09/Feb./23', 'layout' => 'df', 'inspector_label' => 'Inspector / Technician',
+            'default_statement' => 'The above-mentioned items are NOT SAFE FOR USE; hence shall be removed from service immediately.',
+            'fields' => [
+                ['key' => 'client', 'label' => 'Client Name', 'source' => 'client.name'],
+                ['key' => 'cert_no', 'label' => 'Report No.', 'source' => 'cert.certificate_no'],
+                ['key' => 'client_address', 'label' => 'Client Address', 'type' => 'text', 'required' => true],
+                ['key' => 'job_order', 'label' => 'Job Order No.', 'type' => 'text', 'required' => false],
+                ['key' => 'cert_date', 'label' => 'Date Of Certificate', 'source' => 'cert.issue_date'],
+                ['key' => 'location', 'label' => 'Inspection Location', 'source' => 'job.location'],
+                ['key' => 'insp_date', 'label' => 'Inspection Date', 'source' => 'cert.inspection_date'],
+                ['key' => 'manufacturer', 'label' => 'Manufacturer Name', 'source' => 'equipment.manufacturer'],
+                ['key' => 'ident_no', 'label' => 'Identification No.', 'source' => 'equipment.equipment_no'],
+                ['key' => 'capacity', 'label' => 'Capacity / SWL', 'source' => 'equipment.capacity'],
+                ['key' => 'insp_type', 'label' => 'Type of Inspection', 'type' => 'text', 'required' => true],
+                ['key' => 'last_exam', 'label' => 'Date of Last Examination / Load Test', 'type' => 'text', 'required' => false],
+                ['key' => 'eq_type', 'label' => 'Equipment Type', 'source' => 'equipment.description'],
+                ['key' => 'standard', 'label' => 'Applicable Standard', 'source' => 'type.standard_ref'],
+                ['key' => 'procedure', 'label' => 'Applicable Procedure', 'source' => 'type.procedure_ref'],
+                ['key' => 'item_serial', 'label' => 'Item - Serial No.', 'source' => 'equipment.serial_no'],
+                ['key' => 'item_desc', 'label' => 'Item - Description (first line bold)', 'type' => 'textarea', 'required' => true],
+                ['key' => 'item_swl', 'label' => 'Item - SWL', 'source' => 'equipment.capacity'],
+                ['key' => 'item_reason', 'label' => 'Reason of Rejection (one per line)', 'type' => 'textarea', 'required' => true],
+            ],
+            'notes' => "This Inspection Report shall not be reproduced Except in Full, Without the Written Approval of TUV East.\nInspection Results Relate Only to The Inspected Items and the liability for the samples through the inspection period only.\nThis report concerns the samples that have been inspected only. This report is null and void in the event of any alteration or modification, deletion, or addition.\nThe Client has Right during a maximum period of fifteen days from the date of issuance of this report; let us know in writing for any error that may take place in this report, also has Right to Recover Samples that Have Been Tested or remained.",
+        ],
+    ],
+
+    [
         'type' => ['code' => 'LIFN', 'name' => 'Lift Inspection (Without Permit)', 'category' => 'Lifts & Elevators', 'procedure_ref' => 'TUV.EL.706.01', 'standard_ref' => 'BS EN 81-20:2020 / BS EN 81-50:2020 / SASO M.A-161-17-07-05 Rev.01', 'validity_months' => 12, 'requires_checklist' => 0, 'requires_certificate' => 1, 'requires_sticker' => 0],
         'checklist' => null,
         'certificate' => [
-            'code' => 'F-7.5.1-01', 'title' => 'LIFT INSPECTION CERTIFICATE', 'doc_ref' => 'F-7.5.1-01', 'revision' => '01', 'revision_date' => '09/Feb./23',
+            'code' => 'F-7.5.1-01', 'title' => 'LIFT INSPECTION CERTIFICATE', 'doc_ref' => 'F-7.5.1-01', 'revision' => '01', 'revision_date' => '09/Feb./23', 'layout' => 'li',
             'inspector_label' => 'Inspector Name:',
             'default_statement' => 'The above lift was inspected and found satisfactory at the time of inspection (PASSED)',
             'fields' => [
                 ['key' => 'owner', 'label' => 'Owner', 'source' => 'client.name'],
                 ['key' => 'tenant', 'label' => 'Tenant', 'type' => 'text', 'required' => false],
+                ['key' => 'owner_ar', 'label' => 'Owner name (Arabic)', 'type' => 'text', 'required' => false],
+                ['key' => 'tenant_ar', 'label' => 'Tenant name (Arabic)', 'type' => 'text', 'required' => false],
                 ['key' => 'address', 'label' => 'Owner Address', 'type' => 'text', 'required' => true],
+                ['key' => 'address_ar', 'label' => 'Owner address (Arabic)', 'type' => 'text', 'required' => false],
                 ['key' => 'location', 'label' => 'Installation Location', 'source' => 'job.location'],
+                ['key' => 'location_ar', 'label' => 'Installation location (Arabic)', 'type' => 'text', 'required' => false],
                 ['key' => 'po', 'label' => 'Request / P.O No.', 'source' => 'job.po_no'],
                 ['key' => 'cert_no', 'label' => 'Certificate No.', 'source' => 'cert.certificate_no'],
                 ['key' => 'year', 'label' => 'Installation Year', 'source' => 'equipment.year_built'],
@@ -2280,7 +2321,7 @@ Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States C
                 ['key' => 'next_date', 'label' => 'Expiration Date', 'source' => 'cert.next_inspection_date'],
                 ['key' => 'procedure', 'label' => 'Applicable Procedure', 'source' => 'type.procedure_ref'],
             ],
-            'notes' => "- In case of any repair / replacement / substantial change made to the lift, the inspection must be carried out again.\n- This certificate must be displayed in a clear place or under glass at the lift. It permits operation of the lift until its expiry date.",
+            'notes' => "- في حاله القيام بأي إصلاح / تبديل / تغيير جوهري تم على المصعد يجب إعادة عملية الفحص مرة أخرى.\n- يجب وضع هذه الشهادة في مكان واضح أو تحت غطاء زجاجي عند المصعد, حيث هذا التقرير يجيز تشغيل المصعد حتى تاريخ إنتهاء صلاحيتها.",
         ],
     ],
 
@@ -2288,15 +2329,20 @@ Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States C
         'type' => ['code' => 'LIFP', 'name' => 'Lift Inspection (With Permit)', 'category' => 'Lifts & Elevators', 'procedure_ref' => 'TUV.EL.706.01', 'standard_ref' => 'BS EN 81-20:2020 / BS EN 81-50:2020 / SASO M.A-161-17-07-05 Rev.01', 'validity_months' => 12, 'requires_checklist' => 0, 'requires_certificate' => 1, 'requires_sticker' => 0],
         'checklist' => null,
         'certificate' => [
-            'code' => 'F-7.5.1-02', 'title' => 'LIFT INSPECTION CERTIFICATE', 'doc_ref' => 'F-7.5.1-02', 'revision' => '01', 'revision_date' => '09/Feb./23',
+            'code' => 'F-7.5.1-02', 'title' => 'LIFT INSPECTION CERTIFICATE', 'doc_ref' => 'F-7.5.1-02', 'revision' => '01', 'revision_date' => '09/Feb./23', 'layout' => 'li',
             'inspector_label' => 'Inspector Name:',
             'default_statement' => 'The above lift was inspected and found satisfactory at the time of inspection (PASSED)',
             'fields' => [
                 ['key' => 'owner', 'label' => 'Owner', 'source' => 'client.name'],
                 ['key' => 'tenant', 'label' => 'Tenant', 'type' => 'text', 'required' => false],
+                ['key' => 'owner_ar', 'label' => 'Owner name (Arabic)', 'type' => 'text', 'required' => false],
+                ['key' => 'tenant_ar', 'label' => 'Tenant name (Arabic)', 'type' => 'text', 'required' => false],
                 ['key' => 'address', 'label' => 'Owner Address', 'type' => 'text', 'required' => true],
+                ['key' => 'address_ar', 'label' => 'Owner address (Arabic)', 'type' => 'text', 'required' => false],
                 ['key' => 'location', 'label' => 'Installation Location', 'source' => 'job.location'],
+                ['key' => 'location_ar', 'label' => 'Installation location (Arabic)', 'type' => 'text', 'required' => false],
                 ['key' => 'permit_no', 'label' => 'Permit No.', 'type' => 'text', 'required' => true],
+                ['key' => 'permit_ar', 'label' => 'Permit No. (Arabic form)', 'type' => 'text', 'required' => false],
                 ['key' => 'cert_no', 'label' => 'Certificate No.', 'source' => 'cert.certificate_no'],
                 ['key' => 'year', 'label' => 'Installation Year', 'source' => 'equipment.year_built'],
                 ['key' => 'serial', 'label' => 'Lift Serial No.', 'source' => 'equipment.serial_no'],
@@ -2311,7 +2357,7 @@ Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States C
                 ['key' => 'next_date', 'label' => 'Expiration Date', 'source' => 'cert.next_inspection_date'],
                 ['key' => 'procedure', 'label' => 'Applicable Procedure', 'source' => 'type.procedure_ref'],
             ],
-            'notes' => "- In case of any repair / replacement / substantial change made to the lift, the inspection must be carried out again.\n- This certificate must be displayed in a clear place or under glass at the lift. It permits operation of the lift until its expiry date.",
+            'notes' => "- في حاله القيام بأي إصلاح / تبديل / تغيير جوهري تم على المصعد يجب إعادة عملية الفحص مرة أخرى.\n- يجب وضع هذه الشهادة في مكان واضح أو تحت غطاء زجاجي عند المصعد, حيث هذا التقرير يجيز تشغيل المصعد حتى تاريخ إنتهاء صلاحيتها.",
         ],
     ],
 
