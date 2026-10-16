@@ -2204,6 +2204,56 @@ return [
     ],
 
     [
+        'type' => [
+            'code' => 'STSR', 'name' => 'Steel Structure Inspection', 'category' => 'Lifting Equipment',
+            'procedure_ref' => 'TUV.LE.724.01', 'standard_ref' => 'AWS D1.1 / ANSI A14.2 / 29 CFR 1926 OSHA', 'validity_months' => 6,
+            'requires_checklist' => 0, 'requires_certificate' => 1, 'requires_sticker' => 0,
+        ],
+        'checklist' => null,
+        // F-7.5.1-16 · Rev. 03 · 09/Feb./23 — header data and result of the steel structure report in the certificate layout;
+        // the narrative parts (introduction, attendees, scope, activity details, conclusions) go into Remarks \ Notes
+        'certificate' => [
+            'code' => 'F-7.5.1-16', 'title' => 'STEEL STRACUTURE INSPECTION REPORT', 'doc_ref' => 'F-7.5.1-16',
+            'revision' => '03', 'revision_date' => '09/Feb./23', 'layout' => 'ss', 'inspector_label' => 'Inspection carried out by:',
+            'default_statement' => 'Reference to the examination carried out, the equipment was found satisfactory at time of inspection and safe for use',
+            'fields' => [
+                ['key' => 'client', 'label' => 'Client', 'source' => 'client.name'],
+                ['key' => 'cert_no', 'label' => 'Report No.', 'source' => 'cert.certificate_no'],
+                ['key' => 'address', 'label' => 'Address', 'type' => 'text', 'required' => true],
+                ['key' => 'insp_date', 'label' => 'Inspection Date', 'source' => 'cert.inspection_date'],
+                ['key' => 'project', 'label' => 'Project', 'type' => 'text', 'required' => true],
+                ['key' => 'location', 'label' => 'Inspection Location', 'source' => 'job.location'],
+                ['key' => 'manufacture', 'label' => 'Manufacuture', 'type' => 'text', 'required' => false],
+                ['key' => 'standard', 'label' => 'Reference Standard', 'source' => 'type.standard_ref'],
+                ['key' => 'eq_item', 'label' => 'Inspected Item', 'source' => 'equipment.description'],
+                ['key' => 'eq_tag', 'label' => 'Item / Tag No.', 'source' => 'equipment.equipment_no'],
+                ['key' => 'qty_drawing', 'label' => 'QTY / Drawing No.', 'type' => 'text', 'required' => true],
+                ['key' => 'procedure', 'label' => 'Applicable Procedure', 'source' => 'type.procedure_ref'],
+                ['key' => 'stage', 'label' => 'Stage of Inspection', 'type' => 'select', 'required' => true,
+                    'options' => ['Before Manufacturing', 'During Manufacturing', 'Final', 'Packing', 'After Installed', 'In-Service Inspection']],
+                ['key' => 'type_insp', 'label' => 'Type of Inspection', 'type' => 'select', 'required' => true,
+                    'options' => ['Pre-Inspection', 'Document and QC Record Review', 'Visual Examination/Checks', 'Witnessing Tests', 'Final Inspection']],
+                ['key' => 'type_insp2', 'label' => 'Type of Inspection (second, optional)', 'type' => 'select', 'required' => false,
+                    'options' => ['Pre-Inspection', 'Document and QC Record Review', 'Visual Examination/Checks', 'Witnessing Tests', 'Final Inspection']],
+                ['key' => 'intro', 'label' => 'Introduction', 'type' => 'textarea', 'required' => true],
+                ['key' => 'ncr_issued', 'label' => 'NCRs issued during report', 'type' => 'text', 'required' => false],
+                ['key' => 'ncr_outstanding', 'label' => 'List of outstanding NCRs', 'type' => 'text', 'required' => false],
+                ['key' => 'conclusions', 'label' => 'Conclusions and remarks (one numbered point per line)', 'type' => 'textarea', 'required' => true],
+                ['key' => 'attendees', 'label' => 'Attendees (Name | Designation | Representative per line)', 'type' => 'textarea', 'required' => true],
+                ['key' => 'scope_method', 'label' => 'Scope - inspection method', 'type' => 'text', 'required' => false],
+                ['key' => 'scope_scope', 'label' => 'Scope - scope', 'type' => 'text', 'required' => false],
+                ['key' => 'scope_remarks', 'label' => 'Scope - remarks', 'type' => 'text', 'required' => false],
+                ['key' => 'gen_desc', 'label' => 'General description (visual inspection)', 'type' => 'text', 'required' => false],
+                ['key' => 'draw_title', 'label' => 'Drawing page heading', 'type' => 'text', 'required' => false],
+                ['key' => 'activities', 'label' => 'Inspection activities detail', 'type' => 'textarea', 'required' => false],
+            ],
+            'notes' => "Structural Steel Welding Code | AWS D1.1 | American National Standard
+Ladders - Portable Metal - Safety Requirements | ANSI A14.2 | American National Standard
+Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States Code of Federal Regulations",
+        ],
+    ],
+
+    [
         'type' => ['code' => 'LIFN', 'name' => 'Lift Inspection (Without Permit)', 'category' => 'Lifts & Elevators', 'procedure_ref' => 'TUV.EL.706.01', 'standard_ref' => 'BS EN 81-20:2020 / BS EN 81-50:2020 / SASO M.A-161-17-07-05 Rev.01', 'validity_months' => 12, 'requires_checklist' => 0, 'requires_certificate' => 1, 'requires_sticker' => 0],
         'checklist' => null,
         'certificate' => [

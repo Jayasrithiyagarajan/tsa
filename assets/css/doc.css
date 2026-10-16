@@ -280,3 +280,9 @@ table.f.es tr.h175 td { height: 17.5mm; }
 .stk-void { width: 100mm; margin: 10mm auto -8mm; text-align: center; color: #c62828; font: bold 11pt Arial, sans-serif; letter-spacing: .5mm; }
 @media screen { body.doc.preview .stk-sheet, body.doc.preview .stk-page { margin: 0 auto 8mm; box-shadow: 0 2px 12px rgba(0,0,0,.25); background: #fff; } }
 @media print { body.doc.preview .stk-sheet, body.doc.preview .stk-page { margin: 0; box-shadow: none; } }
+
+/* Steel structure report (layout ss): two drawing pages, 4 x 4 photo grids */
+table.f.sc-ph.ss td { height: 50mm; padding: 1mm; }
+table.f.sc-ph.ss.last td { height: 40mm; }
+table.f.sc-ph.ss img { max-width: 44mm; max-height: 46mm; }
+table.f.sc-ph.ss.last img { max-width: 44mm; max-height: 36mm; }
