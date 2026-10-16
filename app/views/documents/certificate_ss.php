@@ -8,7 +8,7 @@ $fv = [];
 foreach ($m['fields'] as $f) $fv[$f['key']] = (string) ($f['value'] ?? '');
 $v = fn ($k) => e($fv[$k] ?? '');
 $tx = fn ($k) => nl2br(e($fv[$k] ?? ''));
-$lines = fn ($k) => array_values(array_filter(array_map('trim', preg_split('/\R/', $fv[$k] ?? '')), fn ($l) => $l !== ''));
+$lines = fn ($k) => array_values(array_filter(array_map('trim', preg_split('/\R/u', $fv[$k] ?? '')), fn ($l) => $l !== ''));
 $box = fn ($on, $label) => '<span class="radio">' . ($on ? '&#9746;' : '&#9744;') . '</span> ' . e($label);
 
 $result = (string) ($c['result'] ?? '');

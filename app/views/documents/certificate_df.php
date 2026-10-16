@@ -7,7 +7,7 @@ $brand = DocumentService::brand();
 $fv = [];
 foreach ($m['fields'] as $f) $fv[$f['key']] = (string) ($f['value'] ?? '');
 $v = fn ($k) => e($fv[$k] ?? '');
-$lines = fn ($k) => array_values(array_filter(array_map('trim', preg_split('/\R/', $fv[$k] ?? '')), fn ($l) => $l !== ''));
+$lines = fn ($k) => array_values(array_filter(array_map('trim', preg_split('/\R/u', $fv[$k] ?? '')), fn ($l) => $l !== ''));
 
 // ---- header grid (label / value, two pairs per row)
 $pairs = [
