@@ -62,7 +62,10 @@ final class InspectionService
 
             $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ?', [$subJobId]);
             if ($sj['requires_certificate'] && !$cert) {
-                $tpl = self::activeCertificateTemplate((int) $sj['inspection_type_id']);
+                $tpl = !empty($sj['cert_template_id'])
+                    ? DB::one('SELECT * FROM certificate_templates WHERE id = ? AND is_active = 1', [$sj['cert_template_id']])
+                    : null;
+                $tpl = $tpl ?? self::activeCertificateTemplate((int) $sj['inspection_type_id']);
                 $today = date('Y-m-d');
                 DB::insert('certificates', [
                     'sub_job_id'           => $subJobId,

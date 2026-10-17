@@ -31,15 +31,65 @@ final class InspectorController extends Controller
             $jobs[$s['job_id']]['job'] = $s;
             $jobs[$s['job_id']]['subs'][] = $s;
         }
-        $this->view('inspector/jobs', compact('jobs', 'filter') + ['title' => 'Assigned Jobs', 'crumbs' => ['Assigned Jobs' => null]]);
+        // also include jobs assigned to me but with no sub-jobs yet
+        $myJobs = DB::all("SELECT j.*, c.name client_name FROM jobs j JOIN clients c ON c.id = j.client_id
+                           WHERE j.lead_inspector_id = ? AND j.status NOT IN ('completed','cancelled')
+                           AND NOT EXISTS (SELECT 1 FROM sub_jobs s WHERE s.job_id = j.id AND s.inspector_id = ?)
+                           ORDER BY j.scheduled_date IS NULL, j.scheduled_date, j.id", [Auth::id(), Auth::id()]);
+        $this->view('inspector/jobs', compact('jobs', 'filter', 'myJobs') + ['title' => 'Assigned Jobs', 'crumbs' => ['Assigned Jobs' => null]]);
     }
 
     public function job(string $id): void
     {
-        $subs = DB::all(JobService::SUBJOB_SQL . ' WHERE sj.job_id = ? AND sj.inspector_id = ? ORDER BY sj.seq', [(int) $id, Auth::id()]);
-        if (!$subs) $this->forbid();
         $job = DB::one('SELECT j.*, c.name client_name, c.contact_person, c.phone client_phone FROM jobs j JOIN clients c ON c.id = j.client_id WHERE j.id = ?', [(int) $id]);
+        if (!$job) $this->notFound();
+        // inspector must be the lead inspector or have at least one sub-job on this job
+        $hasAccess = (int) $job['lead_inspector_id'] === Auth::id()
+            || DB::value('SELECT id FROM sub_jobs WHERE job_id = ? AND inspector_id = ? LIMIT 1', [(int) $id, Auth::id()]);
+        if (!$hasAccess) $this->forbid();
+        $subs = DB::all(JobService::SUBJOB_SQL . ' WHERE sj.job_id = ? AND sj.inspector_id = ? ORDER BY sj.seq', [(int) $id, Auth::id()]);
         $this->view('inspector/job', compact('job', 'subs') + ['title' => $job['job_no'], 'crumbs' => ['Assigned Jobs' => 'inspector/jobs', $job['job_no'] => null]]);
+    }
+
+    /** Show form to add a new sub-job to an assigned job. */
+    public function createSubJob(string $id): void
+    {
+        $job = DB::one('SELECT j.*, c.name client_name FROM jobs j JOIN clients c ON c.id = j.client_id WHERE j.id = ?', [(int) $id]);
+        if (!$job) $this->notFound();
+        if ((int) $job['lead_inspector_id'] !== Auth::id()) $this->forbid();
+        if (in_array($job['status'], ['completed', 'cancelled'], true)) {
+            flash('error', 'Cannot add sub-jobs to a ' . Workflow::label($job['status']) . ' job.');
+            redirect('inspector/jobs/' . $id);
+        }
+        $this->view('inspector/subjob_form', [
+            'job'           => $job,
+            'types'         => DB::all("SELECT id, code, name FROM inspection_types WHERE status='active' ORDER BY name"),
+            'equipment'     => DB::all('SELECT id, description, equipment_no FROM equipment WHERE client_id = ? ORDER BY description', [$job['client_id']]),
+            'certTemplates' => DB::all("SELECT id, title, doc_ref FROM certificate_templates WHERE is_active = 1 ORDER BY title, version DESC"),
+            'title'         => 'Add Sub-job',
+            'crumbs'        => ['Assigned Jobs' => 'inspector/jobs', $job['job_no'] => 'inspector/jobs/' . $id, 'Add sub-job' => null],
+        ]);
+    }
+
+    /** Store one or more sub-jobs created by the inspector. */
+    public function storeSubJob(string $id): void
+    {
+        $this->attempt(function () use ($id) {
+            $job = DB::one('SELECT * FROM jobs WHERE id = ?', [(int) $id]);
+            if (!$job) throw new DomainException('Job not found.');
+            if ((int) $job['lead_inspector_id'] !== Auth::id()) throw new DomainException('You are not assigned to this job.');
+            if (in_array($job['status'], ['completed', 'cancelled'], true)) {
+                throw new DomainException('Cannot add sub-jobs to a ' . Workflow::label($job['status']) . ' job.');
+            }
+            $qty = max(1, min(50, (int) input('quantity', 1)));
+            for ($i = 0; $i < $qty; $i++) {
+                $sjId = JobService::addSubJob((int) $id, $_POST);
+                // auto-assign to self
+                JobService::assign([$sjId], Auth::id(), 'Created by inspector');
+            }
+            flash('success', $qty . ' sub-job(s) added and assigned to you.');
+            return 'inspector/jobs/' . $id;
+        });
     }
 
     public function subJob(string $id): void

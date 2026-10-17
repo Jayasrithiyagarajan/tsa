@@ -34,8 +34,8 @@ $readOnly = !Auth::isSuper();          // only a Super Admin creates or edits us
           <div class="field col-4"><label>Certificate No.</label><input class="input" name="cert_no" value="<?= e($v('cert_no')) ?>"></div>
           <div class="field col-4"><label>Qualification expiry</label><input class="input" type="date" name="cert_expiry" value="<?= e($v('cert_expiry')) ?>"></div>
           <div class="field col-4"><label>Base location</label><input class="input" name="base_location" value="<?= e($v('base_location')) ?>"></div>
-          <div class="col-12" data-role-only="inspector"><label class="label">Qualified to inspect</label>
-            <div class="row wrap" style="gap:8px 18px">
+          <div class="col-12" data-role-only="inspector"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><label class="label" style="margin:0">Qualified to inspect</label><span style="font-size:.8rem"><a href="#" id="skills-select-all" style="color:var(--accent)">Select all</a> · <a href="#" id="skills-deselect-all" style="color:var(--muted)">Deselect all</a></span></div>
+            <div class="row wrap" style="gap:8px 18px" id="skills-list">
               <?php foreach ($types as $t): ?><label class="check"><input type="checkbox" name="skills[]" value="<?= $t['id'] ?>"<?= checked(in_array((int) $t['id'], array_map('intval', (array) $oldSkills), true)) ?>> <?= e($t['name']) ?> <span class="pill"><?= e($t['code']) ?></span></label><?php endforeach; ?>
             </div><div class="help">The assignment screens only allow these inspection types for this inspector.</div></div>
         </div></div></div>
@@ -74,5 +74,12 @@ $readOnly = !Auth::isSuper();          // only a Super Admin creates or edits us
   const sel = document.getElementById('role-select');
   const apply = () => document.querySelectorAll('[data-role-only]').forEach((el) => { el.hidden = !el.dataset.roleOnly.split(' ').includes(sel.value); });
   sel.addEventListener('change', apply); apply();
+
+  const list = document.getElementById('skills-list');
+  const boxes = () => list ? list.querySelectorAll('input[type="checkbox"]') : [];
+  const sa = document.getElementById('skills-select-all');
+  const da = document.getElementById('skills-deselect-all');
+  if (sa) sa.addEventListener('click', (e) => { e.preventDefault(); boxes().forEach((cb) => { cb.checked = true; }); });
+  if (da) da.addEventListener('click', (e) => { e.preventDefault(); boxes().forEach((cb) => { cb.checked = false; }); });
 })();
 </script>

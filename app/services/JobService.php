@@ -89,6 +89,12 @@ final class JobService
                     'location'           => $job['location'],
                 ]);
             }
+            // Optional cert template override: any active template is valid
+            $certTemplateId = !empty($sj['cert_template_id']) ? (int) $sj['cert_template_id'] : null;
+            if ($certTemplateId) {
+                $valid = DB::value('SELECT id FROM certificate_templates WHERE id = ? AND is_active = 1', [$certTemplateId]);
+                if (!$valid) $certTemplateId = null;
+            }
             $seq = (int) DB::value('SELECT COALESCE(MAX(seq),0)+1 FROM sub_jobs WHERE job_id = ?', [$jobId]);
             $id = DB::insert('sub_jobs', [
                 'job_id'             => $jobId,
@@ -96,6 +102,7 @@ final class JobService
                 'sub_job_no'         => $job['job_no'] . '.' . $seq,
                 'inspection_type_id' => $typeId,
                 'equipment_id'       => $equipmentId,
+                'cert_template_id'   => $certTemplateId,
                 'scheduled_date'     => nullable($sj['scheduled_date'] ?? null) ?? $job['scheduled_date'],
             ]);
             Audit::log('subjob.created', 'sub_job', $id, ['job_id' => $jobId, 'seq' => $seq]);

@@ -112,6 +112,8 @@ $r->post('/admin/settings',                 [AdminDocumentController::class, 'sa
 $r->get('/inspector',                          [InspectorController::class, 'dashboard'], $I);
 $r->get('/inspector/jobs',                     [InspectorController::class, 'jobs'], $I);
 $r->get('/inspector/jobs/{id}',                [InspectorController::class, 'job'], $I);
+$r->get('/inspector/jobs/{id}/subjobs/new',    [InspectorController::class, 'createSubJob'], $I);
+$r->post('/inspector/jobs/{id}/subjobs',       [InspectorController::class, 'storeSubJob'], $I);
 $r->get('/inspector/subjobs/{id}',             [InspectorController::class, 'subJob'], ['inspector', 'admin']);
 $r->post('/inspector/subjobs/{id}/start',      [InspectorController::class, 'start'], ['inspector', 'admin']);
 $r->post('/inspector/subjobs/{id}/checklist',  [InspectorController::class, 'saveChecklist'], ['inspector', 'admin']);

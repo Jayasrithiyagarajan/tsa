@@ -43,8 +43,7 @@ final class AdminJobController extends Controller
     {
         $this->view('admin/jobs/form', [
             'title' => 'New Job', 'crumbs' => ['Jobs & Sub-jobs' => 'admin/jobs', 'New job' => null],
-            'request' => null, 'items' => [],
-            'types' => DB::all("SELECT id, code, name FROM inspection_types WHERE status='active' ORDER BY name"),
+            'request' => null,
             'clients' => DB::all("SELECT id, code, name FROM clients WHERE status='active' ORDER BY name"),
             'inspectors' => JobService::inspectorsFor(),
             'action' => url('admin/jobs'),
@@ -54,10 +53,10 @@ final class AdminJobController extends Controller
     public function store(): void
     {
         $this->attempt(function () {
-            $subs = array_values(array_filter($_POST['subjobs'] ?? [], fn ($s) => is_array($s) && !empty($s['inspection_type_id'])));
-            if (!$subs) throw new DomainException('Add at least one sub-job (inspection type + equipment).');
-            $id = JobService::create($_POST, $subs);
-            flash('success', 'Job ' . DB::value('SELECT job_no FROM jobs WHERE id = ?', [$id]) . ' created.');
+            if (empty($_POST['client_id'])) throw new DomainException('Client is required.');
+            if (trim($_POST['title'] ?? '') === '') throw new DomainException('Job title is required.');
+            $id = JobService::create($_POST, []);
+            flash('success', 'Job ' . DB::value('SELECT job_no FROM jobs WHERE id = ?', [$id]) . ' created. The assigned inspector can now add sub-jobs.');
             return 'admin/jobs/' . $id;
         });
     }
