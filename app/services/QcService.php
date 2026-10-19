@@ -12,14 +12,15 @@ final class QcService
             if ((int) $sj['inspector_id'] === Auth::id()) {
                 throw new DomainException('Four-eyes rule: you cannot approve an inspection you performed.');
             }
-            $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ?', [$subJobId]);
+            $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ? ORDER BY seq LIMIT 1', [$subJobId]);
             DB::update('sub_jobs', ['status' => 'approved', 'approved_at' => now(), 'result' => $cert['result'] ?? $sj['result']], 'id = ?', [$subJobId]);
             DB::insert('qc_reviews', ['sub_job_id' => $subJobId, 'reviewer_id' => Auth::id(), 'decision' => 'approved', 'comments' => nullable($comments)]);
 
             if ($cert) {
+                // issue every page of a multi-page certificate, not just page 1
                 DB::update('certificates', [
                     'status' => 'issued', 'reviewer_id' => Auth::id(), 'issue_date' => date('Y-m-d'),
-                ], 'id = ?', [$cert['id']]);
+                ], 'sub_job_id = ?', [$subJobId]);
                 Audit::log('certificate.issued', 'certificate', (int) $cert['id'], ['certificate_no' => $cert['certificate_no']]);
                 if ($sj['equipment_id'] && $cert['result'] !== 'rejected') {
                     DB::update('equipment', [

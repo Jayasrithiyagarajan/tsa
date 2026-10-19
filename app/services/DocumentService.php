@@ -71,10 +71,10 @@ final class DocumentService
         ];
     }
 
-    public static function certificateModel(int $subJobId): ?array
+    public static function certificateModel(int $subJobId, int $seq = 1): ?array
     {
         $sj = JobService::subJob($subJobId);
-        $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ?', [$subJobId]);
+        $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ? AND seq = ?', [$subJobId, $seq]);
         if (!$sj || !$cert || !$cert['template_id']) return null;
         $tpl = DB::one('SELECT * FROM certificate_templates WHERE id = ?', [$cert['template_id']]);
         $data = json_decode($cert['data'] ?? '{}', true) ?: [];
@@ -84,7 +84,8 @@ final class DocumentService
             $fields[] = $f;
         }
         $photoLimit = ['ec' => 12, 'sc' => 30, 'ss' => 70][$tpl['layout'] ?? ''] ?? 4;
-        $photos = DB::all("SELECT * FROM attachments WHERE sub_job_id = ? AND on_certificate = 1 AND mime LIKE 'image/%' ORDER BY id LIMIT $photoLimit", [$subJobId]);
+        // photos tagged for this page, plus untagged ones (cert_seq NULL = every page); page-specific photos print first
+        $photos = DB::all("SELECT * FROM attachments WHERE sub_job_id = ? AND on_certificate = 1 AND mime LIKE 'image/%' AND (cert_seq IS NULL OR cert_seq = ?) ORDER BY cert_seq IS NULL, id LIMIT $photoLimit", [$subJobId, $seq]);
         foreach ($photos as &$p) {
             $p['src'] = upload_data_uri($p['file_path']);
         }

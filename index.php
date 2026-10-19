@@ -117,10 +117,12 @@ $r->post('/inspector/jobs/{id}/subjobs',       [InspectorController::class, 'sto
 $r->get('/inspector/subjobs/{id}',             [InspectorController::class, 'subJob'], ['inspector', 'admin']);
 $r->post('/inspector/subjobs/{id}/start',      [InspectorController::class, 'start'], ['inspector', 'admin']);
 $r->post('/inspector/subjobs/{id}/checklist',  [InspectorController::class, 'saveChecklist'], ['inspector', 'admin']);
-$r->post('/inspector/subjobs/{id}/certificate',[InspectorController::class, 'saveCertificate'], ['inspector', 'admin']);
-$r->post('/inspector/subjobs/{id}/sticker',    [InspectorController::class, 'sticker'], ['inspector', 'admin']);
+$r->post('/inspector/subjobs/{id}/certificate',       [InspectorController::class, 'saveCertificate'],  ['inspector', 'admin']);
+$r->post('/inspector/subjobs/{id}/certificate/clone', [InspectorController::class, 'cloneCertificate'], ['inspector', 'admin']);
+$r->post('/inspector/subjobs/{id}/sticker',           [InspectorController::class, 'sticker'],           ['inspector', 'admin']);
 $r->post('/inspector/subjobs/{id}/upload',     [InspectorController::class, 'upload'], ['inspector', 'admin']);
 $r->post('/inspector/attachments/{id}/delete', [InspectorController::class, 'deleteAttachment'], ['inspector', 'admin']);
+$r->post('/inspector/attachments/{id}/page',   [InspectorController::class, 'attachmentPage'], ['inspector', 'admin']);
 $r->post('/inspector/subjobs/{id}/submit',     [InspectorController::class, 'submit'], ['inspector', 'admin']);
 $r->get('/inspector/history',                  [InspectorController::class, 'history'], $I);
 $r->get('/inspector/stickers',                 [InspectorController::class, 'stickers'], $I);

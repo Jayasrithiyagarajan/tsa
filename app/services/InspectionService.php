@@ -60,7 +60,7 @@ final class InspectionService
                 DB::update('checklists', ['status' => 'draft'], 'sub_job_id = ?', [$subJobId]);
             }
 
-            $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ?', [$subJobId]);
+            $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ? AND seq = 1', [$subJobId]);
             if ($sj['requires_certificate'] && !$cert) {
                 $tpl = !empty($sj['cert_template_id'])
                     ? DB::one('SELECT * FROM certificate_templates WHERE id = ? AND is_active = 1', [$sj['cert_template_id']])
@@ -69,6 +69,7 @@ final class InspectionService
                 $today = date('Y-m-d');
                 DB::insert('certificates', [
                     'sub_job_id'           => $subJobId,
+                    'seq'                  => 1,
                     'template_id'          => $tpl['id'] ?? null,
                     'source'               => $tpl ? 'generated' : 'uploaded',
                     'certificate_no'       => Numbering::certificate($sj),
@@ -171,15 +172,15 @@ final class InspectionService
         return array_map('intval', $r);
     }
 
-    public static function saveCertificate(int $subJobId, array $in): void
+    public static function saveCertificate(int $subJobId, array $in, int $seq = 1): void
     {
-        DB::tx(function () use ($subJobId, $in) {
+        DB::tx(function () use ($subJobId, $in, $seq) {
             $sj = JobService::subJob($subJobId);
             if (!$sj) throw new DomainException('Sub-job not found.');
             self::authorizeWork($sj);
             self::assertEditable($sj);
-            $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ?', [$subJobId]);
-            if (!$cert) throw new DomainException('Certificate draft not found. Start the inspection first.');
+            $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ? AND seq = ?', [$subJobId, $seq]);
+            if (!$cert) throw new DomainException('Certificate page not found. Start the inspection first.');
             $tpl = $cert['template_id'] ? DB::one('SELECT * FROM certificate_templates WHERE id = ?', [$cert['template_id']]) : null;
 
             $data = json_decode($cert['data'] ?? '{}', true) ?: [];
@@ -204,6 +205,64 @@ final class InspectionService
             }
             DB::update('certificates', $upd, 'id = ?', [$cert['id']]);
             if (isset($upd['result'])) DB::update('sub_jobs', ['result' => $upd['result']], 'id = ?', [$subJobId]);
+        });
+    }
+
+    /**
+     * Clone the seq=1 certificate page into pages 2..N (total = $qty pages).
+     * Pages that already exist are left unchanged; new ones are created with a fresh
+     * certificate_no and verify_token but with the same data, result and dates as page 1.
+     * Passing $qty = 1 is a no-op (only removes extra pages if any existed).
+     */
+    public static function cloneCertificate(int $subJobId, int $qty): void
+    {
+        $qty = max(1, min(100, $qty));
+        DB::tx(function () use ($subJobId, $qty) {
+            $sj = JobService::subJob($subJobId);
+            if (!$sj) throw new DomainException('Sub-job not found.');
+            self::authorizeWork($sj);
+            self::assertEditable($sj);
+
+            $source = DB::one('SELECT * FROM certificates WHERE sub_job_id = ? AND seq = 1', [$subJobId]);
+            if (!$source) throw new DomainException('Certificate page 1 not found. Start the inspection first.');
+
+            // Determine which seqs already exist
+            $existing = array_column(
+                DB::all('SELECT seq FROM certificates WHERE sub_job_id = ? ORDER BY seq', [$subJobId]),
+                'seq', 'seq'
+            );
+
+            // Remove pages beyond the requested qty
+            if (count($existing) > $qty) {
+                DB::run(
+                    'DELETE FROM certificates WHERE sub_job_id = ? AND seq > ?',
+                    [$subJobId, $qty]
+                );
+            }
+
+            // Insert missing pages
+            for ($seq = 2; $seq <= $qty; $seq++) {
+                if (isset($existing[$seq])) continue;
+                // Append /P{n} to the page-1 cert number for pages 2+
+                $baseCertNo = rtrim(preg_replace('#/P\d+$#', '', (string) $source['certificate_no']), '/');
+                DB::insert('certificates', [
+                    'sub_job_id'           => $subJobId,
+                    'seq'                  => $seq,
+                    'template_id'          => $source['template_id'],
+                    'source'               => $source['source'],
+                    'certificate_no'       => $baseCertNo . '/P' . $seq,
+                    'data'                 => $source['data'],
+                    'result'               => $source['result'],
+                    'result_statement'     => $source['result_statement'],
+                    'remarks'              => $source['remarks'],
+                    'inspection_date'      => $source['inspection_date'],
+                    'next_inspection_date' => $source['next_inspection_date'],
+                    'inspector_id'         => $source['inspector_id'],
+                    'verify_token'         => bin2hex(random_bytes(16)),
+                    'status'               => $source['status'],
+                ]);
+            }
+            Audit::log('certificate.cloned', 'sub_job', $subJobId, ['qty' => $qty]);
         });
     }
 
@@ -256,23 +315,27 @@ final class InspectionService
                 if ($stats['fail_no_remark'] > 0) $issues[] = "Checklist: {$stats['fail_no_remark']} failed item(s) need a remark.";
             }
         }
-        $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ?', [$subJobId]);
+        $certs = DB::all('SELECT * FROM certificates WHERE sub_job_id = ? ORDER BY seq', [$subJobId]);
+        $cert  = $certs[0] ?? null;   // seq=1 (or legacy row without seq)
         if ($sj['requires_certificate']) {
             if (!$cert) {
                 $issues[] = 'Certificate has not been prepared.';
             } elseif ($cert['template_id']) {
                 $tpl = DB::one('SELECT * FROM certificate_templates WHERE id = ?', [$cert['template_id']]);
-                $data = json_decode($cert['data'] ?? '{}', true) ?: [];
-                $missing = [];
-                foreach (json_decode($tpl['fields'], true) ?: [] as $f) {
-                    if (empty($f['source']) && !empty($f['required']) && trim((string) ($data[$f['key']] ?? '')) === '') {
-                        $missing[] = $f['label'];
+                foreach ($certs as $idx => $c) {
+                    $label = count($certs) > 1 ? 'Certificate page ' . ($idx + 1) . ': ' : 'Certificate: ';
+                    $data  = json_decode($c['data'] ?? '{}', true) ?: [];
+                    $missing = [];
+                    foreach (json_decode($tpl['fields'], true) ?: [] as $f) {
+                        if (empty($f['source']) && !empty($f['required']) && trim((string) ($data[$f['key']] ?? '')) === '') {
+                            $missing[] = $f['label'];
+                        }
                     }
-                }
-                if ($missing) $issues[] = 'Certificate: fill in ' . implode(', ', $missing) . '.';
-                if (!$cert['result']) $issues[] = 'Certificate: select the inspection result.';
-                if ($cert['result'] === 'accepted' && $stats && $stats['fail'] > 0) {
-                    $issues[] = 'Certificate result is "Accepted" but the checklist has failed items.';
+                    if ($missing) $issues[] = $label . 'fill in ' . implode(', ', $missing) . '.';
+                    if (!$c['result']) $issues[] = $label . 'select the inspection result.';
+                    if ($c['result'] === 'accepted' && $stats && $stats['fail'] > 0) {
+                        $issues[] = $label . 'result is "Accepted" but the checklist has failed items.';
+                    }
                 }
             } elseif (!DB::value("SELECT id FROM attachments WHERE sub_job_id = ? AND kind = 'certificate_upload'", [$subJobId])) {
                 $issues[] = 'Upload the signed certificate (no template is configured for this inspection type).';
@@ -316,7 +379,7 @@ final class InspectionService
         });
     }
 
-    public static function addAttachment(int $subJobId, array $file, string $kind, ?string $caption, bool $onCertificate): int
+    public static function addAttachment(int $subJobId, array $file, string $kind, ?string $caption, bool $onCertificate, ?int $certSeq = null): int
     {
         $sj = JobService::subJob($subJobId);
         if (!$sj) throw new DomainException('Sub-job not found.');
@@ -331,9 +394,23 @@ final class InspectionService
             'sub_job_id' => $subJobId, 'kind' => $kind, 'file_path' => $f['path'], 'original_name' => $f['name'],
             'mime' => $f['mime'], 'size_bytes' => $f['size'], 'caption' => nullable($caption),
             'on_certificate' => $onCertificate && str_starts_with($f['mime'], 'image/') ? 1 : 0, 'uploaded_by' => Auth::id(),
+            'cert_seq' => $certSeq && $certSeq > 0 ? $certSeq : null,   // null = shown on every certificate page
         ]);
         Audit::log('attachment.uploaded', 'sub_job', $subJobId, ['attachment_id' => $id, 'kind' => $kind]);
         return $id;
+    }
+
+    /** Which certificate page a photo prints on (null = every page). */
+    public static function setAttachmentPage(int $attachmentId, ?int $certSeq): int
+    {
+        $a = DB::one('SELECT * FROM attachments WHERE id = ?', [$attachmentId]);
+        if (!$a) throw new DomainException('Attachment not found.');
+        $sj = JobService::subJob((int) $a['sub_job_id']);
+        self::authorizeWork($sj);
+        if (in_array($sj['status'], ['submitted', 'approved', 'cancelled'], true)) throw new DomainException('Attachments are locked.');
+        DB::update('attachments', ['cert_seq' => $certSeq && $certSeq > 0 ? $certSeq : null], 'id = ?', [$attachmentId]);
+        Audit::log('attachment.page_set', 'sub_job', (int) $a['sub_job_id'], ['attachment_id' => $attachmentId, 'cert_seq' => $certSeq]);
+        return (int) $a['sub_job_id'];
     }
 
     public static function deleteAttachment(int $attachmentId): void

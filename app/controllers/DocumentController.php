@@ -27,7 +27,7 @@ final class DocumentController extends Controller
         $pdf = !empty($_GET['pdf']) || !empty($_GET['download']);
         $html = View::partial($view, $vars + ['toolbar' => $pdf ? null : [
             'back' => $this->backUrl($sj),
-            'pdf' => '?download=1',
+            'pdf' => '?' . http_build_query(array_merge($_GET, ['download' => 1])),
             'status' => $status,
         ]]);
         if ($pdf) {
@@ -48,15 +48,44 @@ final class DocumentController extends Controller
     public function certificate(string $id): void
     {
         $sj = $this->load($id);
-        $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ?', [$sj['id']]);
+        $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ? ORDER BY seq LIMIT 1', [$sj['id']]);
         if ($cert && !$cert['template_id']) {          // uploaded certificate → stream the file
             $att = DB::one("SELECT id FROM attachments WHERE sub_job_id = ? AND kind = 'certificate_upload' ORDER BY id DESC LIMIT 1", [$sj['id']]);
             $att ? $this->attachment((string) $att['id']) : $this->notFound();
             return;
         }
-        $m = DocumentService::certificateModel((int) $sj['id']);
-        if (!$m) $this->notFound();
-        $this->output('documents/certificate', ['m' => $m], 'Certificate-' . $m['cert']['certificate_no'] . '.pdf', $sj, Workflow::label($m['cert']['status']));
+        // Multi-page certificates: ?seq=N shows one page, otherwise every page is rendered in one document.
+        $seqs = array_map('intval', array_column(DB::all('SELECT seq FROM certificates WHERE sub_job_id = ? ORDER BY seq', [$sj['id']]), 'seq'));
+        if (isset($_GET['seq'])) $seqs = array_values(array_intersect($seqs, [(int) $_GET['seq']]));
+        if (!$seqs) $this->notFound();
+        $fileNo = fn (array $c) => str_replace(['/', '\\'], '-', (string) $c['certificate_no']);
+
+        if (count($seqs) === 1) {
+            $m = DocumentService::certificateModel((int) $sj['id'], $seqs[0]);
+            if (!$m) $this->notFound();
+            $this->output('documents/certificate', ['m' => $m], 'Certificate-' . $fileNo($m['cert']) . '.pdf', $sj, Workflow::label($m['cert']['status']));
+            return;
+        }
+
+        $first = DocumentService::certificateModel((int) $sj['id'], $seqs[0]);
+        if (!$first) $this->notFound();
+        $GLOBALS['__doc_collect'] = [];
+        try {
+            foreach ($seqs as $s) {
+                $m = $s === $seqs[0] ? $first : DocumentService::certificateModel((int) $sj['id'], $s);
+                if ($m) View::partial('documents/certificate', ['m' => $m, 'toolbar' => null]);
+            }
+            $pages = $GLOBALS['__doc_collect'];
+        } finally {
+            unset($GLOBALS['__doc_collect']);
+        }
+        $this->output('documents/frame', [
+            'title'     => $first['template']['title'] . ' · ' . $first['cert']['certificate_no'] . ' (' . count($seqs) . ' certificates)',
+            'pages'     => $pages,
+            'sidetext'  => $pages[0]['sidetext'] ?? '',
+            'qr'        => null,
+            'watermark' => null,
+        ], 'Certificates-' . $fileNo($first['cert']) . '-x' . count($seqs) . '.pdf', $sj, Workflow::label($first['cert']['status']));
     }
 
     /** Digital sticker of a job: everyone who may see the job's documents (customers once QC has approved it). */

@@ -142,13 +142,54 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
     <?php if (!$cert): ?>
       <?php View::render('partials/empty', ['icon' => 'award', 'title' => 'Certificate not prepared', 'text' => 'Start the inspection to reserve the certificate number and open the draft.'], null); ?>
     <?php elseif (!$certTpl || !$cert['template_id']): ?>
-      <div class="card-b"><div class="alert alert-info"><?= icon('info') ?><div>No certificate template is configured for <?= e($sj['type_name']) ?>. Upload the signed certificate as a PDF in <b>Photos & files</b> with type “Certificate (signed PDF)”.</div></div></div>
+      <div class="card-b"><div class="alert alert-info"><?= icon('info') ?><div>No certificate template is configured for <?= e($sj['type_name']) ?>. Upload the signed certificate as a PDF in <b>Photos &amp; files</b> with type "Certificate (signed PDF)".</div></div></div>
     <?php else: ?>
+
+      <?php
+        // Multi-page: if there are multiple cert pages show a page-picker + clone UI
+        $totalPages = count($allCerts);
+        $isMultiPage = $totalPages > 1;
+      ?>
+
+      <?php if ($editable): ?>
+      <!-- Clone / page-count panel (always shown so user can set quantity) -->
+      <div class="card-b" style="padding-bottom:0">
+        <div class="row wrap" style="gap:12px;align-items:center">
+          <div class="strong small"><?= icon('copy', 'sm') ?> Certificate pages</div>
+          <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/certificate/clone') ?>" class="row" style="gap:8px;align-items:center">
+            <?= Csrf::field() ?>
+            <label class="small" for="clone-qty">Total pages needed:</label>
+            <input id="clone-qty" class="input" type="number" name="qty" min="1" max="100" value="<?= $totalPages ?>" style="width:70px">
+            <button class="btn btn-secondary btn-sm" type="submit"><?= icon('copy', 'sm') ?> Apply</button>
+          </form>
+          <span class="small muted">Fill page 1, set the quantity, then click Apply — all other pages will be cloned from page 1. You can edit each page independently.</span>
+        </div>
+        <?php if ($isMultiPage): ?>
+        <!-- Page tabs -->
+        <div class="tab-row mt-2" style="border-bottom:none">
+          <?php foreach ($allCerts as $c): ?>
+            <a class="tab-btn<?= (int)$c['seq'] === $certSeq ? ' active' : '' ?>"
+               href="<?= url('inspector/subjobs/' . $sj['id'] . '?cert_page=' . $c['seq'] . '#tab-certificate') ?>">
+              Page <?= (int)$c['seq'] ?>
+              <?php if ($c['result']): ?><span class="badge badge-<?= $c['result'] === 'accepted' ? 'green' : 'red' ?> ms-1" style="font-size:10px"><?= e(Workflow::label($c['result'])) ?></span><?php endif; ?>
+            </a>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+      </div>
+      <?php endif; ?>
+
       <form id="certificate-form" method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/certificate') ?>" data-api="<?= $editable ? url('api/v1/subjobs/' . $sj['id'] . '/certificate') : '' ?>">
         <?= Csrf::field() ?>
+        <input type="hidden" name="seq" value="<?= $certSeq ?>">
         <div class="card-b">
-          <div class="row between wrap mb-2"><div><div class="strong"><?= e($certTpl['title']) ?></div><div class="small muted">Doc Ref. <?= e($certTpl['doc_ref']) ?> · Rev. <?= e($certTpl['revision']) ?> · fields with <?= icon('lock', 'sm') ?> are filled from the job record</div></div>
-            <?php if ($editable): ?><span class="save-state" id="cf-save-state">Autosave on</span><?php endif; ?></div>
+          <div class="row between wrap mb-2">
+            <div>
+              <div class="strong"><?= e($certTpl['title']) ?><?= $isMultiPage ? ' — Page ' . $certSeq . ' of ' . $totalPages : '' ?></div>
+              <div class="small muted">Doc Ref. <?= e($certTpl['doc_ref']) ?> · Rev. <?= e($certTpl['revision']) ?> · fields with <?= icon('lock', 'sm') ?> are filled from the job record</div>
+            </div>
+            <?php if ($editable): ?><span class="save-state" id="cf-save-state">Autosave on</span><?php endif; ?>
+          </div>
           <div class="form-grid">
             <?php foreach ($fields as $f): ?>
               <div class="field <?= ($f['type'] ?? '') === 'textarea' ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && !$f['bound'] ? ' <span class="req">*</span>' : '' ?></label>
@@ -176,13 +217,19 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <div class="field col-12"><label>Remarks \ Notes</label><textarea class="textarea" name="remarks"<?= $dis ?>><?= e($cert['remarks']) ?></textarea></div>
           </div>
         </div>
-        <?php if ($editable): ?><div class="card-f"><a class="btn btn-ghost" href="<?= url('documents/certificate/' . $sj['id']) ?>" target="_blank"><?= icon('eye', 'sm') ?> Preview certificate</a><button class="btn btn-secondary">Save</button></div><?php endif; ?>
+        <?php if ($editable): ?>
+        <div class="card-f">
+          <a class="btn btn-ghost" href="<?= url('documents/certificate/' . $sj['id'] . ($certSeq > 1 ? '?seq=' . $certSeq : '')) ?>" target="_blank"><?= icon('eye', 'sm') ?> Preview<?= $isMultiPage ? ' page ' . $certSeq : ' certificate' ?></a>
+          <button class="btn btn-secondary">Save</button>
+        </div>
+        <?php endif; ?>
       </form>
     <?php endif; ?>
   </section>
   <?php endif; ?>
 
   <section class="tab-panel" id="tab-files">
+    <?php $pageCount = count($allCerts ?? []); ?>
     <div class="card-b">
       <?php if ($editable): ?>
       <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/upload') ?>" enctype="multipart/form-data" class="dropzone mb-2">
@@ -192,10 +239,16 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
           <input type="file" name="files[]" multiple accept="image/*,application/pdf" capture="environment" class="input" style="max-width:320px;padding-top:7px">
           <select class="select" name="kind" style="width:auto"><option value="photo">Photo</option><option value="document">Supporting document</option><?php if ($sj['requires_certificate']): ?><option value="certificate_upload">Certificate (signed PDF)</option><?php endif; ?></select>
           <input class="input" name="caption" placeholder="Caption (optional)" style="max-width:220px">
-          <label class="check small"><input type="checkbox" name="on_certificate" value="1"> Show on certificate</label>
+          <label class="check small"><input type="checkbox" name="on_certificate" value="1"<?= $pageCount > 1 ? ' checked' : '' ?>> Show on certificate</label>
+          <?php if ($pageCount > 1): ?>
+            <select class="select" name="cert_seq" style="width:auto" title="Which certificate page this photo prints on">
+              <option value="0">All certificate pages</option>
+              <?php foreach ($allCerts as $c): ?><option value="<?= (int) $c['seq'] ?>"<?= (int) $c['seq'] === (int) ($certSeq ?? 0) && $certSeq > 1 ? ' selected' : '' ?>>Certificate page <?= (int) $c['seq'] ?> only</option><?php endforeach; ?>
+            </select>
+          <?php endif; ?>
           <button class="btn btn-primary"><?= icon('upload', 'sm') ?> Upload</button>
         </div>
-        <div class="small mt-1">JPG, PNG, WEBP or PDF · max <?= (int) config('upload_max_mb') ?> MB each. Up to 4 photos marked “show on certificate” print in the report image area.</div>
+        <div class="small mt-1">JPG, PNG, WEBP or PDF · max <?= (int) config('upload_max_mb') ?> MB each. Up to 4 photos marked "show on certificate" print in the report image area.</div>
       </form>
       <?php endif; ?>
       <?php if ($attachments): ?>
@@ -206,6 +259,21 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
               <a href="<?= url('documents/attachment/' . $a['id']) ?>" target="_blank"><?php if ($img): ?><img src="<?= url('documents/attachment/' . $a['id']) ?>" alt="<?= e($a['caption'] ?: $a['original_name']) ?>" loading="lazy"><?php else: ?><div style="height:120px;display:grid;place-items:center;color:var(--muted)"><?= icon('file', 'lg') ?></div><?php endif; ?></a>
               <div class="ph-b"><span title="<?= e($a['original_name']) ?>"><?= e($a['caption'] ?: $a['original_name']) ?><br><span class="muted"><?= e(Workflow::label($a['kind'])) ?></span></span>
                 <?php if ($editable): ?><form method="post" action="<?= url('inspector/attachments/' . $a['id'] . '/delete') ?>" data-confirm="Delete this file?"><?= Csrf::field() ?><button class="btn btn-ghost btn-sm" title="Delete"><?= icon('trash', 'sm') ?></button></form><?php endif; ?></div>
+              <?php if ($pageCount > 1 && $a['on_certificate']): ?>
+                <div style="padding:0 10px 10px">
+                  <?php if ($editable): ?>
+                    <form method="post" action="<?= url('inspector/attachments/' . $a['id'] . '/page') ?>">
+                      <?= Csrf::field() ?>
+                      <select class="select" name="cert_seq" onchange="this.form.submit()" style="height:30px;font-size:12.5px;width:100%" title="Certificate page">
+                        <option value="0"<?= $a['cert_seq'] === null ? ' selected' : '' ?>>All certificate pages</option>
+                        <?php foreach ($allCerts as $c): ?><option value="<?= (int) $c['seq'] ?>"<?= (int) $a['cert_seq'] === (int) $c['seq'] ? ' selected' : '' ?>>Page <?= (int) $c['seq'] ?> only</option><?php endforeach; ?>
+                      </select>
+                    </form>
+                  <?php else: ?>
+                    <span class="small muted"><?= $a['cert_seq'] === null ? 'All certificate pages' : 'Certificate page ' . (int) $a['cert_seq'] ?></span>
+                  <?php endif; ?>
+                </div>
+              <?php endif; ?>
             </div>
           <?php endforeach; ?>
         </div>

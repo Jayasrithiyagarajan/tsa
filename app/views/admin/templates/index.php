@@ -37,7 +37,7 @@ foreach ($folders as $kind => $f):
     <div class="nm"><span class="pill"><?= e($t['code']) ?></span><span class="t strong" title="<?= e($t['name']) ?>"><?= e($t['name']) ?></span><?= badge($t['status']) ?></div>
     <div class="small muted"><?php if ($t[$f['id']]): ?><?= e($t[$f['lbl']]) ?><?= $kind === 'checklist' ? ' · ' . (int) $t['cl_items'] . ' items' : '' ?><?php else: ?><?= e($f['empty']) ?><?php endif; ?></div>
     <div class="acts">
-      <?php if ($t[$f['id']]): ?><a class="btn btn-ghost btn-sm" href="<?= url('admin/templates/preview/' . $kind . '/' . $t[$f['id']]) ?>" title="Preview"><?= icon('eye', 'sm') ?></a><?php endif; ?>
+      <?php if ($t[$f['id']]): ?><a class="btn btn-ghost btn-sm" href="<?= url('admin/templates/preview/' . $kind . '/' . $t[$f['id']]) ?>" target="_blank" rel="noopener" title="Preview"><?= icon('eye', 'sm') ?></a><?php endif; ?>
       <a class="btn btn-secondary btn-sm" href="<?= url('admin/templates/' . $kind . '/' . $t['id']) ?>"><?= $t[$f['id']] ? 'Edit' : 'Create' ?></a>
       <button class="btn btn-ghost btn-sm" data-modal="type-<?= $t['id'] ?>" title="Inspection type settings"><?= icon('settings', 'sm') ?></button>
     </div>

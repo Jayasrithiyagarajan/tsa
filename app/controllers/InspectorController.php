@@ -103,7 +103,15 @@ final class InspectorController extends Controller
             'SELECT i.*, r.result, r.remarks FROM checklist_template_items i LEFT JOIN checklist_responses r ON r.item_id = i.id AND r.checklist_id = ?
              WHERE i.template_id = ? ORDER BY i.sort_order', [$checklist['id'], $checklist['template_id']]) : [];
         $clStats = $checklist ? InspectionService::checklistStats((int) $checklist['id']) : null;
-        $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ?', [$sj['id']]);
+
+        // Load ALL certificate pages; $cert = page being viewed (default: seq=1)
+        $certSeq   = max(1, (int) input('cert_page', 1));
+        $allCerts  = DB::all('SELECT * FROM certificates WHERE sub_job_id = ? ORDER BY seq', [$sj['id']]);
+        $cert      = null;
+        foreach ($allCerts as $c) { if ((int)$c['seq'] === $certSeq) { $cert = $c; break; } }
+        if (!$cert) $cert = $allCerts[0] ?? null;  // fallback to first
+        $certSeq   = $cert ? (int)$cert['seq'] : 1;
+
         $certTpl = $cert && $cert['template_id'] ? DB::one('SELECT * FROM certificate_templates WHERE id = ?', [$cert['template_id']]) : InspectionService::activeCertificateTemplate((int) $sj['inspection_type_id']);
         $certData = $cert ? (json_decode($cert['data'] ?? '{}', true) ?: []) : [];
         $fields = [];
@@ -118,7 +126,7 @@ final class InspectorController extends Controller
         $reviews = DB::all('SELECT q.*, u.name reviewer FROM qc_reviews q JOIN users u ON u.id = q.reviewer_id WHERE q.sub_job_id = ? ORDER BY q.id DESC', [$sj['id']]);
         $issues = in_array($sj['status'], ['in_progress'], true) ? InspectionService::issues((int) $sj['id']) : [];
         $editable = $sj['status'] === 'in_progress';
-        $this->view('inspector/workspace', compact('sj', 'checklist', 'items', 'clStats', 'cert', 'certTpl', 'fields', 'attachments', 'sticker', 'myStickers', 'reviews', 'issues', 'editable') + [
+        $this->view('inspector/workspace', compact('sj', 'checklist', 'items', 'clStats', 'cert', 'certSeq', 'allCerts', 'certTpl', 'fields', 'attachments', 'sticker', 'myStickers', 'reviews', 'issues', 'editable') + [
             'title' => $sj['sub_job_no'],
             'crumbs' => Auth::is('admin')
                 ? ['Jobs & Sub-jobs' => 'admin/jobs', $sj['job_no'] => 'admin/jobs/' . $sj['job_id'], 'Sub-job ' . $sj['seq'] => null]
@@ -139,7 +147,19 @@ final class InspectorController extends Controller
 
     public function saveCertificate(string $id): void
     {
-        $this->attempt(fn () => InspectionService::saveCertificate((int) $id, $_POST), 'Certificate details saved.');
+        $seq = max(1, (int) ($_POST['seq'] ?? 1));
+        $this->attempt(fn () => InspectionService::saveCertificate((int) $id, $_POST, $seq), 'Certificate details saved.');
+    }
+
+    /** Clone page 1 → pages 2..N based on posted qty. */
+    public function cloneCertificate(string $id): void
+    {
+        $qty = max(1, min(100, (int) ($_POST['qty'] ?? 1)));
+        $this->attempt(
+            fn () => InspectionService::cloneCertificate((int) $id, $qty),
+            $qty > 1 ? "Generated $qty certificate pages." : 'Kept 1 certificate page.',
+            'inspector/subjobs/' . (int) $id . '#tab-certificate'
+        );
     }
 
     /** Links an allocated sticker to the sub-job. Once linked the sticker is closed and cannot be changed. */
@@ -162,13 +182,26 @@ final class InspectorController extends Controller
                 if ($files['error'][$i] === UPLOAD_ERR_NO_FILE) continue;
                 InspectionService::addAttachment((int) $id, [
                     'name' => $name, 'type' => $files['type'][$i], 'tmp_name' => $files['tmp_name'][$i], 'error' => $files['error'][$i], 'size' => $files['size'][$i],
-                ], (string) input('kind', 'photo'), input('caption'), !empty($_POST['on_certificate']));
+                ], (string) input('kind', 'photo'), input('caption'), !empty($_POST['on_certificate']), ((int) input('cert_seq', 0)) ?: null);
                 $n++;
             }
             if (!$n) throw new InvalidArgumentException('Choose at least one file.');
             flash('success', "$n file(s) uploaded.");
             return 'inspector/subjobs/' . (int) $id . '#tab-files';
         });
+    }
+
+    public function attachmentPage(string $id): void
+    {
+        $seq = ((int) ($_POST['cert_seq'] ?? 0)) ?: null;
+        try {
+            $sjId = InspectionService::setAttachmentPage((int) $id, $seq);
+            flash('success', $seq ? "Photo will print on certificate page $seq only." : 'Photo will print on every certificate page.');
+            redirect('inspector/subjobs/' . $sjId . '#tab-files');
+        } catch (DomainException $e) {
+            flash('error', $e->getMessage());
+            redirect($_SERVER['HTTP_REFERER'] ?? 'inspector');
+        }
     }
 
     public function deleteAttachment(string $id): void
