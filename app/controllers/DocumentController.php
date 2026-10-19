@@ -48,12 +48,13 @@ final class DocumentController extends Controller
     public function publicDoc(string $token, string $kind): void
     {
         if (!preg_match('/^[a-f0-9]{32}$/', $token) || !in_array($kind, ['checklist', 'certificate', 'sticker'], true)) $this->notFound();
-        $back = url('verify/' . $token);
-        $row = DB::one("SELECT c.sub_job_id FROM certificates c WHERE c.verify_token = ? AND c.status = 'issued' LIMIT 1", [$token]);
+        $back = $this->pubBack ?? url('verify/' . $token);
+        $row = DB::one("SELECT c.sub_job_id, c.seq FROM certificates c WHERE c.verify_token = ? AND c.status = 'issued' LIMIT 1", [$token]);
+        if ($row && $kind === 'certificate') $_GET['seq'] = (int) $row['seq'];   // a certificate-page QR / number → that page only
         if (!$row) {
             $row = DB::one("SELECT c.sub_job_id FROM stickers s JOIN certificates c ON c.sub_job_id = s.sub_job_id
                             WHERE s.verify_token = ? AND s.status = 'closed' AND c.status = 'issued' LIMIT 1", [$token]);
-            $back = url('s/' . $token);
+            $back = $this->pubBack ?? url('s/' . $token);
         }
         if (!$row) $this->notFound();
         $sjId = (int) $row['sub_job_id'];
@@ -65,6 +66,19 @@ final class DocumentController extends Controller
         $stId = (int) DB::value("SELECT id FROM stickers WHERE sub_job_id = ? AND status = 'closed' ORDER BY id LIMIT 1", [$sjId]);
         if (!$stId) $this->notFound();
         $this->sticker((string) $stId);
+    }
+
+    /** Typed certificate number (e.g. BASE/P3): that page's certificate PDF, or the job's checklist / sticker (?kind=). No token is exposed. */
+    public function publicCertByNo(): void
+    {
+        $no = trim((string) input('certificate_no', ''));
+        $kind = (string) input('kind', 'certificate');
+        if ($no === '' || !in_array($kind, ['certificate', 'checklist', 'sticker'], true)) $this->notFound();
+        $row = DB::one("SELECT c.verify_token FROM certificates c JOIN sub_jobs sj ON sj.id = c.sub_job_id
+                        WHERE c.certificate_no = ? AND c.status = 'issued' AND sj.status = 'approved' LIMIT 1", [$no]);
+        if (!$row) $this->notFound();
+        $this->pubBack = url('verify') . '?certificate_no=' . rawurlencode($no);
+        $this->publicDoc($row['verify_token'], $kind);
     }
 
     public function checklist(string $id): void

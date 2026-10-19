@@ -49,7 +49,7 @@ final class PublicController extends Controller
     {
         $q = trim((string) input('certificate_no', ''));
         $cert = $q !== '' ? $this->lookup('c.certificate_no = ?', $q) : null;
-        $this->view('public/verify', ['title' => 'Verify a Certificate', 'q' => $q, 'cert' => $cert, 'searched' => $q !== ''], 'public');
+        $this->view('public/verify', ['title' => 'Verify a Certificate', 'q' => $q, 'cert' => $cert, 'searched' => $q !== '', 'docs' => $this->docLinks($cert, null)], 'public');
     }
 
     public function verifyToken(string $token): void
@@ -65,7 +65,7 @@ final class PublicController extends Controller
             ? DB::one('SELECT s.sticker_no, s.status, s.color, s.sub_job_id, c.certificate_no FROM stickers s LEFT JOIN certificates c ON c.sub_job_id = s.sub_job_id WHERE s.verify_token = ?', [$token])
             : null;
         $cert = $st && $st['status'] === 'closed' && $st['certificate_no'] ? $this->lookup('c.certificate_no = ?', $st['certificate_no']) : null;
-        $this->view('public/verify', ['title' => 'Sticker Verification', 'q' => $cert['certificate_no'] ?? '', 'cert' => $cert, 'sticker' => $st ?: ['sticker_no' => null], 'searched' => true, 'docs' => $this->docLinks($cert, $token)], 'public');
+        $this->view('public/verify', ['title' => 'Sticker Verification', 'q' => $cert['certificate_no'] ?? '', 'cert' => $cert, 'sticker' => $st ?: ['sticker_no' => null], 'searched' => true, 'docs' => $this->docLinks($cert, $token, true)], 'public');
     }
 
     /** Target of the QR code on the back of an inspector ID card: the card online + a validity message. */
@@ -78,12 +78,28 @@ final class PublicController extends Controller
         ], 'public');
     }
 
-    /** Download links shown after a QR scan (not after typing a certificate number): certificate, checklist and sticker, when they exist. */
-    private function docLinks(?array $cert, string $token): array
+    /**
+     * Download links on the verify page. After a QR scan ($token set): certificate (the scanned page), checklist and sticker.
+     * After a typed certificate number ($token null): the same documents, with the certificate limited to exactly that page.
+     */
+    private function docLinks(?array $cert, ?string $token, bool $allPages = false): array
     {
         if (!$cert || $cert['status'] !== 'issued') return [];
+        $pages = (int) ($cert['cert_pages'] ?? 1);
+        $label = $pages > 1 ? ($allPages ? 'Certificate · all ' . $pages . ' pages' : 'Certificate · page ' . (int) $cert['cert_seq'] . ' of ' . $pages) : 'Certificate';
+        if ($token === null) {   // typed number: same three documents, addressed by the number (no token in the URL)
+            $q = '?certificate_no=' . rawurlencode($cert['certificate_no']) . '&download=1&kind=';
+            $links = [['label' => $label, 'icon' => 'award', 'url' => url('verify/download') . $q . 'certificate']];
+            if (DB::value('SELECT id FROM checklists WHERE sub_job_id = ?', [$cert['sub_job_id']])) {
+                $links[] = ['label' => 'Checklist', 'icon' => 'clipboard', 'url' => url('verify/download') . $q . 'checklist'];
+            }
+            if (DB::value("SELECT id FROM stickers WHERE sub_job_id = ? AND status = 'closed' LIMIT 1", [$cert['sub_job_id']])) {
+                $links[] = ['label' => 'Sticker', 'icon' => 'tag', 'url' => url('verify/download') . $q . 'sticker'];
+            }
+            return $links;
+        }
         $base = 'verify/doc/' . $token . '/';
-        $links = [['label' => 'Certificate', 'icon' => 'award', 'url' => url($base . 'certificate') . '?download=1']];
+        $links = [['label' => $label, 'icon' => 'award', 'url' => url($base . 'certificate') . '?download=1']];
         if (DB::value('SELECT id FROM checklists WHERE sub_job_id = ?', [$cert['sub_job_id']])) {
             $links[] = ['label' => 'Checklist', 'icon' => 'clipboard', 'url' => url($base . 'checklist') . '?download=1'];
         }
@@ -99,7 +115,7 @@ final class PublicController extends Controller
         return DB::one(
             "SELECT c.certificate_no, c.status, c.result, c.inspection_date, c.issue_date, c.next_inspection_date, c.revoked_reason,
                     t.name type_name, e.description eq_description, e.equipment_no, cl.name client_name,
-                    sj.id AS sub_job_id, sj.sub_job_no, sj.approved_at, j.job_no, j.location,
+                    sj.id AS sub_job_id, c.seq AS cert_seq, (SELECT COUNT(*) FROM certificates x WHERE x.sub_job_id = sj.id) AS cert_pages, sj.sub_job_no, sj.approved_at, j.job_no, j.location,
                     e.serial_no eq_serial_no, e.manufacturer, e.model eq_model, e.capacity eq_capacity, e.year_built eq_year,
                     iu.name inspector_name, ru.name reviewer_name,
                     (SELECT s.sticker_no FROM stickers s WHERE s.sub_job_id = sj.id AND s.status = 'closed' LIMIT 1) sticker_no

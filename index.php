@@ -15,6 +15,7 @@ $r->get('/request',               [PublicController::class, 'requestForm']);
 $r->post('/request',              [PublicController::class, 'requestSubmit']);
 $r->get('/request/thanks/{no}',   [PublicController::class, 'requestThanks']);
 $r->get('/verify',                [PublicController::class, 'verify']);
+$r->get('/verify/download',       [DocumentController::class, 'publicCertByNo']);   // must stay above /verify/{token}; typed certificate / page number → that page's PDF only
 $r->get('/verify/card/{token}',   [PublicController::class, 'verifyCard']);
 $r->get('/verify/{token}',        [PublicController::class, 'verifyToken']);
 $r->get('/s/{token}',             [PublicController::class, 'stickerScan']);
