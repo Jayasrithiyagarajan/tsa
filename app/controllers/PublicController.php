@@ -89,6 +89,7 @@ final class PublicController extends Controller
         $label = $pages > 1 ? ($allPages ? 'Certificate · all ' . $pages . ' pages' : 'Certificate · page ' . (int) $cert['cert_seq'] . ' of ' . $pages) : 'Certificate';
         if ($token === null) {   // typed number: same three documents, addressed by the number (no token in the URL)
             $q = '?certificate_no=' . rawurlencode($cert['certificate_no']) . '&download=1&kind=';
+            if ($pages > 1 && !preg_match('#/P\d+$#i', (string) $cert['certificate_no'])) $label = 'Certificate · all ' . $pages . ' pages';   // no page number typed
             $links = [['label' => $label, 'icon' => 'award', 'url' => url('verify/download') . $q . 'certificate']];
             if (DB::value('SELECT id FROM checklists WHERE sub_job_id = ?', [$cert['sub_job_id']])) {
                 $links[] = ['label' => 'Checklist', 'icon' => 'clipboard', 'url' => url('verify/download') . $q . 'checklist'];

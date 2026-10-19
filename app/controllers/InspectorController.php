@@ -63,9 +63,14 @@ final class InspectorController extends Controller
         }
         $this->view('inspector/subjob_form', [
             'job'           => $job,
-            'types'         => DB::all("SELECT id, code, name FROM inspection_types WHERE status='active' ORDER BY name"),
+            'types'         => DB::all("SELECT t.id, t.code, t.name FROM inspection_types t WHERE t.status = 'active'
+                    AND EXISTS (SELECT 1 FROM checklist_templates c WHERE c.inspection_type_id = t.id AND c.is_active = 1)
+                    ORDER BY t.name"),
             'equipment'     => DB::all('SELECT id, description, equipment_no FROM equipment WHERE client_id = ? ORDER BY description', [$job['client_id']]),
-            'certTemplates' => DB::all("SELECT id, title, doc_ref FROM certificate_templates WHERE is_active = 1 ORDER BY title, version DESC"),
+            'certTemplates' => DB::all("SELECT c.id, c.title, c.doc_ref FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
+                    WHERE c.is_active = 1 AND t.requires_checklist = 0
+                      AND c.version = (SELECT MAX(v.version) FROM certificate_templates v WHERE v.inspection_type_id = c.inspection_type_id AND v.is_active = 1)
+                    ORDER BY t.category, t.name"),
             'title'         => 'Add Sub-job',
             'crumbs'        => ['Assigned Jobs' => 'inspector/jobs', $job['job_no'] => 'inspector/jobs/' . $id, 'Add sub-job' => null],
         ]);

@@ -5,6 +5,8 @@ final class DocumentController extends Controller
 {
     /** Set only while serving a public QR-scan download (token already verified); replaces the login check. */
     private ?string $pubBack = null;
+    /** Typed base certificate number (no /P suffix): serve every page, not just page 1. */
+    private bool $allPages = false;
 
     private function backUrl(array $sj): string
     {
@@ -50,7 +52,7 @@ final class DocumentController extends Controller
         if (!preg_match('/^[a-f0-9]{32}$/', $token) || !in_array($kind, ['checklist', 'certificate', 'sticker'], true)) $this->notFound();
         $back = $this->pubBack ?? url('verify/' . $token);
         $row = DB::one("SELECT c.sub_job_id, c.seq FROM certificates c WHERE c.verify_token = ? AND c.status = 'issued' LIMIT 1", [$token]);
-        if ($row && $kind === 'certificate') $_GET['seq'] = (int) $row['seq'];   // a certificate-page QR / number → that page only
+        if ($row && $kind === 'certificate' && !$this->allPages) $_GET['seq'] = (int) $row['seq'];   // a certificate-page QR / number → that page only
         if (!$row) {
             $row = DB::one("SELECT c.sub_job_id FROM stickers s JOIN certificates c ON c.sub_job_id = s.sub_job_id
                             WHERE s.verify_token = ? AND s.status = 'closed' AND c.status = 'issued' LIMIT 1", [$token]);
@@ -78,6 +80,7 @@ final class DocumentController extends Controller
                         WHERE c.certificate_no = ? AND c.status = 'issued' AND sj.status = 'approved' LIMIT 1", [$no]);
         if (!$row) $this->notFound();
         $this->pubBack = url('verify') . '?certificate_no=' . rawurlencode($no);
+        $this->allPages = !preg_match('#/P\d+$#i', $no);   // no page number → the entire certificate
         $this->publicDoc($row['verify_token'], $kind);
     }
 
