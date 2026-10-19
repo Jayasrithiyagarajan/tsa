@@ -51,10 +51,10 @@ $old = fn ($k, $d = '') => old($k, $d);
           </div>
           <div class="col-12" id="new-eq-fields" style="<?= $old('equipment_id') ? 'display:none' : '' ?>">
             <div class="form-grid">
-              <div class="field col-5"><label>Equipment description</label><input class="input" name="equipment_description" value="<?= e($old('equipment_description')) ?>" placeholder="e.g. BOOM TRUCK"></div>
-              <div class="field col-3"><label>Equipment ID / S No.</label><input class="input" name="equipment_no" value="<?= e($old('equipment_no')) ?>"></div>
-              <div class="field col-2"><label>Serial No.</label><input class="input" name="serial_no" value="<?= e($old('serial_no')) ?>"></div>
-              <div class="field col-2"><label>Quantity</label><input class="input" type="number" min="1" max="50" name="quantity" value="<?= e($old('quantity', '1')) ?>"><div class="help">Each unit becomes a separate sub-job (1.1, 1.2 …)</div></div>
+              <div class="field col-6"><label>Equipment description</label><input class="input" name="equipment_description" value="<?= e($old('equipment_description')) ?>" placeholder="e.g. BOOM TRUCK"></div>
+              <div class="field col-6"><label>Equipment ID / S No.</label><input class="input" name="equipment_no" value="<?= e($old('equipment_no')) ?>"></div>
+              <div class="field col-6"><label>Serial No.</label><input class="input" name="serial_no" value="<?= e($old('serial_no')) ?>"></div>
+              <div class="field col-6"><label>Quantity</label><input class="input" type="number" min="1" max="50" name="quantity" value="<?= e($old('quantity', '1')) ?>"><div class="help">Each unit becomes a separate sub-job (1.1, 1.2 …)</div></div>
             </div>
           </div>
           <div class="field col-6">
