@@ -18,6 +18,7 @@ $r->get('/verify',                [PublicController::class, 'verify']);
 $r->get('/verify/card/{token}',   [PublicController::class, 'verifyCard']);
 $r->get('/verify/{token}',        [PublicController::class, 'verifyToken']);
 $r->get('/s/{token}',             [PublicController::class, 'stickerScan']);
+$r->get('/verify/doc/{token}/{kind}', [DocumentController::class, 'publicDoc']);   // QR scan page: checklist / certificate / sticker downloads
 $r->get('/login',                 [AuthController::class, 'form']);
 $r->post('/login',                [AuthController::class, 'login']);
 $r->post('/logout',               [AuthController::class, 'logout'], 'auth');

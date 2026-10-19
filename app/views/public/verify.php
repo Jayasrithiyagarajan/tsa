@@ -27,13 +27,30 @@
             <p class="muted mt-1">Issued by TUV EAST after QC review.</p>
             <dl class="kv mt-2">
               <dt>Certificate No.</dt><dd class="mono"><?= e($cert['certificate_no']) ?></dd>
+              <?php if (!empty($cert['sticker_no'])): ?><dt>Sticker No.</dt><dd class="mono"><?= e($cert['sticker_no']) ?></dd><?php endif; ?>
+              <dt>Job / Sub-job</dt><dd class="mono"><?= e($cert['job_no']) ?> · <?= e($cert['sub_job_no']) ?></dd>
               <dt>Client</dt><dd><?= e($cert['client_name']) ?></dd>
+              <?php if (!empty($cert['location'])): ?><dt>Location</dt><dd><?= e($cert['location']) ?></dd><?php endif; ?>
               <dt>Inspection</dt><dd><?= e($cert['type_name']) ?></dd>
               <dt>Equipment</dt><dd><?= e($cert['eq_description']) ?> <?= $cert['equipment_no'] ? '· ' . e($cert['equipment_no']) : '' ?></dd>
+              <?php if (!empty($cert['eq_serial_no'])): ?><dt>Serial No.</dt><dd><?= e($cert['eq_serial_no']) ?></dd><?php endif; ?>
+              <?php if (!empty($cert['manufacturer']) || !empty($cert['eq_model'])): ?><dt>Make / Model</dt><dd><?= e(trim(($cert['manufacturer'] ?? '') . ' ' . ($cert['eq_model'] ?? ''))) ?></dd><?php endif; ?>
+              <?php if (!empty($cert['eq_capacity'])): ?><dt>Capacity / SWL</dt><dd><?= e($cert['eq_capacity']) ?></dd><?php endif; ?>
+              <?php if (!empty($cert['eq_year'])): ?><dt>Year built</dt><dd><?= e($cert['eq_year']) ?></dd><?php endif; ?>
               <dt>Result</dt><dd><?= badge($cert['result'] ?? 'accepted') ?></dd>
               <dt>Inspection date</dt><dd><?= e(fmt_date($cert['inspection_date'])) ?></dd>
               <dt>Valid until</dt><dd><?= e(fmt_date($cert['next_inspection_date'])) ?></dd>
+              <?php if (!empty($cert['inspector_name'])): ?><dt>Inspected by</dt><dd><?= e($cert['inspector_name']) ?></dd><?php endif; ?>
+              <?php if (!empty($cert['reviewer_name'])): ?><dt>QC approved by</dt><dd><?= e($cert['reviewer_name']) ?></dd><?php endif; ?>
+              <?php if (!empty($cert['approved_at'])): ?><dt>QC approved on</dt><dd><?= e(date('d-M-Y H:i', strtotime($cert['approved_at']))) ?></dd><?php endif; ?>
             </dl>
+            <?php if (!empty($docs)): ?>
+              <div class="mt-2"><div class="small muted" style="margin-bottom:6px">Documents</div>
+                <div class="row wrap" style="gap:8px">
+                  <?php foreach ($docs as $d): ?><a class="btn btn-secondary btn-sm" href="<?= e($d['url']) ?>" target="_blank" rel="noopener"><?= icon($d['icon'], 'sm') ?> <?= e($d['label']) ?></a><?php endforeach; ?>
+                </div>
+              </div>
+            <?php endif; ?>
           </div>
         </div>
       <?php elseif ($cert && $cert['status'] === 'revoked'): ?>

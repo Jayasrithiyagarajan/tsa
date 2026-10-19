@@ -3,8 +3,12 @@
 /** Controlled documents: on-screen preview + PDF (?pdf=1 inline, ?download=1 attachment). */
 final class DocumentController extends Controller
 {
+    /** Set only while serving a public QR-scan download (token already verified); replaces the login check. */
+    private ?string $pubBack = null;
+
     private function backUrl(array $sj): string
     {
+        if ($this->pubBack !== null) return $this->pubBack;
         switch (Auth::role()) {
             case 'superadmin':
             case 'admin':     return url('admin/jobs/' . $sj['job_id']);
@@ -18,7 +22,7 @@ final class DocumentController extends Controller
     {
         $sj = JobService::subJob((int) $id);
         if (!$sj) $this->notFound();
-        if (!DocumentService::canView($sj)) $this->forbid();
+        if ($this->pubBack === null && !DocumentService::canView($sj)) $this->forbid();
         return $sj;
     }
 
@@ -35,6 +39,32 @@ final class DocumentController extends Controller
             DocumentService::pdf($html, $file, !empty($_GET['download']));
         }
         echo $html;
+    }
+
+    /**
+     * Public download from the QR scan page. The unguessable verify token (certificate or sticker) is the credential;
+     * documents are released only once QC has issued the certificate and approved the sub-job.
+     */
+    public function publicDoc(string $token, string $kind): void
+    {
+        if (!preg_match('/^[a-f0-9]{32}$/', $token) || !in_array($kind, ['checklist', 'certificate', 'sticker'], true)) $this->notFound();
+        $back = url('verify/' . $token);
+        $row = DB::one("SELECT c.sub_job_id FROM certificates c WHERE c.verify_token = ? AND c.status = 'issued' LIMIT 1", [$token]);
+        if (!$row) {
+            $row = DB::one("SELECT c.sub_job_id FROM stickers s JOIN certificates c ON c.sub_job_id = s.sub_job_id
+                            WHERE s.verify_token = ? AND s.status = 'closed' AND c.status = 'issued' LIMIT 1", [$token]);
+            $back = url('s/' . $token);
+        }
+        if (!$row) $this->notFound();
+        $sjId = (int) $row['sub_job_id'];
+        $sj = JobService::subJob($sjId);
+        if (!$sj || $sj['status'] !== 'approved') $this->notFound();
+        $this->pubBack = $back;
+        if ($kind === 'checklist') { $this->checklist((string) $sjId); return; }
+        if ($kind === 'certificate') { $this->certificate((string) $sjId); return; }
+        $stId = (int) DB::value("SELECT id FROM stickers WHERE sub_job_id = ? AND status = 'closed' ORDER BY id LIMIT 1", [$sjId]);
+        if (!$stId) $this->notFound();
+        $this->sticker((string) $stId);
     }
 
     public function checklist(string $id): void

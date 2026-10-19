@@ -55,7 +55,7 @@ final class PublicController extends Controller
     public function verifyToken(string $token): void
     {
         $cert = preg_match('/^[a-f0-9]{32}$/', $token) ? $this->lookup('c.verify_token = ?', $token) : null;
-        $this->view('public/verify', ['title' => 'Certificate Verification', 'q' => $cert['certificate_no'] ?? '', 'cert' => $cert, 'searched' => true], 'public');
+        $this->view('public/verify', ['title' => 'Certificate Verification', 'q' => $cert['certificate_no'] ?? '', 'cert' => $cert, 'searched' => true, 'docs' => $this->docLinks($cert, $token)], 'public');
     }
 
     /** QR on a sticker. Discloses the certificate only once QC has issued it; otherwise just the sticker state. */
@@ -65,7 +65,7 @@ final class PublicController extends Controller
             ? DB::one('SELECT s.sticker_no, s.status, s.color, s.sub_job_id, c.certificate_no FROM stickers s LEFT JOIN certificates c ON c.sub_job_id = s.sub_job_id WHERE s.verify_token = ?', [$token])
             : null;
         $cert = $st && $st['status'] === 'closed' && $st['certificate_no'] ? $this->lookup('c.certificate_no = ?', $st['certificate_no']) : null;
-        $this->view('public/verify', ['title' => 'Sticker Verification', 'q' => $cert['certificate_no'] ?? '', 'cert' => $cert, 'sticker' => $st ?: ['sticker_no' => null], 'searched' => true], 'public');
+        $this->view('public/verify', ['title' => 'Sticker Verification', 'q' => $cert['certificate_no'] ?? '', 'cert' => $cert, 'sticker' => $st ?: ['sticker_no' => null], 'searched' => true, 'docs' => $this->docLinks($cert, $token)], 'public');
     }
 
     /** Target of the QR code on the back of an inspector ID card: the card online + a validity message. */
@@ -78,16 +78,37 @@ final class PublicController extends Controller
         ], 'public');
     }
 
-    /** Only issued or revoked certificates are disclosed publicly — never drafts. */
+    /** Download links shown after a QR scan (not after typing a certificate number): certificate, checklist and sticker, when they exist. */
+    private function docLinks(?array $cert, string $token): array
+    {
+        if (!$cert || $cert['status'] !== 'issued') return [];
+        $base = 'verify/doc/' . $token . '/';
+        $links = [['label' => 'Certificate', 'icon' => 'award', 'url' => url($base . 'certificate') . '?download=1']];
+        if (DB::value('SELECT id FROM checklists WHERE sub_job_id = ?', [$cert['sub_job_id']])) {
+            $links[] = ['label' => 'Checklist', 'icon' => 'clipboard', 'url' => url($base . 'checklist') . '?download=1'];
+        }
+        if (DB::value("SELECT id FROM stickers WHERE sub_job_id = ? AND status = 'closed' LIMIT 1", [$cert['sub_job_id']])) {
+            $links[] = ['label' => 'Sticker', 'icon' => 'tag', 'url' => url($base . 'sticker')];
+        }
+        return $links;
+    }
+
+    /** Only issued or revoked certificates are disclosed publicly — never drafts. Released as soon as QC approves the sub-job. */
     private function lookup(string $where, string $v): ?array
     {
         return DB::one(
             "SELECT c.certificate_no, c.status, c.result, c.inspection_date, c.issue_date, c.next_inspection_date, c.revoked_reason,
-                    t.name type_name, e.description eq_description, e.equipment_no, cl.name client_name
+                    t.name type_name, e.description eq_description, e.equipment_no, cl.name client_name,
+                    sj.id AS sub_job_id, sj.sub_job_no, sj.approved_at, j.job_no, j.location,
+                    e.serial_no eq_serial_no, e.manufacturer, e.model eq_model, e.capacity eq_capacity, e.year_built eq_year,
+                    iu.name inspector_name, ru.name reviewer_name,
+                    (SELECT s.sticker_no FROM stickers s WHERE s.sub_job_id = sj.id AND s.status = 'closed' LIMIT 1) sticker_no
              FROM certificates c JOIN sub_jobs sj ON sj.id = c.sub_job_id JOIN jobs j ON j.id = sj.job_id
              JOIN clients cl ON cl.id = j.client_id JOIN inspection_types t ON t.id = sj.inspection_type_id
              LEFT JOIN equipment e ON e.id = sj.equipment_id
-             WHERE $where AND c.status IN ('issued','revoked') AND j.status IN ('completed','cancelled') LIMIT 1",   // released by final approval
+             LEFT JOIN users iu ON iu.id = sj.inspector_id
+             LEFT JOIN users ru ON ru.id = c.reviewer_id
+             WHERE $where AND c.status IN ('issued','revoked') LIMIT 1",   // issued = QC has approved the sub-job
             [$v]
         );
     }
