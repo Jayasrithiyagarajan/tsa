@@ -116,11 +116,11 @@ $r->get('/inspector/jobs',                     [InspectorController::class, 'job
 $r->get('/inspector/jobs/{id}',                [InspectorController::class, 'job'], $I);
 $r->get('/inspector/jobs/{id}/subjobs/new',    [InspectorController::class, 'createSubJob'], $I);
 $r->post('/inspector/jobs/{id}/subjobs',       [InspectorController::class, 'storeSubJob'], $I);
-$r->get('/inspector/subjobs/{id}',             [InspectorController::class, 'subJob'], ['inspector', 'admin']);
+$r->get('/inspector/subjobs/{id}',             [InspectorController::class, 'subJob'], ['inspector', 'qc', 'admin']);
 $r->post('/inspector/subjobs/{id}/start',      [InspectorController::class, 'start'], ['inspector', 'admin']);
-$r->post('/inspector/subjobs/{id}/checklist',  [InspectorController::class, 'saveChecklist'], ['inspector', 'admin']);
-$r->post('/inspector/subjobs/{id}/certificate',       [InspectorController::class, 'saveCertificate'],  ['inspector', 'admin']);
-$r->post('/inspector/subjobs/{id}/certificate/clone', [InspectorController::class, 'cloneCertificate'], ['inspector', 'admin']);
+$r->post('/inspector/subjobs/{id}/checklist',  [InspectorController::class, 'saveChecklist'], ['inspector', 'qc', 'admin']);
+$r->post('/inspector/subjobs/{id}/certificate',       [InspectorController::class, 'saveCertificate'],  ['inspector', 'qc', 'admin']);
+$r->post('/inspector/subjobs/{id}/certificate/clone', [InspectorController::class, 'cloneCertificate'], ['inspector', 'qc', 'admin']);
 $r->post('/inspector/subjobs/{id}/sticker',           [InspectorController::class, 'sticker'],           ['inspector', 'admin']);
 $r->post('/inspector/subjobs/{id}/upload',     [InspectorController::class, 'upload'], ['inspector', 'admin']);
 $r->post('/inspector/attachments/{id}/delete', [InspectorController::class, 'deleteAttachment'], ['inspector', 'admin']);
@@ -158,8 +158,8 @@ $r->get('/api/v1/jobs',                            [ApiController::class, 'jobs'
 $r->get('/api/v1/jobs/{id}',                       [ApiController::class, 'job'], ['admin', 'inspector', 'qc']);
 $r->get('/api/v1/inspectors',                      [ApiController::class, 'inspectors'], $A);
 $r->get('/api/v1/clients/{id}/equipment',          [ApiController::class, 'clientEquipment'], $A);
-$r->post('/api/v1/subjobs/{id}/checklist',         [ApiController::class, 'saveChecklist'], ['inspector', 'admin']);
-$r->post('/api/v1/subjobs/{id}/certificate',       [ApiController::class, 'saveCertificate'], ['inspector', 'admin']);
+$r->post('/api/v1/subjobs/{id}/checklist',         [ApiController::class, 'saveChecklist'], ['inspector', 'qc', 'admin']);
+$r->post('/api/v1/subjobs/{id}/certificate',       [ApiController::class, 'saveCertificate'], ['inspector', 'qc', 'admin']);
 $r->get('/api/v1/subjobs/{id}/validation',         [ApiController::class, 'validation'], ['inspector', 'admin', 'qc']);
 $r->get('/api/v1/notifications',                   [ApiController::class, 'notifications'], 'auth');
 $r->get('/api/v1/verify/{certificateNo}',          [ApiController::class, 'verify']);

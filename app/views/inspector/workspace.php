@@ -29,6 +29,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
       <?php elseif ($st === 'in_progress'): ?>
         <a class="btn btn-primary btn-lg" href="#tab-submit" data-tab-link="tab-submit"><?= icon('send', 'sm') ?> Review & submit</a>
       <?php endif; ?>
+      <?php if ($qcEdit): ?><a class="btn btn-primary btn-lg" href="<?= url('qc/review/' . $sj['id']) ?>"><?= icon('shield', 'sm') ?> Back to QC review</a><?php endif; ?>
       <?php if ($checklist): ?><a class="btn btn-secondary" href="<?= url('documents/checklist/' . $sj['id']) ?>" target="_blank"><?= icon('clipboard', 'sm') ?> Checklist</a><?php endif; ?>
       <?php if ($cert && $cert['template_id']): ?><a class="btn btn-secondary" href="<?= url('documents/certificate/' . $sj['id']) ?>" target="_blank"><?= icon('award', 'sm') ?> Certificate</a><?php endif; ?>
     </div>
@@ -56,7 +57,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
 <?php if ($st === 'assigned'): ?>
   <div class="alert alert-info"><?= icon('info') ?><div>Press <b>Start inspection</b> when you are at the equipment. The checklist (<?= $sj['requires_checklist'] ? 'required' : 'not required' ?>) and the certificate draft are created with the current controlled template versions.</div></div>
 <?php elseif (in_array($st, ['submitted', 'approved'], true)): ?>
-  <div class="alert alert-<?= $st === 'approved' ? 'success' : 'info' ?>"><?= icon($st === 'approved' ? 'check' : 'clock') ?><div><?= $st === 'approved' ? 'Approved by QC — certificate issued. This record is locked.' : 'Submitted to QC on ' . e(fmt_datetime($sj['submitted_at'])) . '. Editing is locked until QC decides.' ?></div></div>
+  <div class="alert alert-<?= $st === 'approved' ? 'success' : 'info' ?>"><?= icon($st === 'approved' ? 'check' : 'clock') ?><div><?= $st === 'approved' ? 'Approved by QC — certificate issued. This record is locked.' : ($qcEdit ? 'Under QC review - you can correct the checklist and certificate below; changes save automatically. When done, go back to the review to approve or return it.' : 'Submitted to QC on ' . e(fmt_datetime($sj['submitted_at'])) . '. Editing is locked until QC decides.') ?></div></div>
 <?php endif; ?>
 
 <div class="card">

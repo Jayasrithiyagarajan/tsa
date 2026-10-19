@@ -103,6 +103,7 @@ final class InspectorController extends Controller
         if (!$sj) $this->notFound();
         if (Auth::is('inspector') && (int) $sj['inspector_id'] !== Auth::id()) $this->forbid();
 
+        if (Auth::is('qc') && $sj['status'] !== 'submitted') redirect('qc/review/' . (int) $sj['id']);   // QC works on this page only while a sub-job awaits review
         $checklist = DB::one('SELECT * FROM checklists WHERE sub_job_id = ?', [$sj['id']]);
         $items = $checklist ? DB::all(
             'SELECT i.*, r.result, r.remarks FROM checklist_template_items i LEFT JOIN checklist_responses r ON r.item_id = i.id AND r.checklist_id = ?
@@ -130,12 +131,13 @@ final class InspectorController extends Controller
         $myStickers = $sticker ? [] : DB::all("SELECT sticker_no, color FROM stickers WHERE status = 'allocated' AND inspector_id = ? ORDER BY color, sticker_no LIMIT 300", [(int) ($sj['inspector_id'] ?: Auth::id())]);
         $reviews = DB::all('SELECT q.*, u.name reviewer FROM qc_reviews q JOIN users u ON u.id = q.reviewer_id WHERE q.sub_job_id = ? ORDER BY q.id DESC', [$sj['id']]);
         $issues = in_array($sj['status'], ['in_progress'], true) ? InspectionService::issues((int) $sj['id']) : [];
-        $editable = $sj['status'] === 'in_progress';
-        $this->view('inspector/workspace', compact('sj', 'checklist', 'items', 'clStats', 'cert', 'certSeq', 'allCerts', 'certTpl', 'fields', 'attachments', 'sticker', 'myStickers', 'reviews', 'issues', 'editable') + [
+        $qcEdit = Auth::is('qc') && $sj['status'] === 'submitted' && (int) $sj['inspector_id'] !== Auth::id();
+        $editable = $sj['status'] === 'in_progress' || $qcEdit;
+        $this->view('inspector/workspace', compact('sj', 'checklist', 'items', 'clStats', 'cert', 'certSeq', 'allCerts', 'certTpl', 'fields', 'attachments', 'sticker', 'myStickers', 'reviews', 'issues', 'editable', 'qcEdit') + [
             'title' => $sj['sub_job_no'],
-            'crumbs' => Auth::is('admin')
+            'crumbs' => $qcEdit ? ['Review Queue' => 'qc/queue', $sj['sub_job_no'] => 'qc/review/' . $sj['id'], 'Edit documents' => null] : (Auth::is('admin')
                 ? ['Jobs & Sub-jobs' => 'admin/jobs', $sj['job_no'] => 'admin/jobs/' . $sj['job_id'], 'Sub-job ' . $sj['seq'] => null]
-                : ['Assigned Jobs' => 'inspector/jobs', $sj['job_no'] => 'inspector/jobs/' . $sj['job_id'], 'Sub-job ' . $sj['seq'] => null],
+                : ['Assigned Jobs' => 'inspector/jobs', $sj['job_no'] => 'inspector/jobs/' . $sj['job_id'], 'Sub-job ' . $sj['seq'] => null]),
         ]);
     }
 

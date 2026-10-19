@@ -28,11 +28,13 @@ final class InspectionService
     {
         if (Auth::is('admin')) return;
         if (Auth::is('inspector') && (int) $sj['inspector_id'] === Auth::id()) return;
+        if (Auth::is('qc') && $sj['status'] === 'submitted' && (int) $sj['inspector_id'] !== Auth::id()) return;   // QC corrects documents under review (four-eyes: not their own inspection)
         throw new DomainException('This sub-job is not assigned to you.');
     }
 
     private static function assertEditable(array $sj): void
     {
+        if ($sj['status'] === 'submitted' && (Auth::is('qc') || Auth::is('admin'))) return;   // correction during QC review
         if ($sj['status'] !== 'in_progress') {
             throw new DomainException('Start the inspection before recording results (current status: ' . Workflow::label($sj['status']) . ').');
         }
