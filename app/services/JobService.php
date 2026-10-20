@@ -31,6 +31,13 @@ final class JobService
 
     public static function create(array $d, array $subJobs): int
     {
+        $id = self::createRecord($d, $subJobs);
+        MailEvents::jobCreated($id);          // e-mail the client after the job is saved
+        return $id;
+    }
+
+    private static function createRecord(array $d, array $subJobs): int
+    {
         return DB::tx(function () use ($d, $subJobs) {
             if (empty($d['client_id'])) throw new DomainException('Client is required.');
             if (trim($d['title'] ?? '') === '') throw new DomainException('Job title is required.');
@@ -273,6 +280,12 @@ final class JobService
      * reports released to the client (portal, notifications, public verification).
      */
     public static function close(int $jobId, string $note = ''): void
+    {
+        self::closeRecord($jobId, $note);
+        MailEvents::jobClosed($jobId);        // e-mail the client once the job is closed
+    }
+
+    private static function closeRecord(int $jobId, string $note = ''): void
     {
         $job = DB::one('SELECT * FROM jobs WHERE id = ?', [$jobId]);
         if (!$job) throw new DomainException('Job not found.');

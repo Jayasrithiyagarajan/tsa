@@ -61,6 +61,7 @@ $r->get('/admin/jobs/{id}',                 [AdminJobController::class, 'show'],
 $r->post('/admin/jobs/{id}/update',         [AdminJobController::class, 'update'], $A);
 $r->post('/admin/jobs/{id}/assign',         [AdminJobController::class, 'assign'], $A);
 $r->post('/admin/jobs/{id}/subjobs',        [AdminJobController::class, 'addSubJob'], $A);
+$r->get('/admin/captcha',                   [AdminJobController::class, 'captcha'], $A);       // verification image for closing a job
 $r->post('/admin/jobs/{id}/close',          [AdminJobController::class, 'close'], $A);       // final approval after QC
 $r->post('/admin/jobs/{id}/cancel',         [AdminJobController::class, 'cancel'], $A);
 $r->post('/admin/subjobs/{id}/unassign',    [AdminJobController::class, 'unassign'], $A);

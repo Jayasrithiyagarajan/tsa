@@ -81,6 +81,7 @@ final class AdminUserController extends Controller
                 'status' => input('status') === 'inactive' ? 'inactive' : 'active',
             ];
             if (input('password')) $data['password_hash'] = password_hash((string) input('password'), PASSWORD_DEFAULT);
+            $wasNew = !$id;
             DB::tx(function () use (&$id, $data) {
                 if ($id) {
                     DB::update('users', $data, 'id = ?', [$id]);
@@ -111,6 +112,7 @@ final class AdminUserController extends Controller
                 $f = store_upload($_FILES['id_photo'], 'id-photos', ['image/jpeg', 'image/png', 'image/webp']);
                 InspectorCardService::setProfilePhoto($id, $f['path']);
             }
+            if ($wasNew && $data['role'] === 'customer') MailEvents::customerAccount((int) $id, (string) input('password'));
             return 'admin/users/' . $id;
         }, 'User saved.');
     }

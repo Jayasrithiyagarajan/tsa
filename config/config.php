@@ -24,6 +24,18 @@ $config = [
     // session
     'session_name'    => 'tuvims',
     'session_minutes' => 120,
+
+    // outgoing e-mail (job created / job closed / customer account). Leave host empty to only save mails to storage/mail/.
+    // Put real values in config/config.local.php, e.g. 'mail' => ['host' => 'smtp.office365.com', 'port' => 587, 'secure' => 'tls', 'user' => '...', 'pass' => '...', 'from' => 'noreply@tuv-east.com']
+    'mail' => [
+        'host'      => '',
+        'port'      => 587,
+        'secure'    => 'tls',             // tls (STARTTLS) | ssl | '' (none)
+        'user'      => '',
+        'pass'      => '',
+        'from'      => 'no-reply@tuv-east.com',
+        'from_name' => 'TUV EAST',
+    ],
 ];
 
 if (is_file(__DIR__ . '/config.local.php')) {

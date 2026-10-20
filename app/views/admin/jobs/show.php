@@ -29,7 +29,12 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
     <?= Csrf::field() ?><?= icon('check') ?>
     <div style="flex:1"><b>Final approval needed.</b> Every inspection passed QC review. Check the documents below, then close the job —
       only then are the certificates and reports released to <?= e($job['client_name']) ?>.
-      <input class="input mt-1" name="note" maxlength="255" placeholder="Note (optional)" style="max-width:420px"></div>
+      <input class="input mt-1" name="note" maxlength="255" placeholder="Note (optional)" style="max-width:420px">
+      <div class="row mt-1" style="gap:10px;align-items:center;flex-wrap:wrap">
+        <img id="cap-img" src="<?= url('admin/captcha') ?>?t=<?= time() ?>" alt="Verification text" width="190" height="60" style="border:1px solid var(--border);border-radius:8px;background:#fff">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('cap-img').src='<?= url('admin/captcha') ?>?t='+Date.now()"><?= icon('rotate', 'sm') ?> New image</button>
+        <input class="input" name="captcha" required autocomplete="off" maxlength="5" placeholder="Type the text in the image" style="max-width:240px">
+      </div></div>
     <button class="btn btn-primary"><?= icon('check', 'sm') ?> Final approval &amp; close job</button>
   </form>
 <?php elseif ($job['status'] === 'completed' && !empty($job['closed_by'])): ?>

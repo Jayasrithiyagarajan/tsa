@@ -74,7 +74,7 @@ echo View::partial('documents/frame', [
         'top'   => 36,
         'left'  => 10.5,
         'width' => 190,
-        'extra' => '<div class="cert-title" style="top:24.6mm">' . e($tpl['title']) . '</div>' . $stamp,
+        'extra' => '<div class="cert-title ut-t">' . e($tpl['title']) . '</div>' . $stamp,
     ]],
     'sidetext'  => 'Doc Ref.  ' . $tpl['doc_ref'] . '   l   Rev. ' . $tpl['revision'] . '   l   Date: ' . $tpl['revision_date'],
     'qr'        => $m['qr'] ?? null,

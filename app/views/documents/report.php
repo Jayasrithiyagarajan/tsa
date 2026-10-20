@@ -7,6 +7,7 @@
  */
 $tpl = $m['template'];
 $R = $L['report'];
+if (($R['ar']['style'] ?? '') === 'mo') { require __DIR__ . '/report_mo.php'; return; }
 $pt = 0.3528;
 $font = (float) ($R['item_font'] ?? $L['font']);
 $cols = array_map('floatval', $R['cols'] ?? [94, 13.6, 13.8, 13.7, 47.4]);
