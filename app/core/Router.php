@@ -54,7 +54,8 @@ final class Router
         if ($roles === 'auth') {
             return;
         }
-        if (!Auth::is(...(array) $roles)) {
+        $superPass = Auth::isSuper() && (array) $roles !== ['customer'];   // Super Admin: all access (customer portal excluded - it is scoped to a client account)
+        if (!$superPass && !Auth::is(...(array) $roles)) {
             if (is_ajax()) {
                 json_out(['error' => 'Forbidden'], 403);
             }

@@ -11,7 +11,8 @@ if (Auth::is('admin')) {
     $c = DB::one("SELECT (SELECT COUNT(*) FROM service_requests WHERE status IN ('new','under_review')) req,
                          (SELECT COUNT(*) FROM sub_jobs WHERE status='pending') unassigned,
                          (SELECT COUNT(*) FROM jobs WHERE status='awaiting_approval') approvals,
-                         (SELECT COUNT(*) FROM inspector_cards WHERE status='active' AND handed_over_at IS NULL) cards_pending");
+                         (SELECT COUNT(*) FROM inspector_cards WHERE status='active' AND handed_over_at IS NULL) cards_pending,
+                         (SELECT COUNT(*) FROM sub_jobs WHERE status='submitted') queue");
 } elseif ($role === 'inspector') {
     $c = DB::one("SELECT SUM(status IN ('assigned','in_progress')) open, SUM(status='rework') rework FROM sub_jobs WHERE inspector_id = ?", [$u['id']]);
 } elseif ($role === 'qc') {
@@ -78,6 +79,15 @@ $nav = [
         ]],
     ],
 ][$role === 'superadmin' ? 'admin' : $role];
+if ($role === 'superadmin') {
+    // Super Admin has every role's screens: add the QC group to the admin menu
+    $nav[] = ['Quality Control', [
+        ['qc/queue', 'shield', 'QC Review Queue', $cnt($c['queue'] ?? 0, true)],
+        ['qc/history', 'history', 'QC Decisions', ''],
+        ['qc/certificates', 'award', 'Issued Certificates', ''],
+        ['qc/kpi', 'chart', 'QC KPIs', ''],
+    ]];
+}
 if ($role === 'admin') {
     // operations admin: no template / settings / audit screens and no card issuing (Super Admin only)
     $superOnly = ['admin/templates', 'admin/cards/new', 'admin/audit', 'admin/settings'];

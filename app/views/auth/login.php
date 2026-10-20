@@ -34,7 +34,8 @@
       <div class="demo-box">
         Demo accounts (local only) — pick one, password is in <span class="mono">database/install.php</span>.
         <div class="demo-grid">
-          <button type="button" data-demo="admin@tuveast.test"><b>Admin</b>admin@tuveast.test</button>
+          <button type="button" data-demo="admin@tuveast.test"><b>Super Admin</b>admin@tuveast.test</button>
+  <button type="button" data-demo="ops.admin@tuveast.test"><b>Admin</b>ops.admin@tuveast.test</button>
           <button type="button" data-demo="omar.khalid@tuveast.test"><b>Inspector</b>omar.khalid@…</button>
           <button type="button" data-demo="sara.nasser@tuveast.test"><b>QC Reviewer</b>sara.nasser@…</button>
           <button type="button" data-demo="customer@alnoor.test"><b>Customer</b>customer@alnoor.test</button>
