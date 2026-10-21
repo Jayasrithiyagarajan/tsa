@@ -323,3 +323,16 @@ table.f.df.nt { margin-top: 2.6mm; }
 
 .cert-title.ut-t { top: 24.2mm; font-size: 10.7pt; }
 .cert-title.ec-t { top: 23.2mm; font-size: 11.5pt; }
+
+/* ---------- F-7.5.1-10 Leak Test / F-7.5.1-11 Pressure Test ---------- */
+.cert-title.lp-title { top: 22.85mm; text-decoration: underline; font-size: 14pt; }
+table.f.lp td { border: 0.5pt solid #808080; padding: 0 1.9mm; font-size: 10pt; line-height: 0.909; vertical-align: middle; }
+table.f.lp.gap { margin-top: 5mm; }
+table.f.lp td.l { background: #aabee3; font-weight: bold; }
+table.f.lp td.c { text-align: center; }
+table.f.lp td.b { font-weight: bold; }
+table.f.lp td.h12 { font-size: 12pt; font-weight: bold; }
+table.f.lp td.rm { vertical-align: middle; padding: 0.75pt 1.9mm 0; }
+table.f.lp .rmh { font-size: 12pt; font-weight: bold; text-decoration: underline; height: 24.8pt; }
+table.f.lp .rml { height: 14.1pt; }
+.lp-sig { position: absolute; max-width: 36.6mm; max-height: 18.6mm; }

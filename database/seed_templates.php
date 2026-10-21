@@ -2343,6 +2343,66 @@ Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States C
     ],
 
     [
+        'type' => ['code' => 'LEAK', 'name' => 'Leak / Hydro Test Witness', 'category' => 'Pressure Equipment', 'procedure_ref' => 'N/A', 'standard_ref' => 'Client Requirements', 'validity_months' => 12, 'requires_checklist' => 0, 'requires_certificate' => 1, 'requires_sticker' => 1],
+        'checklist' => null,
+        // F-7.5.1-10 · Rev. 03 · 09/Feb./23 - one page: header data, equipment details, result, remarks, sign-off (exact Word layout)
+        'certificate' => [
+            'code' => 'F-7.5.1-10', 'title' => 'LEAK / HYDRO TEST WITNESS CERTIFICATE', 'doc_ref' => 'F-7.5.1-10', 'revision' => '03', 'revision_date' => '09/Feb./23', 'layout' => 'lp',
+            'inspector_label' => 'Test Witnessed by',
+            'default_statement' => 'PASSED (NO LEAK / PRESSURE TEST SATISFACTORY)',
+            'fields' => [
+                ['key' => 'client', 'label' => 'Client Name', 'source' => 'client.name'],
+                ['key' => 'address', 'label' => 'Address / Location', 'type' => 'text', 'required' => true],
+                ['key' => 'location', 'label' => 'Test Location', 'source' => 'job.location'],
+                ['key' => 'cert_no', 'label' => 'Report No.', 'source' => 'cert.certificate_no'],
+                ['key' => 'standard', 'label' => 'Relevant Standard', 'source' => 'type.standard_ref'],
+                ['key' => 'holding_time', 'label' => 'Holding Time', 'type' => 'text', 'required' => true],
+                ['key' => 'eq_name', 'label' => 'Equipment Name', 'source' => 'equipment.description'],
+                ['key' => 'pressure', 'label' => 'Normal / Actual Pressure', 'type' => 'text', 'required' => true],
+                ['key' => 'sticker_no', 'label' => 'Sticker No', 'type' => 'text', 'required' => true],
+                ['key' => 'test_method', 'label' => 'Test Method', 'type' => 'select', 'required' => true, 'options' => ['Water', 'Air']],
+                ['key' => 'insp_date', 'label' => 'Inspection Date', 'source' => 'cert.inspection_date'],
+                ['key' => 'next_date', 'label' => 'Next Inspection Date', 'source' => 'cert.next_inspection_date'],
+                ['key' => 'sn', 'label' => 'Equipment - S/N', 'source' => 'equipment.serial_no'],
+                ['key' => 'description', 'label' => 'Equipment - Description', 'source' => 'equipment.description'],
+                ['key' => 'capacity', 'label' => 'Equipment - Capacity', 'source' => 'equipment.capacity'],
+                ['key' => 'remarks', 'label' => 'Remarks (one paragraph per line; empty = standard text)', 'type' => 'textarea', 'required' => false],
+            ],
+            'notes' => "The above-mentioned equipment was Filled to Top with water and observed for 24 Hours.\nWe hereby Certify above that the test was witnessed and no Leakage upon / during the time of Inspection.",
+        ],
+    ],
+
+    [
+        'type' => ['code' => 'PRES', 'name' => 'Pressure / Hydro Test Witness', 'category' => 'Pressure Equipment', 'procedure_ref' => 'N/A', 'standard_ref' => 'Client Requirements', 'validity_months' => 12, 'requires_checklist' => 0, 'requires_certificate' => 1, 'requires_sticker' => 1],
+        'checklist' => null,
+        // F-7.5.1-11 · Rev. 03 · 09/Feb./23 - one page: header data, equipment details, result, remarks, sign-off (exact Word layout)
+        'certificate' => [
+            'code' => 'F-7.5.1-11', 'title' => 'PRESSURE / HYDRO TEST WITNESS CERTIFICATE', 'doc_ref' => 'F-7.5.1-11', 'revision' => '03', 'revision_date' => '09/Feb./23', 'layout' => 'lp',
+            'inspector_label' => 'Test Witnessed by',
+            'default_statement' => 'PASSED (NO LEAK / PRESSURE TEST SATISFACTORY)',
+            'fields' => [
+                ['key' => 'client', 'label' => 'Client Name', 'source' => 'client.name'],
+                ['key' => 'address', 'label' => 'Address / Location', 'type' => 'text', 'required' => true],
+                ['key' => 'location', 'label' => 'Test Location', 'source' => 'job.location'],
+                ['key' => 'cert_no', 'label' => 'Report No.', 'source' => 'cert.certificate_no'],
+                ['key' => 'standard', 'label' => 'Relevant Standard', 'source' => 'type.standard_ref'],
+                ['key' => 'holding_time', 'label' => 'Holding Time', 'type' => 'text', 'required' => true],
+                ['key' => 'eq_name', 'label' => 'Equipment Name', 'source' => 'equipment.description'],
+                ['key' => 'pressure', 'label' => 'Normal / Actual Pressure', 'type' => 'text', 'required' => true],
+                ['key' => 'sticker_no', 'label' => 'Sticker No', 'type' => 'text', 'required' => true],
+                ['key' => 'test_method', 'label' => 'Test Method', 'type' => 'select', 'required' => true, 'options' => ['Water', 'Air']],
+                ['key' => 'insp_date', 'label' => 'Inspection Date', 'source' => 'cert.inspection_date'],
+                ['key' => 'next_date', 'label' => 'Next Inspection Date', 'source' => 'cert.next_inspection_date'],
+                ['key' => 'sn', 'label' => 'Equipment - S/N', 'source' => 'equipment.serial_no'],
+                ['key' => 'description', 'label' => 'Equipment - Description', 'source' => 'equipment.description'],
+                ['key' => 'capacity', 'label' => 'Equipment - Capacity', 'source' => 'equipment.capacity'],
+                ['key' => 'remarks', 'label' => 'Remarks (one paragraph per line; empty = standard text)', 'type' => 'textarea', 'required' => false],
+            ],
+            'notes' => "The above-mentioned equipment was Filled to Top with water and observed for 24 Hours.\nWe hereby Certify above that the test was witnessed and no Leakage upon / during the time of Inspection.",
+        ],
+    ],
+
+    [
         'type' => ['code' => 'LIFN', 'name' => 'Lift Inspection (Without Permit)', 'category' => 'Lifts & Elevators', 'procedure_ref' => 'TUV.EL.706.01', 'standard_ref' => 'BS EN 81-20:2020 / BS EN 81-50:2020 / SASO M.A-161-17-07-05 Rev.01', 'validity_months' => 12, 'requires_checklist' => 0, 'requires_certificate' => 1, 'requires_sticker' => 0],
         'checklist' => null,
         'certificate' => [

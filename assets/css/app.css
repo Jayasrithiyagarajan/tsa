@@ -185,7 +185,7 @@ table.t tr.child td { background: #fcfdfe; }
 
 /* ---------------------------------------------------------------- forms */
 .form-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px 16px; }
-.col-12 { grid-column: span 12; } .col-8 { grid-column: span 8; } .col-6 { grid-column: span 6; } .col-4 { grid-column: span 4; } .col-3 { grid-column: span 3; }
+.col-12 { grid-column: span 12; } .col-8 { grid-column: span 8; } .col-7 { grid-column: span 7; } .col-6 { grid-column: span 6; } .col-5 { grid-column: span 5; } .col-4 { grid-column: span 4; } .col-3 { grid-column: span 3; } .col-2 { grid-column: span 2; } .col-1 { grid-column: span 1; }
 .field label, .label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
 .field label .req { color: var(--red); }
 .field .help { font-size: 12px; color: var(--muted); margin-top: 5px; }
@@ -201,6 +201,33 @@ table.t tr.child td { background: #fcfdfe; }
 .check { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; }
 .check input { width: 16px; height: 16px; accent-color: var(--primary); }
 .form-section { font-size: 13px; font-weight: 700; color: var(--text); padding-bottom: 8px; border-bottom: 1px solid var(--border); margin: 6px 0 2px; grid-column: span 12; display: flex; align-items: center; gap: 8px; }
+
+/* ---------- Request forms & Equipment repeater responsiveness ---------- */
+.req-item-row { align-items: flex-start; }
+@media (max-width: 860px) {
+  .field-location { grid-column: span 12 !important; }
+  .field-po       { grid-column: span 6 !important; }
+  .field-date     { grid-column: span 6 !important; }
+  .req-item-row .req-item-service { grid-column: span 6 !important; }
+  .req-item-row .req-item-desc    { grid-column: span 6 !important; }
+  .req-item-row .req-item-id      { grid-column: span 6 !important; }
+  .req-item-row .req-item-qty     { grid-column: span 6 !important; }
+}
+@media (max-width: 560px) {
+  .field-po       { grid-column: span 12 !important; }
+  .field-date     { grid-column: span 12 !important; }
+  .req-item-row .req-item-service { grid-column: span 12 !important; }
+  .req-item-row .req-item-desc    { grid-column: span 12 !important; }
+  .req-item-row .req-item-id      { grid-column: span 7 !important; }
+  .req-item-row .req-item-qty     { grid-column: span 5 !important; }
+  .req-item-row .req-item-qty .row { gap: 6px; }
+}
+@media (max-width: 420px) {
+  .req-item-row .req-item-id      { grid-column: span 12 !important; }
+  .req-item-row .req-item-qty     { grid-column: span 12 !important; }
+  .card-f { flex-direction: column-reverse; }
+  .card-f > * { width: 100%; justify-content: center; text-align: center; }
+}
 
 /* ---------------------------------------------------------------- alerts */
 .alert { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; border: 1px solid; margin-bottom: 16px; font-size: 13.5px; }
@@ -455,7 +482,7 @@ a.sub-row:hover { background: var(--surface-2); text-decoration: none; }
   .content { padding: 16px; }
   .topbar { padding: 0 16px; }
   .page-head h1 { font-size: 19px; }
-  .col-8, .col-6, .col-4, .col-3 { grid-column: span 12; }
+  .col-8, .col-7, .col-6, .col-5, .col-4, .col-3, .col-2 { grid-column: span 12; }
   .kv { grid-template-columns: 1fr; gap: 2px 0; } .kv dd { margin-bottom: 8px; }
   .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .kpi { padding: 12px; flex-direction: column; gap: 8px; } .kpi .k-v { font-size: 22px; }
