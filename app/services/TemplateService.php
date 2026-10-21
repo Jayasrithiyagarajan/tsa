@@ -93,7 +93,7 @@ final class TemplateService
         if (is_string($r)) $r = json_decode($r, true);
         if (!is_array($r)) return [];
         $keep = ['cover', 'cols', 'answers', 'note_label', 'band_h', 'intro_h', 'colhead_h', 'band_align', 'intros', 'gap_before',
-                 'pictures', 'notes_box', 'item_font', 'ar', 'sign', 'sign_h'];
+                 'pictures', 'notes_box', 'item_font', 'ar', 'sign', 'sign_h', 'style'];
         return array_intersect_key($r, array_flip($keep));
     }
 
@@ -102,8 +102,8 @@ final class TemplateService
     {
         $keys = [];
         foreach ($layout['report']['cover']['rows'] ?? [] as $row) {
-            $cells = $row[0] === 'triple' ? $row[1] : [[$row[1] ?? '', $row[2] ?? '']];
-            if (in_array($row[0], ['f', 'triple', 'vin'], true)) {
+            $cells = in_array($row[0], ['triple', 'quad', 'hdr4'], true) ? $row[1] : [[$row[1] ?? '', $row[2] ?? '']];
+            if (in_array($row[0], ['f', 'triple', 'vin', 'quad', 'hdr4'], true)) {
                 foreach ($cells as $c) {
                     $k = $row[0] === 'vin' ? ($row[1] ?? 'vin') : ($c[1] ?? '');
                     if ($k !== '' && !array_key_exists($k, self::REPORT_SOURCES)) $keys[$k] = $row[0] === 'vin' ? 'VIN (17 characters)' : ($c[0] ?? $k);

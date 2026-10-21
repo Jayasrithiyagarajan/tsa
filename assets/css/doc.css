@@ -336,3 +336,40 @@ table.f.lp td.rm { vertical-align: middle; padding: 0.75pt 1.9mm 0; }
 table.f.lp .rmh { font-size: 12pt; font-weight: bold; text-decoration: underline; height: 24.8pt; }
 table.f.lp .rml { height: 14.1pt; }
 .lp-sig { position: absolute; max-width: 36.6mm; max-height: 18.6mm; }
+
+/* ---------- F-7.5.1-D 03 Service / Delivery Receipt ---------- */
+table.f.dr td { border: 0.5pt solid #7f7f7f; padding: 0 1.9mm; font-size: 10pt; line-height: 0.909; vertical-align: middle; }
+table.f.dr td.nb { border: 0; padding: 0; background: #fff; }
+table.f.dr td.l { background: #aabee3; }
+table.f.dr td.c { text-align: center; }
+table.f.dr td.b { font-weight: bold; }
+table.f.dr td.t14 { font-size: 14pt; font-weight: bold; }
+table.f.dr td.h12 { font-size: 12pt; font-weight: bold; }
+table.f.dr .n10 { font-size: 10pt; font-weight: normal; }
+
+/* ---- ld: Elevator Inspection Defect Report ---- */
+table.f.ld { border-collapse: collapse; }
+table.f.ld td { vertical-align: top; border: 0.5pt #7f7f7f solid; border-style: solid; padding: 0 1.9mm; font-size: 10pt; line-height: 0.909; }
+table.f.ld td.l { background: #aabee3; }
+table.f.ld td.c { text-align: center; }
+table.f.ld td.b, table.f.ld .b { font-weight: bold; }
+table.f.ld td.rt { text-align: right; }
+table.f.ld td.t12 { font-size: 12pt; }
+table.f.ld .rd { color: #ff0000; }
+table.f.ld .gn { color: #1a7f37; }
+table.f.ld td.nt { text-align: right; padding-top: 0.5mm; }
+table.f.ld td.lh { line-height: 0.75; }
+table.f.ld .nr { text-align: right; line-height: 1.15; }
+
+/* ---- ch: Crane Health Check (F-7.5.1-CL 029) ---- */
+table.f.ch { border-collapse: collapse; }
+table.f.ch td { vertical-align: middle; border: 0.5pt solid #000; padding: 0 1.9mm; font-size: 11pt; line-height: 0.909; font-weight: normal; }
+table.f.ch tr.sz td { border: 0 !important; padding: 0 !important; }
+table.f.ch td.fl { background: #95b3d7; }
+table.f.ch td.c { text-align: center; }
+table.f.ch td.b, table.f.ch .b { font-weight: bold; }
+table.f.ch td.t12 { font-size: 12pt; }
+table.f.ch td.t10 { font-size: 10pt; }
+table.f.ch td.yes { background: #00b050; color: #fff; }
+table.f.ch td.bx { font-family: "DejaVu Sans", "Segoe UI Symbol", sans-serif; font-size: 10pt; }
+table.f.ch td.ph { padding: 0.5mm; }

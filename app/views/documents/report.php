@@ -7,6 +7,7 @@
  */
 $tpl = $m['template'];
 $R = $L['report'];
+if (($R['style'] ?? '') === 'ch') { require __DIR__ . '/report_ch.php'; return; }
 if (($R['ar']['style'] ?? '') === 'mo') { require __DIR__ . '/report_mo.php'; return; }
 $pt = 0.3528;
 $font = (float) ($R['item_font'] ?? $L['font']);
