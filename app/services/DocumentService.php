@@ -212,6 +212,10 @@ final class DocumentService
         $pdf->loadHtml($html, 'UTF-8');
         $pdf->setPaper($paper, 'portrait');
         $pdf->render();
+        // Lock the PDF: opens without a password, but only printing is permitted (no editing, copying or form changes).
+        // The owner password is private to the server; set PDF_OWNER_PASSWORD in the environment to change it.
+        $owner = getenv('PDF_OWNER_PASSWORD') ?: hash('sha256', 'tsa-pdf-lock|' . ROOT_PATH);
+        $pdf->getCanvas()->get_cpdf()->setEncryption('', $owner, ['print']);
         $pdf->stream($filename, ['Attachment' => $download]);
         exit;
     }
