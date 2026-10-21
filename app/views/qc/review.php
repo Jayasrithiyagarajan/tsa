@@ -36,6 +36,12 @@
         <?php else: ?><div class="ok-line"><?= icon('check') ?> All completeness rules pass</div><?php endif; ?>
         <?php if (!$self): ?><div><a class="btn btn-secondary" href="<?= url('inspector/subjobs/' . $sj['id']) ?>"><?= icon('edit', 'sm') ?> Edit checklist & certificate</a><div class="small muted mt-1">Fix small errors yourself instead of returning the job.</div></div><?php endif; ?>
         <div class="field"><label>Comments to inspector <span class="muted">(required for rework)</span></label><textarea class="textarea" name="comments" placeholder="What was checked, or what must be corrected…"></textarea></div>
+        <?php if (!$self): ?><div class="field"><label>To approve, type the text in the image <span class="muted">(not needed to return for rework)</span></label>
+          <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap">
+            <img id="cap-img" src="<?= url('admin/captcha') ?>?t=<?= time() ?>" alt="Verification text" width="190" height="60" style="border:1px solid var(--border);border-radius:8px;background:#fff">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('cap-img').src='<?= url('admin/captcha') ?>?t='+Date.now()"><?= icon('rotate', 'sm') ?> New image</button>
+          </div>
+          <input class="input mt-1" name="captcha" autocomplete="off" maxlength="5" placeholder="Type the text in the image"></div><?php endif; ?>
         <?php if ($self): ?><div class="alert alert-error" style="margin:0"><?= icon('lock') ?><div>Four-eyes rule: you performed this inspection and cannot approve it.</div></div><?php endif; ?>
       </div>
       <div class="card-f" style="justify-content:stretch">

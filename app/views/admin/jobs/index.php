@@ -28,7 +28,7 @@
   </div>
   <?php if ($rows): ?>
   <div class="table-wrap"><table class="t stack-sm">
-    <thead><tr><th>Job</th><th>Client</th><th>Scheduled</th><th>Priority</th><th>Lead inspector</th><th style="min-width:160px">Progress</th><th>Status</th></tr></thead>
+    <thead><tr><th>Job</th><th>Client</th><th>Scheduled</th><th>Priority</th><th>Lead inspector</th><th style="min-width:160px">Progress</th><th>Status</th><th>Closed by</th></tr></thead>
     <tbody>
     <?php foreach ($rows as $j): $pct = $j['n_total'] ? round($j['n_done'] / $j['n_total'] * 100) : 0; ?>
       <tr class="row-link" data-href="<?= url('admin/jobs/' . $j['id']) ?>">
@@ -41,6 +41,7 @@
           <div class="progress-label"><span><?= (int) $j['n_done'] ?>/<?= (int) $j['n_total'] ?> approved</span><span><?= $j['n_qc'] ? (int) $j['n_qc'] . ' at QC' : ($j['n_pending'] ? (int) $j['n_pending'] . ' unassigned' : '') ?></span></div>
           <div class="progress"><span style="width:<?= $pct ?>%"></span></div></td>
         <td data-label="Status"><?= badge($j['status']) ?></td>
+    <td data-label="Closed by"><?= !empty($j['closed_by_name']) ? '<span class="person"><span class="avatar sm">' . e(initials($j['closed_by_name'])) . '</span><span>' . e($j['closed_by_name']) . '<div class="sub">' . e(Workflow::label($j['closed_by_role'])) . ' · ' . e(fmt_date($j['completed_at'])) . '</div></span></span>' : '<span class="muted">-</span>' ?></td>
       </tr>
     <?php endforeach; ?>
     </tbody>

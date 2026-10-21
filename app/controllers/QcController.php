@@ -60,6 +60,7 @@ final class QcController extends Controller
     {
         $this->attempt(function () use ($id) {
             if (input('decision') === 'approve') {
+                AdminJobController::checkCaptcha();          // second check: type the text shown in the image
                 QcService::approve((int) $id, nullable(input('comments')));
                 flash('success', 'Approved. Once every inspection of the job passes QC, an admin gives the final approval and the client receives the certificates.');
             } elseif (input('decision') === 'rework') {

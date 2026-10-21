@@ -38,7 +38,7 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
     <button class="btn btn-primary"><?= icon('check', 'sm') ?> Final approval &amp; close job</button>
   </form>
 <?php elseif ($job['status'] === 'completed' && !empty($job['closed_by'])): ?>
-  <div class="alert alert-success"><?= icon('check') ?><div>Closed with final approval by <b><?= e(DB::value('SELECT name FROM users WHERE id = ?', [$job['closed_by']])) ?></b> on <?= e(fmt_datetime($job['completed_at'])) ?>.</div></div>
+  <div class="alert alert-success"><?= icon('check') ?><div>Closed with final approval by <b><?= e($job['closed_by_name'] ?: DB::value('SELECT name FROM users WHERE id = ?', [$job['closed_by']])) ?></b><?= $job['closed_by_role'] ? ' (' . e(Workflow::label($job['closed_by_role'])) . ')' : '' ?> on <?= e(fmt_datetime($job['completed_at'])) ?>.</div></div>
 <?php endif; ?>
 <div class="card card-b mb-2">
   <div class="progress-label"><span class="strong" style="color:var(--text)">Job progress</span><span><?= $progress['approved'] ?> of <?= $progress['total'] ?> sub-jobs approved · <?= $progress['submitted'] ?> at QC · <?= $progress['active'] ?> in inspection · <?= $progress['unassigned'] ?> unassigned</span></div>

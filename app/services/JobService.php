@@ -293,7 +293,7 @@ final class JobService
             throw new DomainException('Only a job whose inspections all passed QC review (Awaiting Final Approval) can be closed.');
         }
         DB::tx(function () use ($job, $note) {
-            DB::update('jobs', ['status' => 'completed', 'completed_at' => now(), 'closed_by' => Auth::id()], 'id = ?', [$job['id']]);
+            DB::update('jobs', ['status' => 'completed', 'completed_at' => now(), 'closed_by' => Auth::id(), 'closed_by_name' => Auth::user()['name'] ?? null, 'closed_by_role' => Auth::role()], 'id = ?', [$job['id']]);
             Audit::log('job.closed', 'job', (int) $job['id'], ['note' => trim($note)]);
             $certs = (int) DB::value("SELECT COUNT(*) FROM certificates c JOIN sub_jobs s ON s.id = c.sub_job_id WHERE s.job_id = ? AND c.status = 'issued'", [$job['id']]);
             Notify::client((int) $job['client_id'], "Job {$job['job_no']} completed",

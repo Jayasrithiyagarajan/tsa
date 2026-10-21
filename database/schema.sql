@@ -224,6 +224,8 @@ CREATE TABLE jobs (
   created_by      INT UNSIGNED NULL,
   completed_at    DATETIME NULL,
   closed_by       INT UNSIGNED NULL,                      -- admin who gave the final approval
+    closed_by_name  VARCHAR(120) NULL,                      -- name and role of the closer, saved when the job is closed
+    closed_by_role  VARCHAR(20) NULL,
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_jobs_status (status),

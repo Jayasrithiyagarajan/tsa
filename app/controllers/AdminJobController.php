@@ -143,7 +143,17 @@ final class AdminJobController extends Controller
         }, 'Final approval given. The job is closed and the client can now download the certificates.');
     }
 
-    /** Verification image shown beside the "close job" button. The code lives only in the session. */
+    /** One-time check of the typed verification text; throws when it does not match the image. */
+    public static function checkCaptcha(): void
+    {
+        $c = $_SESSION['close_captcha'] ?? null;
+        unset($_SESSION['close_captcha']);
+        if (!$c || time() - $c['t'] > 600 || strcasecmp(trim((string) input('captcha', '')), $c['code']) !== 0) {
+            throw new DomainException('The verification text does not match the image. Please try again.');
+        }
+    }
+
+    /** Verification image shown beside the "close job" and "QC approve" buttons. The code lives only in the session. */
     public function captcha(): void
     {
         $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';        // no 0/O/1/I to avoid misreading

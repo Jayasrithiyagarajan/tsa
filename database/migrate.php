@@ -95,6 +95,13 @@ if (!DB::one("SHOW COLUMNS FROM jobs LIKE 'closed_by'")) {
     echo "✓ jobs: final approval step (awaiting_approval, closed_by)\n";
 }
 
+if (!DB::one("SHOW COLUMNS FROM jobs LIKE 'closed_by_name'")) {
+    // who closed the job (name + role) is saved with the job, so it stays correct even if the user is renamed or changes role later
+    DB::pdo()->exec("ALTER TABLE jobs ADD closed_by_name VARCHAR(120) NULL AFTER closed_by, ADD closed_by_role VARCHAR(20) NULL AFTER closed_by_name");
+    DB::pdo()->exec("UPDATE jobs j JOIN users u ON u.id = j.closed_by SET j.closed_by_name = u.name, j.closed_by_role = u.role WHERE j.closed_by IS NOT NULL");
+    echo "+ jobs: closed_by_name / closed_by_role saved\n";
+}
+
 $sig = fn (array $sections) => md5(json_encode(array_map(fn ($items) => array_values($items), $sections)));
 
 foreach (require __DIR__ . '/seed_templates.php' as $def) {
