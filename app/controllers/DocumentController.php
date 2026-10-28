@@ -92,6 +92,47 @@ final class DocumentController extends Controller
         $this->output('documents/checklist', ['m' => $m], 'Checklist-' . $sj['sub_job_no'] . '.pdf', $sj, Workflow::label($m['checklist']['status']));
     }
 
+    /**
+     * Public downloads from the ID-card QR scan page. The unguessable card token is the credential;
+     * files are released only while the card is valid (not expired, revoked or awaiting hand-over).
+     */
+    public function publicCardDoc(string $token, string $kind): void
+    {
+        if (!preg_match('/^[a-f0-9]{32}$/', $token) || !in_array($kind, ['card', 'certificate'], true)) $this->notFound();
+        $card = InspectorCardService::find('c.verify_token = ?', [$token]);
+        if (!$card || InspectorCardService::state($card) !== 'valid') $this->notFound();
+        $this->pubBack = url('verify/card/' . $token);
+        if ($kind === 'certificate') {
+            $sj = $card['sub_job_id'] ? JobService::subJob((int) $card['sub_job_id']) : null;
+            if (!$sj) $this->notFound();
+            $this->renderOperatorCertificate($sj);
+            return;
+        }
+        $m = InspectorCardService::model($card);
+        $html = View::partial('documents/id_card', ['m' => $m, 'side' => 'both', 'toolbar' => null]);
+        Audit::log('id_card.downloaded', 'inspector_card', (int) $card['id'], ['side' => 'both', 'public' => true]);
+        $pt = 72 / 25.4;
+        DocumentService::pdf($html, 'ID-Card-' . $card['card_no'] . '.pdf', true, [0, 0, InspectorCardService::W_MM * $pt, InspectorCardService::H_MM * $pt]);
+    }
+
+    /** Certificate of Competence handed to the operator once the operator assessment is closed. */
+    public function operatorCertificate(string $id): void
+    {
+        $sj = $this->load($id);
+        $this->renderOperatorCertificate($sj);
+    }
+
+    private function renderOperatorCertificate(array $sj): void
+    {
+        if ($sj['kind'] !== 'operator' || $sj['status'] !== 'approved') $this->notFound();
+        $card = DB::one('SELECT * FROM inspector_cards WHERE sub_job_id = ? ORDER BY id DESC', [$sj['id']]);
+        if (!$card) $this->notFound();
+        $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
+        $m = ['sj' => $sj, 'card' => $card, 'od' => $od, 'photo' => upload_data_uri($card['photo_path']),
+              'qr' => DocumentService::qr(abs_url('verify/card/' . $card['verify_token']))];
+        $this->output('documents/operator_certificate', ['m' => $m], 'Certificate-' . ($od['cert_no'] ?? $sj['sub_job_no']) . '.pdf', $sj, 'Issued');
+    }
+
     public function certificate(string $id): void
     {
         $sj = $this->load($id);

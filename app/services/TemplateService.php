@@ -194,6 +194,9 @@ final class TemplateService
                     $row['type'] = in_array($f['type'] ?? 'text', ['text', 'textarea', 'date', 'select', 'number'], true) ? $f['type'] : 'text';
                     $row['required'] = !empty($f['required']);
                     $row['carry'] = !empty($f['carry']);
+                    // print-layout data of report-style templates (e.g. the motorcycle form): section heading + bilingual item text
+                    if (!empty($f['section'])) $row['section'] = mb_substr((string) $f['section'], 0, 160);
+                    if (!empty($f['item'])) $row['item'] = mb_substr(str_replace("\r\n", "\n", (string) $f['item']), 0, 2000);
                     if ($row['type'] === 'select') {
                         $opts = is_array($f['options'] ?? null) ? $f['options'] : explode(',', (string) ($f['options'] ?? ''));
                         $row['options'] = array_values(array_filter(array_map('trim', $opts), 'strlen'));

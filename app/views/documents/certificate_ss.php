@@ -1,5 +1,5 @@
 <?php
-/** Steel structure inspection report in the F-7.5.1-16 pattern (8 pages: report, 2 drawing boxes, 4 photo pages of 16 boxes, sign-off). @var array $m  @var ?array $toolbar */
+/** Steel structure inspection report in the F-7.5.1-16 pattern (10 pages: report, results, 2 drawing pages, 6 photo pages of 4 x 4 boxes, sign-off under the grid on page 8). @var array $m  @var ?array $toolbar */
 $tpl = $m['template'];
 $c = $m['cert'];
 $brand = DocumentService::brand();
@@ -9,137 +9,175 @@ foreach ($m['fields'] as $f) $fv[$f['key']] = (string) ($f['value'] ?? '');
 $v = fn ($k) => e($fv[$k] ?? '');
 $tx = fn ($k) => nl2br(e($fv[$k] ?? ''));
 $lines = fn ($k) => array_values(array_filter(array_map('trim', preg_split('/\R/u', $fv[$k] ?? '')), fn ($l) => $l !== ''));
-$box = fn ($on, $label) => '<span class="radio">' . ($on ? '&#9746;' : '&#9744;') . '</span> ' . e($label);
+$box = fn ($on, $label) => '<span class="radio">' . ($on ? '&#9746;' : '&#9744;') . '</span>' . e($label);
 
 $result = (string) ($c['result'] ?? '');
 $testResult = ['accepted' => 'Passed', 'rejected' => 'Failed', 'repair' => 'Repair required'][$result] ?? '';
 $satisfactory = $result === 'accepted';
 
+// Dompdf lays text lines out 1.344 x taller than the CSS line-height says (the same factor report_mo.php compensates for), so in PDF mode
+// ($toolbar is null) the line heights below are divided by it; the browser preview uses them as they are.
+$pdfMode = ($toolbar ?? null) === null;
+$lh = fn (float $mm) => round($mm / ($pdfMode ? 1.344 : 1), 3) . 'mm';
+$lhCss = '<style>table.f.sst td{line-height:' . $lh(4.3) . '}table.f.sst.chs td.ck{line-height:' . $lh(4.7) . '}table.f.sst .hd2,table.f.sst .ni{line-height:' . $lh(4.3) . '}table.f.sst .ni.nc{line-height:' . $lh(4.7) . '}.sst-h{line-height:' . $lh(4.7) . '}</style>';
+
+// Dimensions are measured from the Word form F-7.5.1-16 (row heights in mm). Scoped by the "sst" class.
+$row = function (float $h, array $cells, string $cls = '') {
+    $o = '<tr' . ($cls !== '' ? ' class="' . $cls . '"' : '') . '>';
+    foreach ($cells as $cell) {
+        [$cc, $html] = $cell;
+        $o .= '<td' . ($cc !== '' ? ' class="' . $cc . '"' : '') . (isset($cell[2]) ? ' ' . $cell[2] : '') . ' style="height:' . round($h, 2) . 'mm' . (isset($cell[3]) ? ';' . $cell[3] : '') . '">' . $html . '</td>';
+    }
+    return $o . '</tr>';
+};
+$gap = fn (float $mm) => ' style="margin-top:' . $mm . 'mm"';
+
 // ---------------- page 1: details, stage, type, introduction, reference standards
 $pairs = [
-    ['Client', e($fv['client'] ?? ''), 'Report No.', e($fv['cert_no'] ?? '')],
-    ['Address', $v('address'), 'Inspection Date', $v('insp_date')],
-    ['Project', $v('project'), 'Inspection Location', $v('location')],
-    ['Manufacuture', $v('manufacture'), 'Test Result', e($testResult)],
+    ['Client', e($fv['client'] ?? ''), 'Report No.', e($fv['cert_no'] ?? ''), 8.3],
+    ['Address', $v('address'), 'Inspection Date', $v('insp_date'), 7.4],
+    ['Project', $v('project'), 'Inspection Location', $v('location'), 8.2],
+    ['Manufacuture', $v('manufacture'), 'Test Result', e($testResult), 8.1],
 ];
-$t1 = '<table class="f sc">' . doc_sizer([30, 65, 34, 61]);
-foreach ($pairs as $r) $t1 .= '<tr class="h82"><td class="l">' . $r[0] . '</td><td>' . $r[1] . '</td><td class="l">' . $r[2] . '</td><td>' . $r[3] . '</td></tr>';
+$t1 = '<table class="f sst">' . doc_sizer([38.5, 54.9, 36.5, 50.5]);
+foreach ($pairs as $r) $t1 .= $row($r[4], [['l', $r[0]], ['', $r[1]], ['l', $r[2]], ['', $r[3]]]);
 $t1 .= '</table>';
 
-$t2 = '<table class="f sc" style="margin-top:5mm">' . doc_sizer([30, 160])
-    . '<tr class="h66"><td class="l">Inspected Item</td><td>' . $v('eq_item') . '</td></tr>'
-    . '<tr class="h66"><td class="l">Item / Tag No.</td><td>' . $v('eq_tag') . '</td></tr>'
-    . '<tr class="h66"><td class="l">QTY / Drawing No.</td><td>' . $v('qty_drawing') . '</td></tr></table>';
+$t2 = '<table class="f sst"' . $gap(5.2) . '>' . doc_sizer([39.5, 140.9])
+    . $row(9.0, [['l', 'Inspected Item'], ['', $v('eq_item')]])
+    . $row(8.8, [['l', 'Item / Tag No.'], ['', $v('eq_tag')]])
+    . $row(9.2, [['l', 'QTY / Drawing No.'], ['', $v('qty_drawing')]]) . '</table>';
 
-$choice = function (string $title, array $opts, array $picked) use ($box) {
-    $h = '<table class="f sc" style="margin-top:5mm">' . doc_sizer([63.4, 63.3, 63.3]) . '<tr><td class="band c" colspan="3">' . e($title) . '</td></tr>';
-    foreach (array_chunk($opts, 3) as $row) {
-        $row = array_pad($row, 3, null);
-        $h .= '<tr class="h86">';
-        foreach ($row as $o) $h .= '<td>' . ($o === null ? '' : $box(in_array($o, $picked, true), strtoupper($o))) . '</td>';
-        $h .= '</tr>';
+// one box per group, options in three columns (the form lays these out with tab stops)
+$choice = function (string $title, array $opts, array $picked, array $cols, float $hb, float $hc, float $pitch, float $mt) use ($box, $row, $gap) {
+    $h = '<table class="f sst chs"' . $gap($mt) . '>' . doc_sizer($cols) . '<tr><td class="band c" colspan="3" style="height:' . $hb . 'mm">' . e($title) . '</td></tr><tr>';
+    $per = (int) ceil(count($opts) / 3);
+    for ($k = 0; $k < 3; $k++) {
+        $h .= '<td class="ck" style="height:' . $hc . 'mm"><div style="padding-top:2.7mm">';
+        for ($i = 0; $i < $per; $i++) {
+            $o = $opts[$i * 3 + $k] ?? null;
+            $h .= '<div' . ($i < $per - 1 ? ' style="height:' . $pitch . 'mm"' : '') . '>' . ($o === null ? '' : $box(in_array($o, $picked, true), strtoupper($o))) . '</div>';
+        }
+        $h .= '</div></td>';
     }
-    return $h . '</table>';
+    return $h . '</tr></table>';
 };
-$stage = $choice('STAGE OF INSPECTION', ['Before Manufacturing', 'During Manufacturing', 'Final', 'Packing', 'After Installed', 'In-Service Inspection'], [$fv['stage'] ?? '']);
-$typeOpts = ['Pre-Inspection', 'Document and QC Record Review', 'Visual Examination/Checks', 'Witnessing Tests', 'Final Inspection'];
-$typePicked = array_filter([$fv['type_insp'] ?? '', $fv['type_insp2'] ?? '']);
-$types = $choice('TYPE OF INSPECTION', $typeOpts, $typePicked);
+$stage = $choice('STAGE OF INSPECTION', ['Before Manufacturing', 'During Manufacturing', 'Final', 'Packing', 'After Installed', 'In-Service Inspection'], [$fv['stage'] ?? ''], [59.0, 66.5, 55.1], 8.9, 19.6, 9.5, 5.1);
+// the form has separate VISUAL and EXAMINATION/CHECKS boxes; the stored option "Visual Examination/Checks" ticks VISUAL
+$typePicked = array_map(fn ($x) => $x === 'Visual Examination/Checks' ? 'Visual' : $x, array_filter([$fv['type_insp'] ?? '', $fv['type_insp2'] ?? '', $fv['type_insp3'] ?? '']));
+$types = $choice('TYPE OF INSPECTION', ['Pre-Inspection', 'Document and QC Record Review', 'Visual', 'Examination/Checks', 'Witnessing Tests', 'Final Inspection'], $typePicked, [56.2, 70.6, 53.8], 9.1, 21.5, 8.9, 5.2);
 
-$intro = '<table class="f sc" style="margin-top:5mm">' . doc_sizer([190])
-    . '<tr><td class="hd">INTRODUCTION:</td></tr><tr><td class="tx intro">' . $tx('intro') . '</td></tr></table>';
+$intro = '<table class="f sst"' . $gap(5.1) . '>' . doc_sizer([180.6])
+    . '<tr><td class="hd grey" style="height:9.7mm">INTRODUCTION:</td></tr><tr><td class="tx" style="height:21.6mm"><div style="padding-top:2.1mm">' . $tx('intro') . '</div></td></tr></table>';
 
-$std = '<table class="f sc" style="margin-top:5mm">' . doc_sizer([88, 50, 52])
-    . '<tr><td class="band c" colspan="3">Reference Standard</td></tr>'
-    . '<tr class="h66"><td class="l c">Title</td><td class="l c">Standard</td><td class="l c">Remarks</td></tr>';
-foreach ($m['notes'] as $n) {
+$std = '<table class="f sst"' . $gap(5.1) . '>' . doc_sizer([61.7, 50.8, 68.1])
+    . '<tr><td class="band c" colspan="3" style="height:10mm">Reference Standard</td></tr>'
+    . $row(7.0, [['hdb c', 'Title'], ['hdb c', 'Standard'], ['hdb c', 'Remarks']]);
+$hs = [9.3, 9.4, 9.3];
+foreach ($m['notes'] as $i => $n) {
     $p = array_map('trim', explode('|', $n)) + ['', '', ''];
-    $std .= '<tr class="h66"><td>' . e($p[0]) . '</td><td class="c">' . e($p[1]) . '</td><td class="c">' . e($p[2]) . '</td></tr>';
+    $std .= $row($hs[$i] ?? 9.3, [['', e($p[0])], ['c', e($p[1])], ['c', e($p[2])]]);
 }
 $std .= '</table>';
 
 // ---------------- page 2: result, conclusions, attendees, scope, activities, certification
-$res = '<table class="f sc">' . doc_sizer([95, 95])
-    . '<tr><td class="band" colspan="2">RESULT OF INSPECTION:</td></tr>'
-    . '<tr class="h86"><td class="c">' . $box($satisfactory, 'SATISFACTORY') . '</td><td class="c">' . $box($result !== '' && !$satisfactory, 'UNSATISFACTORY') . '</td></tr>'
-    . '<tr><td class="tx" colspan="2"><div class="hd2">NON-CONFORMITIES REPORTS (NCR):</div>'
-    . '<div class="ni"><span>1.</span> NCRs issued during reports: ' . $v('ncr_issued') . '</div>'
-    . '<div class="ni"><span>2.</span> List of outstanding NCRs: ' . $v('ncr_outstanding') . '</div></td></tr></table>';
+$res = '<table class="f sst">' . doc_sizer([91.05, 91.05])
+    . '<tr><td class="band" colspan="2" style="height:8mm">RESULT OF INSPECTION:</td></tr>'
+    . '<tr class="rk"><td colspan="2" style="height:11mm"><div style="padding-top:4.7mm"><span class="k1">' . $box($satisfactory, 'SATISFACTORY') . '</span>' . $box($result !== '' && !$satisfactory, 'UNSATISFACTORY') . '</div></td></tr>'
+    . '<tr class="rn"><td class="tx" colspan="2" style="height:31.3mm"><div style="padding-top:3.2mm"><div class="hd2">NON-CONFORMITIES REPORTS (NCR):</div>'
+    . '<div class="ni nc"><span>1.</span> NCRs issued during reports: ' . $v('ncr_issued') . '</div>'
+    . '<div class="ni nc"><span>2.</span> List of outstanding NCRs: ' . $v('ncr_outstanding') . '</div></div></td></tr>'
+    . '</table>';
 
 $concl = '';
 foreach ($lines('conclusions') as $k => $l) $concl .= '<div class="ni"><span>' . ($k + 1) . '.</span> ' . e($l) . '</div>';
-$cn = '<table class="f sc" style="margin-top:5mm">' . doc_sizer([190])
-    . '<tr><td class="band">CONCLUSIONS AND REMARKS:</td></tr><tr><td class="tx concl">' . $concl . '</td></tr></table>';
+$cn = '<table class="f sst" style="margin-top:-0.5pt">' . doc_sizer([182.1])
+    . '<tr><td class="band" style="height:7.7mm">CONCLUSIONS AND REMARKS:</td></tr><tr><td class="tx" style="height:26mm"><div style="padding-top:4.2mm">' . $concl . '</div></td></tr></table>';
 
-$att = '<table class="f sc" style="margin-top:5mm">' . doc_sizer([63.4, 63.3, 63.3])
-    . '<tr class="h66"><td class="hd c" colspan="3">ATTENDEES</td></tr>'
-    . '<tr class="h66"><td class="l c">NAME</td><td class="l c">DESIGNATION</td><td class="l c">REPRESENTATIVE</td></tr>';
+$att = '<table class="f sst"' . $gap(4.6) . '>' . doc_sizer([66.7, 38.1, 77.8])
+    . '<tr><td class="hdb c" colspan="3" style="height:7.6mm">ATTENDEES</td></tr>'
+    . $row(8.0, [['l c', 'NAME'], ['l c', 'DESIGNATION'], ['l c', 'REPRESENTATIVE']]);
 foreach ($lines('attendees') as $l) {
     $p = array_map('trim', explode('|', $l)) + ['', '', ''];
-    $att .= '<tr class="h66"><td class="c">' . e($p[0]) . '</td><td class="c">' . e($p[1]) . '</td><td class="c">' . e($p[2]) . '</td></tr>';
+    $att .= $row(7.4, [['c', e($p[0])], ['c', e($p[1])], ['c', e($p[2])]]);
 }
-$att .= '<tr class="h66"><td class="hd c" colspan="3">SCOPE OF INSPECTION</td></tr>'
-    . '<tr class="h66"><td class="l c">INSPECTION METHOD</td><td class="l c">SCOPE</td><td class="l c">REMARKS</td></tr>'
-    . '<tr class="h66"><td class="c">' . $v('scope_method') . '</td><td class="c">' . $v('scope_scope') . '</td><td class="c">' . $v('scope_remarks') . '</td></tr></table>';
+$att .= '<tr><td class="hdb c" colspan="3" style="height:7.5mm">SCOPE OF INSPECTION</td></tr>'
+    . $row(8.6, [['l c', 'INSPECTION METHOD'], ['l c', 'SCOPE'], ['l c', 'REMARKS']])
+    . $row(7.7, [['c', $v('scope_method')], ['c', $v('scope_scope')], ['c', $v('scope_remarks')]]) . '</table>';
 
-$det = '<table class="f sc" style="margin-top:5mm">' . doc_sizer([190])
-    . '<tr><td class="band hd">DETAIL OF INSPECTION ACTIVITIES</td></tr>'
-    . '<tr><td class="band">VISUAL INSPECTION</td></tr>'
-    . '<tr><td class="tx"><b>General Description:</b> ' . $v('gen_desc') . '</td></tr>'
-    . '<tr><td class="tx act">' . $tx('activities') . '</td></tr></table>';
+$det = '<table class="f sst"' . $gap(4.5) . '>' . doc_sizer([182.1])
+    . '<tr><td class="hd" style="height:10.2mm;vertical-align:top"><div style="padding-top:2.6mm">DETAIL OF INSPECTION ACTIVITIES</div></td></tr>'
+    . '<tr><td class="band" style="height:8.2mm">VISUAL INSPECTION</td></tr>'
+    . '<tr><td class="tx" style="height:9.7mm"><div style="padding-top:2.6mm"><b>General Description:</b> ' . $v('gen_desc') . '</div></td></tr>'
+    . '<tr><td class="tx" style="height:9.3mm"><div style="padding-top:2.5mm">' . $tx('activities') . '</div></td></tr></table>';
 
-$cert = '<table class="f sc" style="margin-top:5mm">' . doc_sizer([190])
-    . '<tr><td class="band c">RESULT OF INSPECTION</td></tr>'
-    . '<tr><td class="tx fin"><div class="ni"><span>-</span> ' . e($c['result_statement']) . '.</div>'
-    . '<div class="ni"><span>-</span> We hereby certify that the above item described in this certificate was tested and examined according to relevant standards and that the above particulars are correct.</div></td></tr></table>';
+$cert = '<table class="f sst"' . $gap(4.7) . '>' . doc_sizer([182.1])
+    . '<tr><td class="band c" style="height:8.6mm">RESULT OF INSPECTION</td></tr>'
+    . '<tr><td class="tx" style="height:21.7mm"><div style="padding-top:4.4mm"><div class="ni dash"><span>-</span> ' . e($c['result_statement']) . '.</div>'
+    . '<div class="ni dash"><span>-</span> We hereby certify that the above item described in this certificate was tested and examined according to relevant standards and that the above particulars are correct.</div></div></td></tr></table>';
 
-// ---------------- sign-off
+// ---------------- sign-off (last photo page)
 $insp = $m['inspector'];
 $rev = $m['reviewer'];
 $who = fn ($p) => $p ? e($p['name'] . ($p['qualification'] ? ' - ' . $p['qualification'] : '')) : '';
 $signed = in_array($c['status'], ['pending_qc', 'issued'], true);
 $sgImg = ($signed && $insp && !empty($insp['signature'])) ? '<img class="sg" src="' . $insp['signature'] . '" alt="">' : '';
-$stImg = $m['issued'] ? '<img class="sp" src="' . $brand['stamp'] . '" alt="">' : '';
-$sign = '<table class="f sc" style="margin-top:8mm">' . doc_sizer([62, 128])
-    . '<tr class="h110"><td class="l">' . e($tpl['inspector_label']) . '</td><td>' . $who($insp) . '</td></tr>'
-    . '<tr class="h130"><td class="l">Signature:</td><td rowspan="2" class="c sgc">' . $sgImg . $stImg . '</td></tr>'
-    . '<tr class="h130"><td class="l">Stamp:</td></tr>'
-    . '<tr class="h110"><td class="l">Reviewed By:</td><td>' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td></tr></table>';
+$stamp = $m['issued'] ? '<img class="stamp" style="left:164mm; top:244mm" src="' . $brand['stamp'] . '" alt="">' : '';
+$sign = '<table class="f sst sgn"' . $gap(7.1) . '>' . doc_sizer([95.7, 91.6])
+    . '<tr><td class="sl" style="height:6.7mm">' . e($tpl['inspector_label']) . '</td><td style="height:6.7mm">' . $who($insp) . '</td></tr>'
+    . '<tr><td class="sl" style="height:5.1mm">Signature:</td><td rowspan="2" class="sgc" style="height:10.2mm">' . $sgImg . '</td></tr>'
+    . '<tr><td class="sl" style="height:5.1mm">Stamp:</td></tr>'
+    . '<tr><td class="sl" style="height:7.8mm">Reviewed By:</td><td style="height:7.8mm">' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td></tr></table>';
 
-// ---------------- attachments: captions containing "draw" are drawings (one per page, max 2), the rest are photographs (max 64)
+// ---------------- attachments: captions containing "draw" are drawings (one per page, max 2), the rest are photographs (max 96)
 $drawings = $pics = [];
 foreach ($m['photos'] ?? [] as $p) {
     if (preg_match('/draw/i', (string) ($p['caption'] ?? ''))) $drawings[] = $p; else $pics[] = $p;
 }
 $pages = [];
-$title = '<div class="cert-title" style="top:24.6mm">' . e($tpl['title']) . '</div>';
-$pages[] = ['body' => $t1 . $t2 . $stage . $types . $intro . $std, 'top' => 36, 'left' => 10.5, 'width' => 190, 'extra' => $title];
-$pages[] = ['body' => $res . $cn . $att . $det . $cert, 'top' => 36, 'left' => 10.5, 'width' => 190];
+$title = '<div class="cert-title sst-t">' . e($tpl['title']) . '</div>';
+$pages[] = ['body' => $t1 . $t2 . $stage . $types . $intro . $std, 'top' => 40.7, 'left' => 14.85, 'width' => 180.6, 'extra' => $lhCss . $title];
+$pages[] = ['body' => $res . $cn . $att . $det . $cert, 'top' => 28.6, 'left' => 14.7, 'width' => 182.6];
 
-// Fixed to the form: pages 3-4 = two drawing boxes, pages 5-8 = four photo pages of 4 x 4 boxes (64), sign-off on page 8. Extra images are ignored.
+// Fixed to the form: pages 3-4 = two drawing boxes, pages 5-10 = six photo pages of 4 x 4 boxes (96), sign-off on page 8. Extra images are ignored.
 $drawTitle = trim($fv['draw_title'] ?? '') !== '' ? $v('draw_title') : 'Structure Visual inspection Picture As Per Drawing &amp; Site Visit :';
+$dbox = [208.3, 228.6];
 for ($i = 0; $i < 2; $i++) {
     $d = $drawings[$i] ?? null;
-    $head = $i === 0 ? '<div class="sc-h">' . $drawTitle . '</div>' : '';
-    $pages[] = ['body' => $head . '<div class="sc-draw' . ($i === 0 ? ' first' : '') . '">' . ($d ? '<img src="' . $d['src'] . '" alt="">' : '') . '</div>',
-        'top' => 36, 'left' => 10.5, 'width' => 190];
+    $head = $i === 0 ? '<div class="sst-h" style="height:' . ($pdfMode ? 14.7 : 14.3) . 'mm">' . $drawTitle . '</div>' : '';
+    $pages[] = ['body' => $head . '<div class="sst-draw" style="height:' . $dbox[$i] . 'mm' . ($pdfMode ? '' : ';line-height:' . $dbox[$i] . 'mm') . '">' . ($d ? '<img src="' . $d['src'] . '" style="max-height:' . ($dbox[$i] - 8) . 'mm" alt="">' : '') . '</div>',
+        'top' => $i === 0 ? 38.4 - ($pdfMode ? 0.8 : 0) : 38.2, 'left' => 12.7, 'width' => 184.2];
 }
 
-$pics = array_slice($pics, 0, 64);
-for ($i = 0; $i < 4; $i++) {
+// [page top, left, column widths, row height] - measured per page from the form
+$pg = [
+    [47.6, 12.8, [44.1, 47.9, 49.2, 46.0], 50.8],
+    [52.4, 12.8, [44.1, 46.3, 47.6, 47.6], 50.8],
+    [52.4, 12.8, [44.1, 47.9, 46.0, 47.6], 50.8],
+    [40.9, 11.1, [45.6, 47.2, 46.9, 47.6], 48.25],
+    [52.4, 12.8, [44.1, 47.9, 46.0, 47.6], 50.8],   // pages 9-10: two more photo pages, same grid as page 7
+    [52.4, 12.8, [44.1, 47.9, 46.0, 47.6], 50.8],
+];
+$pics = array_slice($pics, 0, 96);
+for ($i = 0; $i < 6; $i++) {
+    [$top, $left, $cols, $rh] = $pg[$i];
     $chunk = array_slice($pics, $i * 16, 16);
-    $last = $i === 3;
-    $g = '<table class="f sc-ph ss' . ($last ? ' last' : '') . '">' . doc_sizer([47.5, 47.5, 47.5, 47.5]);
+    $g = '<table class="f sst sst-ph">' . doc_sizer($cols);
     for ($r = 0; $r < 4; $r++) {
         $g .= '<tr>';
         for ($k = 0; $k < 4; $k++) {
             $p = $chunk[$r * 4 + $k] ?? null;
-            $g .= '<td class="c">' . ($p ? '<img src="' . $p['src'] . '" alt="">' : '') . '</td>';
+            $g .= '<td style="height:' . $rh . 'mm">' . ($p ? '<img src="' . $p['src'] . '" alt="">' : '') . '</td>';
         }
         $g .= '</tr>';
     }
     $g .= '</table>';
-    $pages[] = ['body' => $g . ($last ? $sign : ''), 'top' => 36, 'left' => 10.5, 'width' => 190];
+    $pages[] = ['body' => $g . ($i === 3 ? $sign : ''), 'top' => $top, 'left' => $left, 'width' => array_sum($cols), 'extra' => $i === 3 ? $stamp : ''];
+}
+// Dompdf adds the 0.5pt collapsed border to every row height; take it off again in PDF mode
+if ($pdfMode) {
+    foreach ($pages as &$pgx) $pgx['body'] = preg_replace_callback('/(<td[^>]*style="height:)([\d.]+)mm/', fn ($mt) => $mt[1] . round((float) $mt[2] - 0.18, 2) . 'mm', $pgx['body']);
+    unset($pgx);
 }
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;
 

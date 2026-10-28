@@ -17,6 +17,7 @@ $r->get('/request/thanks/{no}',   [PublicController::class, 'requestThanks']);
 $r->get('/verify',                [PublicController::class, 'verify']);
 $r->get('/verify/download',       [DocumentController::class, 'publicCertByNo']);   // must stay above /verify/{token}; typed certificate / page number → that page's PDF only
 $r->get('/verify/card/{token}',   [PublicController::class, 'verifyCard']);
+$r->get('/verify/card/{token}/{kind}', [DocumentController::class, 'publicCardDoc']);   // QR scan page of an ID card: card PDF / Certificate of Competence
 $r->get('/verify/{token}',        [PublicController::class, 'verifyToken']);
 $r->get('/s/{token}',             [PublicController::class, 'stickerScan']);
 $r->get('/verify/doc/{token}/{kind}', [DocumentController::class, 'publicDoc']);   // QR scan page: checklist / certificate / sticker downloads
@@ -34,6 +35,7 @@ $r->get('/notifications/{id}',              [ProfileController::class, 'openNoti
 $r->post('/notifications/read-all',         [ProfileController::class, 'readAll'], 'auth');
 $r->get('/documents/checklist/{id}',        [DocumentController::class, 'checklist'], 'auth');
 $r->get('/documents/certificate/{id}',      [DocumentController::class, 'certificate'], 'auth');
+$r->get('/documents/operator-certificate/{id}', [DocumentController::class, 'operatorCertificate'], 'auth');
 $r->get('/documents/sticker/{id}',          [DocumentController::class, 'sticker'], 'auth');
 $r->get('/documents/attachment/{id}',       [DocumentController::class, 'attachment'], 'auth');
 $r->get('/id-photo/{id}',                   [AdminCardController::class, 'userPhoto'], ['admin', 'inspector', 'qc']);
@@ -60,7 +62,6 @@ $r->get('/admin/assign',                    [AdminJobController::class, 'board']
 $r->get('/admin/jobs/{id}',                 [AdminJobController::class, 'show'], $A);
 $r->post('/admin/jobs/{id}/update',         [AdminJobController::class, 'update'], $A);
 $r->post('/admin/jobs/{id}/assign',         [AdminJobController::class, 'assign'], $A);
-$r->post('/admin/jobs/{id}/subjobs',        [AdminJobController::class, 'addSubJob'], $A);
 $r->get('/admin/captcha',                   [AdminJobController::class, 'captcha'], ['admin', 'qc']);       // verification image for closing a job
 $r->post('/admin/jobs/{id}/close',          [AdminJobController::class, 'close'], $A);       // final approval after QC
 $r->post('/admin/jobs/{id}/cancel',         [AdminJobController::class, 'cancel'], $A);
@@ -123,6 +124,8 @@ $r->post('/inspector/subjobs/{id}/checklist',  [InspectorController::class, 'sav
 $r->post('/inspector/subjobs/{id}/certificate',       [InspectorController::class, 'saveCertificate'],  ['inspector', 'qc', 'admin']);
 $r->post('/inspector/subjobs/{id}/certificate/clone', [InspectorController::class, 'cloneCertificate'], ['inspector', 'qc', 'admin']);
 $r->post('/inspector/subjobs/{id}/sticker',           [InspectorController::class, 'sticker'],           ['inspector', 'admin']);
+$r->post('/inspector/subjobs/{id}/operator-document', [InspectorController::class, 'operatorDocument'], ['inspector']);
+$r->post('/inspector/subjobs/{id}/operator-certificate', [InspectorController::class, 'operatorCertificateDetails'], ['inspector']);
 $r->post('/inspector/subjobs/{id}/upload',     [InspectorController::class, 'upload'], ['inspector', 'admin']);
 $r->post('/inspector/attachments/{id}/delete', [InspectorController::class, 'deleteAttachment'], ['inspector', 'admin']);
 $r->post('/inspector/attachments/{id}/page',   [InspectorController::class, 'attachmentPage'], ['inspector', 'admin']);

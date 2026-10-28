@@ -25,7 +25,14 @@ final class InspectorController extends Controller
     {
         $filter = (string) input('f', 'open');
         $statuses = $filter === 'all' ? "'assigned','in_progress','rework','submitted','approved'" : "'assigned','in_progress','rework'";
-        $subs = DB::all(JobService::SUBJOB_SQL . " WHERE sj.inspector_id = ? AND sj.status IN ($statuses) ORDER BY j.scheduled_date IS NULL, j.scheduled_date, j.id, sj.seq", [Auth::id()]);
+        // page through the inspector's JOBS (15 per page), then load only those jobs' sub-jobs
+        $jobSql = "SELECT j.id FROM jobs j WHERE EXISTS (SELECT 1 FROM sub_jobs s WHERE s.job_id = j.id AND s.inspector_id = ? AND s.status IN ($statuses))
+                   ORDER BY j.scheduled_date IS NULL, j.scheduled_date, j.id";
+        [$jobRows, $meta] = paginate($jobSql, [Auth::id()], 15,
+            "SELECT COUNT(DISTINCT s.job_id) FROM sub_jobs s WHERE s.inspector_id = ? AND s.status IN ($statuses)");
+        $ids = array_map('intval', array_column($jobRows, 'id'));
+        $subs = $ids ? DB::all(JobService::SUBJOB_SQL . " WHERE sj.inspector_id = ? AND sj.status IN ($statuses) AND sj.job_id IN (" . implode(',', $ids) . ')
+                       ORDER BY j.scheduled_date IS NULL, j.scheduled_date, j.id, sj.seq', [Auth::id()]) : [];
         $jobs = [];
         foreach ($subs as $s) {
             $jobs[$s['job_id']]['job'] = $s;
@@ -35,8 +42,8 @@ final class InspectorController extends Controller
         $myJobs = DB::all("SELECT j.*, c.name client_name FROM jobs j JOIN clients c ON c.id = j.client_id
                            WHERE j.lead_inspector_id = ? AND j.status NOT IN ('completed','cancelled')
                            AND NOT EXISTS (SELECT 1 FROM sub_jobs s WHERE s.job_id = j.id AND s.inspector_id = ?)
-                           ORDER BY j.scheduled_date IS NULL, j.scheduled_date, j.id", [Auth::id(), Auth::id()]);
-        $this->view('inspector/jobs', compact('jobs', 'filter', 'myJobs') + ['title' => 'Assigned Jobs', 'crumbs' => ['Assigned Jobs' => null]]);
+                           ORDER BY j.scheduled_date IS NULL, j.scheduled_date, j.id LIMIT 100", [Auth::id(), Auth::id()]);
+        $this->view('inspector/jobs', compact('jobs', 'filter', 'myJobs', 'meta') + ['title' => 'Assigned Jobs', 'crumbs' => ['Assigned Jobs' => null]]);
     }
 
     public function job(string $id): void
@@ -86,6 +93,9 @@ final class InspectorController extends Controller
             if (in_array($job['status'], ['completed', 'cancelled'], true)) {
                 throw new DomainException('Cannot add sub-jobs to a ' . Workflow::label($job['status']) . ' job.');
             }
+            if (input('kind') === 'operator') {
+                return $this->storeOperatorAssessment($job);
+            }
             $qty = max(1, min(50, (int) input('quantity', 1)));
             for ($i = 0; $i < $qty; $i++) {
                 $sjId = JobService::addSubJob((int) $id, $_POST);
@@ -97,12 +107,77 @@ final class InspectorController extends Controller
         });
     }
 
+    /** Operator assessment: create the sub-job, issue the worker ID card (valid at once), then wait for the document. */
+    private function storeOperatorAssessment(array $job): string
+    {
+        $in = $_POST;
+        $in['holder_type'] = 'worker';
+        $in['client_id'] = $job['client_id'];
+        foreach (['holder_name', 'company', 'title', 'issue_date', 'expiry_date'] as $k) {
+            if (trim((string) ($in[$k] ?? '')) === '') throw new DomainException('Fill in all required card details.');
+        }
+        $photo = !empty($_FILES['photo']['name']) ? store_upload($_FILES['photo'], 'id-photos', ['image/jpeg', 'image/png', 'image/webp']) : null;
+        return DB::tx(function () use ($job, $in, $photo) {
+            $sjId = JobService::addOperatorSubJob((int) $job['id'], Auth::id());
+            $in['job_ref'] = trim((string) ($in['job_ref'] ?? '')) ?: DB::value('SELECT sub_job_no FROM sub_jobs WHERE id = ?', [$sjId]);
+            $cardId = InspectorCardService::save(null, $in, $photo);
+            DB::update('inspector_cards', ['sub_job_id' => $sjId], 'id = ?', [$cardId]);
+            InspectorCardService::handOver($cardId);
+            flash('success', 'Operator assessment created and the ID card issued. Upload the assessment document to close it.');
+            return 'inspector/subjobs/' . $sjId;
+        });
+    }
+
+    /** Operator assessment: enter or correct the Certificate of Competence details (also after closing). */
+    public function operatorCertificateDetails(string $id): void
+    {
+        $this->attempt(function () use ($id) {
+            $sj = JobService::subJob((int) $id);
+            if (!$sj || $sj['kind'] !== 'operator') throw new DomainException('Operator assessment not found.');
+            if ((int) $sj['inspector_id'] !== Auth::id()) throw new DomainException('This sub-job is not assigned to you.');
+            $training = [];
+            foreach (['program', 'completion_date', 'renewal_date', 'trainer'] as $k) $training[$k] = trim((string) input($k, ''));
+            if ($training['program'] === '' || $training['completion_date'] === '') throw new InvalidArgumentException('Enter the training program and the completion date.');
+            JobService::saveOperatorCertificate((int) $sj['id'], $training);
+            flash('success', 'Certificate details saved.');
+            return 'inspector/subjobs/' . (int) $sj['id'];
+        });
+    }
+
+    /** Operator assessment: the uploaded document closes the sub-job. */
+    public function operatorDocument(string $id): void
+    {
+        $this->attempt(function () use ($id) {
+            $sj = JobService::subJob((int) $id);
+            if (!$sj || $sj['kind'] !== 'operator') throw new DomainException('Operator assessment not found.');
+            if ((int) $sj['inspector_id'] !== Auth::id()) throw new DomainException('This sub-job is not assigned to you.');
+            if ($sj['status'] !== 'in_progress') throw new DomainException('This operator assessment is already closed.');
+            if (empty($_FILES['document']['name'])) throw new InvalidArgumentException('Choose the assessment document to upload.');
+            $training = [];
+            foreach (['program', 'completion_date', 'renewal_date', 'trainer'] as $k) $training[$k] = trim((string) input($k, ''));
+            if ($training['program'] === '' || $training['completion_date'] === '') throw new InvalidArgumentException('Enter the training program and the completion date for the certificate.');
+            DB::tx(function () use ($sj, $training) {
+                InspectionService::addAttachment((int) $sj['id'], $_FILES['document'], 'document', input('caption'), false);
+                JobService::closeOperatorSubJob((int) $sj['id'], $training);
+            });
+            flash('success', 'Document uploaded. Operator assessment ' . $sj['sub_job_no'] . ' is closed and the Certificate of Competence is ready.');
+            return 'inspector/jobs/' . (int) $sj['job_id'];
+        });
+    }
+
     public function subJob(string $id): void
     {
         $sj = JobService::subJob((int) $id);
         if (!$sj) $this->notFound();
         if (Auth::is('inspector') && (int) $sj['inspector_id'] !== Auth::id()) $this->forbid();
 
+        if ($sj['kind'] === 'operator') {
+            $card = DB::one('SELECT c.*, NULL AS user_status FROM inspector_cards c WHERE c.sub_job_id = ? ORDER BY c.id DESC', [$sj['id']]);
+            $doc = DB::one("SELECT * FROM attachments WHERE sub_job_id = ? AND kind = 'document' ORDER BY id DESC", [$sj['id']]);
+            $this->view('inspector/operator', ['sj' => $sj, 'card' => $card, 'doc' => $doc, 'title' => 'Operator assessment ' . $sj['sub_job_no'],
+                'crumbs' => ['Assigned Jobs' => 'inspector/jobs', $sj['job_no'] => 'inspector/jobs/' . $sj['job_id'], $sj['sub_job_no'] => null]]);
+            return;
+        }
         if (Auth::is('qc') && $sj['status'] !== 'submitted') redirect('qc/review/' . (int) $sj['id']);   // QC works on this page only while a sub-job awaits review
         $checklist = DB::one('SELECT * FROM checklists WHERE sub_job_id = ?', [$sj['id']]);
         $items = $checklist ? DB::all(

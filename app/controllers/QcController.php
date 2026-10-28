@@ -23,14 +23,18 @@ final class QcController extends Controller
         $p = [];
         $w = "sj.status = 'submitted'";
         if ($type) { $w .= ' AND sj.inspection_type_id = ?'; $p[] = $type; }
-        $rows = DB::all(JobService::SUBJOB_SQL . " WHERE $w ORDER BY FIELD(j.priority,'urgent','high','normal','low'), sj.submitted_at", $p);
+        // two steps: sort on narrow (id, priority, submitted_at) rows, then load the 25 full rows of the page
+        [$idRows, $meta] = paginate("SELECT sj.id FROM sub_jobs sj JOIN jobs j ON j.id = sj.job_id WHERE $w ORDER BY FIELD(j.priority,'urgent','high','normal','low'), sj.submitted_at", $p, 25,
+            "SELECT COUNT(*) FROM sub_jobs sj WHERE $w");
+        $ids = array_map('intval', array_column($idRows, 'id'));
+        $rows = $ids ? DB::all(JobService::SUBJOB_SQL . ' WHERE sj.id IN (' . implode(',', $ids) . ') ORDER BY FIELD(sj.id, ' . implode(',', $ids) . ')') : [];
         foreach ($rows as &$r) {
             $r['cert'] = DB::one('SELECT certificate_no, result FROM certificates WHERE sub_job_id = ?', [$r['id']]);
             $cl = DB::value('SELECT id FROM checklists WHERE sub_job_id = ?', [$r['id']]);
             $r['stats'] = $cl ? InspectionService::checklistStats((int) $cl) : null;
         }
         unset($r);
-        $this->view('qc/queue', compact('rows', 'type') + [
+        $this->view('qc/queue', compact('rows', 'type', 'meta') + [
             'types' => DB::all('SELECT id, name FROM inspection_types ORDER BY name'),
             'title' => 'Review Queue', 'crumbs' => ['Review Queue' => null],
         ]);

@@ -26,12 +26,16 @@ final class AdminDashboardController extends Controller
         $months = DB::all("SELECT DATE_FORMAT(issue_date, '%Y-%m') m, COUNT(*) n FROM certificates
                            WHERE status = 'issued' AND issue_date >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 5 MONTH) GROUP BY m");
         $requests = DB::all("SELECT * FROM service_requests ORDER BY id DESC LIMIT 6");
-        $attention = DB::all("SELECT j.*, c.name client_name,
+        // narrow id query first (sort thousands of ids cheaply), then the 6 full rows
+        $attIds = array_map('intval', array_column(DB::all("SELECT j.id FROM jobs j
+                              WHERE j.id IN (SELECT id FROM (SELECT id FROM jobs WHERE status = 'pending_assignment'
+                                                              UNION SELECT job_id FROM sub_jobs WHERE status = 'pending') x)
+                              ORDER BY FIELD(j.priority,'urgent','high','normal','low'), j.scheduled_date LIMIT 6"), 'id'));
+        $attention = $attIds ? DB::all("SELECT j.*, c.name client_name,
                                  (SELECT COUNT(*) FROM sub_jobs s WHERE s.job_id = j.id AND s.status = 'pending') pending_n,
                                  (SELECT COUNT(*) FROM sub_jobs s WHERE s.job_id = j.id AND s.status <> 'cancelled') total_n
                               FROM jobs j JOIN clients c ON c.id = j.client_id
-                              WHERE j.status = 'pending_assignment' OR EXISTS (SELECT 1 FROM sub_jobs s WHERE s.job_id = j.id AND s.status = 'pending')
-                              ORDER BY FIELD(j.priority,'urgent','high','normal','low'), j.scheduled_date LIMIT 6");
+                              WHERE j.id IN (" . implode(',', $attIds) . ') ORDER BY FIELD(j.id, ' . implode(',', $attIds) . ')') : [];
         $workload = JobService::inspectorsFor();
         $activity = DB::all("SELECT a.*, u.name user_name FROM audit_logs a LEFT JOIN users u ON u.id = a.user_id ORDER BY a.id DESC LIMIT 8");
 

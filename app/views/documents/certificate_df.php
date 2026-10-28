@@ -25,7 +25,7 @@ foreach ($pairs as $i => $r) {
 }
 $t1 .= '</table>';
 
-$intro = '<div class="intro">The equipment mentioned below was inspected according to the requirements of International Standards, an annual examination was carried out and the report is as follows.</div>';
+$intro = '<div class="intro df-intro">The equipment mentioned below was inspected according to the requirements of International Standards, an annual examination was carried out and the report is as follows.</div>';
 
 // ---- item table
 $desc = $lines('item_desc');
@@ -35,12 +35,12 @@ $reasons = '';
 foreach ($lines('item_reason') as $l) $reasons .= e($l) . '<br>';
 $t2 = '<table class="f df" style="margin-top:2.6mm">' . doc_sizer([34.9, 54, 22.9, 78.7])
     . '<tr class="h76"><td class="band c">Serial No.</td><td class="band c">Description</td><td class="band c">SWL</td><td class="band c">Reason of Rejection</td></tr>'
-    . '<tr class="itm"><td class="c b">' . $v('item_serial') . '</td><td class="tp">' . $descHtml . '</td><td class="c b">' . $v('item_swl') . '</td><td class="tp">' . $reasons . '</td></tr></table>';
+    . '<tr class="itm"><td class="c b tp">' . $v('item_serial') . '</td><td class="tp">' . $descHtml . '</td><td class="c b tp">' . $v('item_swl') . '</td><td class="tp">' . $reasons . '</td></tr></table>';
 
 // ---- result sentence ("NOT SAFE FOR USE" is shown in red)
 $stmt = e($c['result_statement'] ?? '');
 $stmt = str_replace('NOT SAFE FOR USE', '<span class="red">NOT SAFE FOR USE</span>', $stmt);
-$res = '<div class="res"><b>Result:</b> ' . $stmt . '</div>';
+$res = '<div class="res df-res"><b>Result:</b> ' . $stmt . '</div>';
 
 // ---- notes (template notes, one bullet per line)
 $notes = '';

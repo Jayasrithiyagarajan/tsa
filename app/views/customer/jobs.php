@@ -10,3 +10,4 @@
     <div style="padding:0 18px 16px"><div class="progress-label"><span><?= $p['approved'] ?> of <?= $p['total'] ?> inspections certified</span><span><?= $p['pct'] ?>%</span></div><div class="progress"><span style="width:<?= $p['pct'] ?>%"></span></div></div>
   </a>
 <?php endforeach; ?>
+<?php View::render('partials/pager', ['meta' => $meta], null); ?>

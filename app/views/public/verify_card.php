@@ -39,6 +39,26 @@ $msg = [
           <?php if ($state === 'revoked' && $c['revoked_reason']): ?><dt>Reason</dt><dd><?= e($c['revoked_reason']) ?></dd><?php endif; ?>
           <dt>Checked</dt><dd><?= e(fmt_datetime(now())) ?></dd>
         </dl>
+        <?php if ($state === 'valid'): ?>
+        <?php
+          $tok = $c['verify_token'];
+          $opSj = !empty($c['sub_job_id']) ? DB::one("SELECT status, operator_data FROM sub_jobs WHERE id = ? AND kind = 'operator'", [$c['sub_job_id']]) : null;
+          $od = $opSj && $opSj['status'] === 'approved' ? (json_decode((string) $opSj['operator_data'], true) ?: []) : null;
+        ?>
+        <?php if ($od): ?>
+        <dl class="kv mt-2">
+          <dt>Certificate No.</dt><dd class="mono"><?= e($od['cert_no'] ?? '') ?></dd>
+          <dt>Training program</dt><dd><?= e($od['program'] ?? '') ?></dd>
+          <?php if (!empty($od['completion_date'])): ?><dt>Completed</dt><dd><?= e(fmt_date($od['completion_date'])) ?></dd><?php endif; ?>
+          <?php if (!empty($od['renewal_date'])): ?><dt>Renewal due</dt><dd><?= e(fmt_date($od['renewal_date'])) ?></dd><?php endif; ?>
+          <?php if (!empty($od['trainer'])): ?><dt>Trainer</dt><dd><?= e($od['trainer']) ?></dd><?php endif; ?>
+        </dl>
+        <?php endif; ?>
+        <div class="row wrap mt-2" style="gap:10px">
+          <a class="btn btn-secondary" href="<?= url('verify/card/' . $tok . '/card') ?>"><?= icon('download', 'sm') ?> Download ID card</a>
+          <?php if ($od): ?><a class="btn btn-primary" href="<?= url('verify/card/' . $tok . '/certificate', ['download' => 1]) ?>"><?= icon('award', 'sm') ?> Download Certificate of Competence</a><?php endif; ?>
+        </div>
+        <?php endif; ?>
         <?php endif; ?>
       </div>
     </div>

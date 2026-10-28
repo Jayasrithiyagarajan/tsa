@@ -36,6 +36,7 @@
         </div>
       </form>
     <?php endforeach; ?>
+    <?php View::render('partials/pager', ['meta' => $meta], null); ?>
   </div>
   <div class="stack" style="position:sticky;top:76px">
     <div class="card"><div class="card-h"><h2><?= icon('users', 'sm') ?> Inspectors</h2></div>

@@ -195,10 +195,11 @@ function is_active_nav(string $prefix): bool
 }
 
 /** Simple paginator over a SELECT without LIMIT. Returns [rows, meta]. */
-function paginate(string $sql, array $params = [], int $perPage = 20): array
+function paginate(string $sql, array $params = [], int $perPage = 20, ?string $countSql = null, ?array $countParams = null, ?int $knownTotal = null): array
 {
     $page = max(1, (int) ($_GET['page'] ?? 1));
-    $total = (int) DB::value("SELECT COUNT(*) FROM ($sql) t", $params);
+    // big tables: pass a lean COUNT(*) query (no select-list sub-queries / unneeded joins) instead of wrapping the full one
+    $total = $knownTotal !== null ? $knownTotal : ($countSql !== null ? (int) DB::value($countSql, $countParams ?? $params) : (int) DB::value("SELECT COUNT(*) FROM ($sql) t", $params));
     $pages = max(1, (int) ceil($total / $perPage));
     $page = min($page, $pages);
     $rows = DB::all($sql . ' LIMIT ' . $perPage . ' OFFSET ' . (($page - 1) * $perPage), $params);

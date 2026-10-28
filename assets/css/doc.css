@@ -1,5 +1,5 @@
 /* ==========================================================================
-   TUV EAST controlled documents — A4 sheets reproduced from the Word forms
+   TUV EAST controlled documents ΓÇö A4 sheets reproduced from the Word forms
    F-7.5.1-CL 01 (checklist) and F-7.5.1-06 (report / certificate).
    Used for both the on-screen preview and the Dompdf PDF, so keep to CSS 2.1.
    ========================================================================== */
@@ -16,6 +16,7 @@ body.doc { font-family: Calibri, Carlito, "DejaVu Sans", Arial, sans-serif; font
 .sheet .pageno { position: absolute; top: 284mm; left: 0; width: 210mm; text-align: center; font-family: "Times New Roman", serif; font-size: 8.5pt; }
 .sheet .pageno span { padding: 0 1mm; border-top: 0.5pt solid #d9d9d9; }
 .sheet .qr { position: absolute; top: 278mm; left: 95mm; width: 16mm; height: 16mm; }
+.sheet .qr.qr-top { top: 7.4mm; left: 97.9mm; width: 13.5mm; height: 13.5mm; }
 .sheet .pageno.with-qr { left: 113mm; width: 30mm; text-align: left; top: 288mm; }
 .sheet .sidetext { position: absolute; left: -36mm; top: 150mm; width: 90mm; text-align: center; font-size: 7.5pt; font-weight: bold; color: #7f7f7f;
   transform: rotate(-90deg); -webkit-transform: rotate(-90deg); white-space: nowrap; }
@@ -81,30 +82,34 @@ table.f.grid td, table.f.result td, table.f.remarks td, table.f.signblock td { b
 .watermark.revoked { color: #f6d0d0; }
 
 
-/* ---------- Eddy Current certificate (F-7.5.1-09) ---------- */
-table.f.ec td { border: 0.5pt solid #000; padding: 0 2.5mm; font-size: 9.5pt; line-height: 1.15; vertical-align: middle; }
+/* ---------- Eddy Current certificate (F-7.5.1-09) ----------
+   Measured from the Word form: 0.5pt #7f7f7f rules, Calibri 11pt bold labels,
+   10pt values, 8pt notes, ~1.9mm cell padding. Everything is scoped to table.f.ec. */
+table.f.ec td { border: 0.5pt solid #7f7f7f; padding: 0 1.6mm; font-size: 10pt; line-height: 1.15; vertical-align: middle; }
 table.f.ec td.l { background: #aabee3; font-weight: bold; font-size: 11pt; }
 table.f.ec td.c { text-align: center; }
 table.f.ec td.tl { vertical-align: top; padding-top: 1.2mm; }
 table.f.ec .lb { font-size: 11pt; }
-table.f.ec .val { font-size: 9.5pt; }
-table.f.ec tr.h78 td { height: 9.2mm; }
-table.f.ec tr.h66 td { height: 9.2mm; }
-table.f.ec tr.h102 td { height: 10.2mm; }
-table.f.ec tr.h85 td { height: 8.5mm; }
-table.f.ec td.imgcell { height: 74.5mm; padding: 0; text-align: center; vertical-align: middle; }
+table.f.ec .val { font-size: 10pt; }
+table.f.ec td.ins { padding-left: 3.2mm; }
+table.f.ec tr.h85 td { height: 9.15mm; }
+table.f.ec tr.h78 td { height: 9.15mm; }
+table.f.ec tr.h66 td { height: 9.15mm; }
+table.f.ec tr.h102 td { height: 10.25mm; }
+table.f.ec tr.gap td { height: 4.85mm; padding: 0; border-left: 0; border-right: 0; font-size: 1pt; line-height: 1; }
+table.f.ec td.imgcell { height: 71.5mm; padding: 0; text-align: center; vertical-align: middle; }
 table.f.ec td.rm { font-size: 11pt; }
-table.f.ec td.stmt { font-weight: bold; font-size: 10pt; height: 9.2mm; vertical-align: top; padding-top: 4.7mm; line-height: 0.9; }
-table.f.ec td.nt { padding: 0.6mm 1.5mm 0.8mm 1.5mm; }
-table.f.ec td.nt ul { margin: 0; padding-left: 2.2mm; font-size: 7pt; line-height: 1.08; }
+table.f.ec td.trl { font-size: 10pt; }
+table.f.ec td.stmt { font-weight: bold; font-size: 10pt; height: 10mm; vertical-align: middle; text-align: left; padding: 1.95mm 1.6mm; line-height: 1.23; }
+table.f.ec td.nt { height: 17.2mm; padding: 0 1.2mm; vertical-align: middle; }
+table.f.ec td.nt ul { margin: 0; padding-left: 1.9mm; font-size: 8pt; line-height: 3.45mm; }
 table.f.ec td.sgcell { text-align: center; padding: 0; }
 .ec-img { text-align: center; }
 .ec-img img { margin: 0.8mm 1mm; vertical-align: middle; }
 .sgcell img.sg { max-height: 10mm; max-width: 20mm; margin: 0 1mm; vertical-align: middle; }
 .sgcell img.sp { width: 20mm; height: 20mm; margin: 0 1mm; vertical-align: middle; }
-.ec-page2 { border: 0.5pt solid #000; height: 240mm; padding: 2mm; text-align: center; }
+.ec-page2 { border: 0.5pt solid #7f7f7f; height: 246.1mm; padding: 2mm; text-align: center; }
 .ec-page2 img { max-width: 84mm; max-height: 54mm; margin: 1mm; vertical-align: middle; }
-
 
 /* ---------- Ultrasonic thickness report (F-7.5.1-08) ---------- */
 table.f.ut td { border: 0.5pt solid #000; padding: 0 1.8mm; font-size: 10.5pt; line-height: 1.15; vertical-align: middle; }
@@ -187,6 +192,17 @@ table.f.sp img.sg { max-height: 13mm; max-width: 40mm; vertical-align: middle; }
 .stk.fail .r { height: 9.6mm; }
 .stk .addr { position: absolute; left: 3.7mm; top: 82.6mm; width: 79mm; color: var(--ink); font-size: 7.45pt; line-height: 3.22mm; white-space: nowrap; }
 .stk .leea { position: absolute; left: 84.2mm; top: 81.8mm; width: 12.2mm; height: 14.4mm; }
+/* Rejected (red) sticker: whole sticker red, light text; logos sit on white panels. Scoped to .stk.fail only. */
+.stk.fail { background: #d32027; border-color: #d32027; color: #fff; }
+.stk.fail .logo, .stk.fail .leea { background: #fff; border-radius: 1.2mm; padding: .8mm; box-sizing: border-box; object-fit: contain; }
+.stk.fail .qr { border-color: #fff; }
+.stk.fail .res { border-color: #fff; color: #fff; }
+.stk.fail .uaf { border-color: #fff; }
+.stk.fail .no { border-color: #fff; background: transparent; }
+.stk.fail .no b { background: #fff; color: #d32027; }
+.stk.fail .no span { color: #fff; }
+.stk.fail .r .k { color: #fff; }
+.stk.fail .addr { color: #fff; }
 
 /* ---------- Scaffolding inspection report (F-7.5.1-15) ---------- */
 table.f.sc td { border: 0.5pt solid #000; padding: 0 1.8mm; font-size: 9.5pt; line-height: 1.1; vertical-align: middle; }
@@ -311,18 +327,22 @@ table.f.df tr.itm td { height: 62.5mm; }
 table.f.df tr.sgn td { height: 20.3mm; }
 table.f.df .sg { max-height: 14mm; max-width: 30mm; }
 table.f.df .rej { display: inline-block; border: 1.5pt solid #d9363e; color: #d9363e; font-weight: bold; font-size: 15pt; letter-spacing: 0.5pt; padding: 0.6mm 2.2mm; }
-table.f.df.nt td { border: 0.5pt solid #000; padding: 0.6mm 1.5mm; height: 24.5mm; vertical-align: top; }
+table.f.df.nt td { border: 0.5pt solid #7f7f7f; padding: 2.4mm 3.2mm 2mm 3.2mm; height: 24.5mm; vertical-align: top; }
 table.f.df.ph td { height: 99.7mm; text-align: center; vertical-align: middle; padding: 1mm; }
 table.f.df.ph img { max-width: 88mm; max-height: 96mm; }
 .intro { font-size: 11pt; line-height: 9.4pt; margin: 3.4mm 0 0 1.8mm; width: 186mm; }
 .res { font-size: 12pt; margin: 2.6mm 0 0 3mm; width: 184mm; line-height: 1.15; }
 .red { color: #ff0000; font-weight: bold; }
-table.f.df.nt .nl { font-size: 8pt; line-height: 7.25pt; padding-left: 12mm; }
-table.f.df.nt .nl .bu { float: left; width: 3.5mm; margin-left: -3.5mm; line-height: 7.25pt; }
+/* Defect Report only: intro + result lines sit on the table's left edge with the same inner padding as the cells */
+.intro.df-intro { margin: 3.4mm 0 0 0; padding: 0 1.8mm; width: 100%; font-size: 11pt; line-height: 1.2; }
+.res.df-res { margin: 3.4mm 0 0 0; padding: 0 1.8mm; width: 100%; font-size: 12pt; line-height: 1.3; }
+table.f.df td.tp.c { text-align: center; }
+table.f.df.nt .nl { font-size: 8.5pt; line-height: 1.3; padding-left: 4.5mm; margin-bottom: 0.7mm; text-align: left; }
+table.f.df.nt .nl .bu { float: left; width: 4.5mm; margin-left: -4.5mm; line-height: 1.3; }
 table.f.df.nt { margin-top: 2.6mm; }
 
 .cert-title.ut-t { top: 24.2mm; font-size: 10.7pt; }
-.cert-title.ec-t { top: 23.2mm; font-size: 11.5pt; }
+.cert-title.ec-t { top: 25.2mm; font-size: 12pt; }
 
 /* ---------- F-7.5.1-10 Leak Test / F-7.5.1-11 Pressure Test ---------- */
 .cert-title.lp-title { top: 22.85mm; text-decoration: underline; font-size: 14pt; }
@@ -373,3 +393,131 @@ table.f.ch td.t10 { font-size: 10pt; }
 table.f.ch td.yes { background: #00b050; color: #fff; }
 table.f.ch td.bx { font-family: "DejaVu Sans", "Segoe UI Symbol", sans-serif; font-size: 10pt; }
 table.f.ch td.ph { padding: 0.5mm; }
+
+/* Certificate of Competence (operator assessment) */
+.oc { position: relative; height: 230mm; font-size: 11pt; font-weight: bold; }
+.oc > * { position: absolute; }
+.oc-title { left: 0; top: 0; width: 100%; text-align: center; font-size: 14pt; text-decoration: underline; }
+.oc-no { left: 3mm; top: 21mm; border-collapse: collapse; }
+.oc-no td { border: 1pt solid #000; padding: 1.2mm 2mm; font-size: 10.5pt; }
+.oc-no td.l { background: #b4c6e7; width: 32mm; text-align: center; }
+.oc-no td.v { width: 41mm; text-align: center; }
+.oc-photo { right: 10mm; top: 19mm; width: 32mm; height: 41mm; object-fit: cover; }
+.oc-line { left: 3mm; line-height: 1.25; }
+.oc-line.l1 { top: 36mm; } .oc-line.l2 { top: 48mm; } .oc-line.l3 { top: 59mm; }
+.oc-stmt { left: 0; top: 79mm; width: 100%; text-align: center; font-size: 12pt; }
+.oc-prog { left: 0; top: 90mm; width: 100%; text-align: center; font-size: 11pt; }
+.oc-line.l4 { top: 101mm; } .oc-line.l5 { top: 109mm; } .oc-line.l6 { top: 134mm; }
+
+/* ---------- Scaffolding Inspection Report (layout sc, F-7.5.1-15) ----------
+   Reproduced from the Word form: 0.5pt #7f7f7f rules, Calibri 11pt bold labels, 10pt values,
+   tables 183.1 mm wide. Scoped to .scf so the other scaffolding-style layout (ss) is not affected. */
+.cert-title.scf-t { top: 25.4mm; font-size: 14pt; line-height: 1.2; }
+table.f.scf td { border: 0.5pt solid #7f7f7f; padding: 0 1.7mm; font-size: 10pt; line-height: 4.3mm; vertical-align: middle; }
+table.f.scf td.l { background: #aabee3; font-weight: bold; font-size: 11pt; }
+table.f.scf td.band { background: #aabee3; font-weight: bold; font-size: 11pt; height: 7.6mm; }
+table.f.scf td.c { text-align: center; }
+table.f.scf td.hb, table.f.scf td.hd0 { font-weight: bold; font-size: 11pt; }
+table.f.scf td.hd { font-weight: bold; font-size: 11pt; text-decoration: underline; }
+table.f.scf td.tx { vertical-align: top; line-height: 4.3mm; }
+table.f.scf tr.h75 td { height: 7.5mm; }
+table.f.scf tr.h76 td { height: 7.6mm; }
+table.f.scf tr.h77 td { height: 7.7mm; }
+table.f.scf tr.h78 td { height: 7.8mm; }
+table.f.scf tr.h79 td { height: 7.9mm; }
+table.f.scf tr.h85 td { height: 8.5mm; }
+table.f.scf.g40 { margin-top: 3.8mm; }
+table.f.scf.g49 { margin-top: 4.7mm; }
+table.f.scf.g53 { margin-top: 5.1mm; }
+table.f.scf.g54 { margin-top: 5.2mm; }
+table.f.scf.g70 { margin-top: 6.8mm; }
+/* stage / type of inspection: one box, no inner vertical rules */
+table.f.scf.chs td.ck { border-top: 0; border-bottom: 0; border-left: 0; border-right: 0; font-size: 11pt; line-height: 4.7mm; vertical-align: top; padding-top: 2.8mm; }
+table.f.scf.chs td.ck:first-child { border-left: 0.5pt solid #7f7f7f; }
+table.f.scf.chs td.ck:last-child { border-right: 0.5pt solid #7f7f7f; }
+table.f.scf.chs tr:last-child td.ck { border-bottom: 0.5pt solid #7f7f7f; }
+table.f.scf.chs tr.rs1 td { height: 9.5mm; }
+table.f.scf.chs tr.rs2 td { height: 10.2mm; }
+table.f.scf.chs tr.rt1 td { height: 8.8mm; padding-top: 2.9mm; }
+table.f.scf.chs tr.rt2 td { height: 12.9mm; padding-top: 2.8mm; }
+table.f.scf .radio { font-family: "DejaVu Sans", "Segoe UI Symbol", sans-serif; font-size: 11pt; }
+table.f.scf td.ih { height: 12.1mm; vertical-align: top; padding-top: 2.7mm; line-height: 4.7mm; }
+table.f.scf td.ib { height: 20mm; padding-top: 3.4mm; }
+/* page 2 */
+table.f.scf tr.rk td { height: 11.5mm; vertical-align: top; padding-top: 4.4mm; border-bottom: 0; line-height: 4.3mm; }
+table.f.scf tr.rk .radio { font-size: 10pt; }
+table.f.scf .k1 { display: inline-block; width: 65mm; margin-left: 42.5mm; }
+table.f.scf tr.rn td { height: 27.3mm; padding-top: 1.6mm; border-top: 0; }
+table.f.scf td.cb { height: 27.1mm; padding-top: 4.4mm; }
+table.f.scf .hd2 { font-weight: bold; text-decoration: underline; line-height: 4.3mm; margin-bottom: 4mm; }
+table.f.scf .ni { padding-left: 7.4mm; text-indent: -7.4mm; line-height: 4.35mm; }
+table.f.scf .ni span { display: inline-block; width: 7.4mm; padding-left: 1mm; text-indent: 0; }
+table.f.scf .ni.dash { padding-left: 4.8mm; text-indent: -3.2mm; }
+table.f.scf .ni.dash span { width: 3.2mm; padding-left: 0; }
+table.f.scf td.dh { height: 10mm; vertical-align: top; padding-top: 2.7mm; line-height: 4.7mm; }
+table.f.scf td.bh { height: 8.2mm; }
+table.f.scf td.dg { height: 9.5mm; padding-top: 2.6mm; }
+table.f.scf td.da { height: 9.5mm; padding-top: 2.6mm; }
+table.f.scf td.bh2 { height: 8.7mm; }
+table.f.scf td.fn { height: 25.4mm; padding-top: 6.2mm; }
+/* drawings and photographs */
+.scf-h { font-weight: bold; font-size: 11pt; text-decoration: underline; height: 9.5mm; line-height: 4.7mm; }
+.scf-draw { border: 0.5pt solid #7f7f7f; height: 203.2mm; text-align: center; padding: 2mm; }
+.scf-draw img { max-width: 100%; max-height: 198mm; vertical-align: middle; }
+table.f.scf.scf-ph td { padding: 1mm; text-align: center; vertical-align: middle; height: 68.6mm; }
+table.f.scf.scf-ph img { max-width: 82mm; max-height: 66mm; }
+table.f.scf.sgn td { font-size: 10pt; }
+table.f.scf.sgn td.sl { font-weight: bold; font-size: 11pt; }
+table.f.scf.sgn td.sgc { text-align: center; padding: 0; }
+table.f.scf.sgn img.sg { max-height: 12mm; max-width: 45mm; margin: 0 3mm; vertical-align: middle; }
+table.f.scf.sgn img.sp { width: 22mm; height: 22mm; margin: 0 3mm; vertical-align: middle; }
+
+
+
+/* ---------- Motorcycle report F-7.5.1-14 (report_mo.php): 0.5pt #808080 rules as in the Word form. Scoped to table.f.mo ---------- */
+table.f.mo td { border: 0.5pt solid #808080; }
+table.f.mo.cl td.box { font-family: "DejaVu Sans", "Segoe UI Symbol", sans-serif; font-size: 12pt; color: #000; text-align: center; }
+
+/* ---------- Steel Structure Inspection Report (layout ss, F-7.5.1-16) ----------
+   Reproduced from the Word form: 0.5pt #7f7f7f rules, Calibri 11pt bold labels, 10pt values. Row heights are set inline
+   in the view (measured from the form); everything is scoped to .sst so the other report layouts are not affected. */
+.cert-title.sst-t { top: 28.8mm; left: -3.9mm; font-size: 14pt; line-height: 1.2; }
+table.f.sst td { border: 0.5pt solid #7f7f7f; padding: 0 1.8mm; font-size: 10pt; line-height: 4.3mm; vertical-align: middle; }
+table.f.sst td.l { background: #aabee3; font-weight: bold; font-size: 11pt; }
+table.f.sst td.band { background: #aabee3; font-weight: bold; font-size: 11pt; }
+table.f.sst td.c { text-align: center; }
+table.f.sst td.hd { font-weight: bold; font-size: 11pt; text-decoration: underline; }
+table.f.sst td.hdb { font-weight: bold; font-size: 11pt; }
+table.f.sst td.grey { background: #d9d9d9; }
+table.f.sst td.tx { vertical-align: top; }
+table.f.sst .radio { font-family: "DejaVu Sans", "Segoe UI Symbol", sans-serif; font-size: 11pt; }
+/* stage / type of inspection: one box, options placed in three columns */
+table.f.sst.chs td.ck { border-top: 0; border-bottom: 0; border-left: 0; border-right: 0; font-size: 11pt; line-height: 4.7mm; vertical-align: top; padding-top: 0; }
+table.f.sst.chs td.ck:first-child { border-left: 0.5pt solid #7f7f7f; }
+table.f.sst.chs td.ck:last-child { border-right: 0.5pt solid #7f7f7f; }
+table.f.sst.chs tr:last-child td.ck { border-bottom: 0.5pt solid #7f7f7f; }
+table.f.sst.chs td.ck div { white-space: nowrap; }
+/* page 2 */
+table.f.sst tr.rk td { vertical-align: top; border-bottom: 0; }
+table.f.sst tr.rk .radio { font-size: 10pt; }
+table.f.sst .k1 { display: inline-block; width: 72.3mm; margin-left: 36.9mm; }
+table.f.sst tr.rn td { border-top: 0; }
+table.f.sst .hd2 { font-weight: bold; text-decoration: underline; line-height: 4.3mm; margin-bottom: 4.4mm; }
+table.f.sst .ni { padding-left: 7.4mm; text-indent: -7.4mm; line-height: 4.3mm; }
+table.f.sst .ni.nc { line-height: 4.7mm; }
+table.f.sst .ni span { display: inline-block; width: 7.4mm; padding-left: 1.2mm; text-indent: 0; }
+table.f.sst .ni.dash { padding-left: 4.8mm; text-indent: -3.2mm; }
+table.f.sst .ni.dash span { width: 3.2mm; padding-left: 0; }
+/* drawings and photographs */
+.sst-h { font-weight: bold; font-size: 11pt; text-decoration: underline; height: 14.3mm; line-height: 4.7mm; font-family: Calibri, Carlito, "DejaVu Sans", Arial, sans-serif; }
+.sst-draw { border: 0.5pt solid #7f7f7f; text-align: center; padding: 0; }
+.sst-draw img { max-width: 100%; vertical-align: middle; }
+table.f.sst.sst-ph td { padding: 0; text-align: center; vertical-align: middle; }
+table.f.sst.sst-ph img { max-width: 43mm; max-height: 45mm; }
+table.f.sst.sgn td { font-size: 10pt; }
+table.f.sst.sgn td.sl { font-weight: bold; font-size: 11pt; padding-left: 2mm; }
+table.f.sst.sgn td.sgc { text-align: center; padding: 0; }
+table.f.sst.sgn img.sg { max-height: 9mm; max-width: 40mm; vertical-align: middle; }
+
+/* ---------- Trailer & Semi-Trailer report F-7.5.1-12 (report_tr.php): shaped Arabic lines drawn at the form's 9 pt line pitch. Scoped to table.f.trl ---------- */
+table.f.trl .ar { line-height: 0.9; }

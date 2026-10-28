@@ -8,6 +8,8 @@ $row = function ($i, $f) { $isOpt = ($f['type'] ?? 'text') === 'select'; ?>
     <div class="row" style="gap:8px;flex-wrap:wrap">
       <span class="row" style="gap:2px"><button type="button" class="btn btn-ghost btn-sm" data-move="up">↑</button><button type="button" class="btn btn-ghost btn-sm" data-move="down">↓</button></span>
       <input type="hidden" name="fields[<?= $i ?>][key]" value="<?= e($f['key'] ?? '') ?>">
+      <?php if (!empty($f['section'])): ?><input type="hidden" name="fields[<?= $i ?>][section]" value="<?= e($f['section']) ?>"><?php endif; ?>
+      <?php if (!empty($f['item'])): ?><input type="hidden" name="fields[<?= $i ?>][item]" value="<?= e($f['item']) ?>"><?php endif; ?>
       <input class="input" style="flex:2;min-width:180px" name="fields[<?= $i ?>][label]" value="<?= e($f['label'] ?? '') ?>" placeholder="Label printed on certificate" aria-label="Label">
       <select class="select" style="flex:2;min-width:200px" name="fields[<?= $i ?>][source]" aria-label="Value source">
         <?php foreach (CertificateService::SOURCES as $k => $l): ?><option value="<?= e($k) ?>"<?= selected($k, $f['source'] ?? '') ?>><?= e($l) ?></option><?php endforeach; ?>

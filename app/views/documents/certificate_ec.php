@@ -42,32 +42,34 @@ if ($signed && $insp && !empty($insp['signature'])) $sigs .= '<img class="sg" sr
 if ($m['issued'] && $rev && !empty($rev['signature'])) $sigs .= '<img class="sg" src="' . $rev['signature'] . '" alt="">';
 if ($m['issued']) $sigs .= '<img class="sp" src="' . $brand['stamp'] . '" alt="">';
 
-$t2 = '<table class="f ec" style="margin-top:4.9mm">' . doc_sizer([39.7, 19.0, 4.2, 32.3, 27.5, 14.3, 47.1])
+$t2 = '<table class="f ec" style="margin-top:4.3mm">' . doc_sizer([39.7, 19.0, 4.2, 32.3, 27.5, 14.3, 47.1])
     . '<tr class="h78"><td class="l">Inspected Item</td><td colspan="6" class="val">' . $v('eq_item') . '</td></tr>'
     . '<tr class="h78"><td class="l">Identification / SN</td><td colspan="6" class="val">' . $v('eq_id') . '</td></tr>'
     . '<tr class="h66"><td class="l">Devise SN</td><td colspan="3" class="val">' . $v('device_sn') . '</td><td colspan="2" class="l c">Calibration Due Date</td><td class="c val">' . $v('calibration_due') . '</td></tr>'
+    . '<tr class="gap"><td colspan="7"></td></tr>'
     . '<tr><td colspan="7" class="imgcell">' . $img . '</td></tr>'
-    . '<tr class="h102"><td colspan="7" class="l">Test Result:</td></tr>'
+    . '<tr class="h102"><td colspan="7" class="l trl">Test Result:</td></tr>'
     . '<tr><td colspan="7" class="stmt">' . e($c['result_statement']) . '</td></tr>'
-    . '<tr class="h66"><td colspan="2" class="l rm">Remarks \ Notes:</td><td colspan="5" class="val">' . nl2br(e($c['remarks'])) . '</td></tr>'
+    . '<tr class="h102"><td colspan="2" class="l rm">Remarks \ Notes:</td><td colspan="5" class="val">' . nl2br(e($c['remarks'])) . '</td></tr>'
     . ($notes ? '<tr><td colspan="7" class="nt"><ul>' . $notes . '</ul></td></tr>' : '')
-    . '<tr class="h102"><td colspan="3" class="l" style="padding-left:3.9mm">' . e(rtrim($tpl['inspector_label'], ': ')) . '</td><td colspan="2" class="val">' . $who($insp) . '</td><td colspan="2" rowspan="2" class="sgcell">' . $sigs . '</td></tr>'
-    . '<tr class="h102"><td colspan="3" class="l" style="padding-left:3.9mm">Approved by</td><td colspan="2" class="val">' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td></tr>'
+    . '<tr class="h102"><td colspan="3" class="l ins">' . e(rtrim($tpl['inspector_label'], ': ')) . '</td><td colspan="2" class="val ins">' . $who($insp) . '</td><td colspan="2" rowspan="2" class="sgcell">' . $sigs . '</td></tr>'
+    . '<tr class="h102"><td colspan="3" class="l ins">Approved by</td><td colspan="2" class="val ins">' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td></tr>'
     . '</table>';
 
 $pages = [[
     'body'  => $t1 . $t2,
-    'top'   => 33.6,
-    'left'  => 12.3,
+    'top'   => 34.3,
+    'left'  => 12.8,
     'width' => 184.1,
     'extra' => '<div class="cert-title ec-t">' . e($tpl['title']) . '</div>',
 ]];
 
-if ($rest) {
+// The Word form (F-7.5.1-09) always has this second bordered sheet, so it is always output.
+{
     $box = '<div class="ec-page2">';
     foreach ($rest as $p) $box .= '<img src="' . $p['src'] . '" alt="">';
     $box .= '</div>';
-    $pages[] = ['body' => $box, 'top' => 24.6, 'left' => 12.3, 'width' => 184.1, 'extra' => ''];
+    $pages[] = ['body' => $box, 'top' => 25.4, 'left' => 12.8, 'width' => 182.6, 'extra' => ''];
 }
 
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;

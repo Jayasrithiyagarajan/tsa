@@ -74,10 +74,10 @@ final class CustomerController extends Controller
     public function jobs(): void
     {
         $c = $this->cid();
-        $jobs = DB::all("SELECT * FROM jobs WHERE client_id = ? ORDER BY id DESC", [$c]);
+        [$jobs, $meta] = paginate("SELECT * FROM jobs WHERE client_id = ? ORDER BY id DESC", [$c], 15, 'SELECT COUNT(*) FROM jobs WHERE client_id = ?');
         foreach ($jobs as &$j) $j['progress'] = JobService::progress((int) $j['id']);
         unset($j);
-        $this->view('customer/jobs', compact('jobs') + ['title' => 'Jobs', 'crumbs' => ['Jobs & Progress' => null]]);
+        $this->view('customer/jobs', compact('jobs', 'meta') + ['title' => 'Jobs', 'crumbs' => ['Jobs & Progress' => null]]);
     }
 
     public function job(string $id): void

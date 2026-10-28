@@ -244,7 +244,9 @@ CREATE TABLE sub_jobs (
   id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   job_id             INT UNSIGNED NOT NULL,
   seq                SMALLINT UNSIGNED NOT NULL,            -- 1,2,3 → displayed as 1.1, 1.2 …
+  kind               ENUM('inspection','operator') NOT NULL DEFAULT 'inspection',   -- operator = operator assessment (ID card + document, no checklist)
   sub_job_no         VARCHAR(40) NOT NULL UNIQUE,           -- JOB-2026-0001-01
+  operator_data      TEXT NULL,                             -- operator assessment: training / certificate details (JSON)
   inspection_type_id INT UNSIGNED NOT NULL,
   equipment_id       INT UNSIGNED NULL,
   inspector_id       INT UNSIGNED NULL,
@@ -392,6 +394,7 @@ CREATE TABLE inspector_cards (
   holder_type     ENUM('inspector','worker') NOT NULL DEFAULT 'inspector',
   user_id         INT UNSIGNED NULL,                       -- inspector cards
   client_id       INT UNSIGNED NULL,                       -- worker cards: the worker's company, when it is a client
+  sub_job_id      INT UNSIGNED NULL,                       -- operator assessment that issued this card
   card_no         VARCHAR(40)  NOT NULL UNIQUE,            -- printed as "ID CODE"
   verify_token    CHAR(32)     NOT NULL UNIQUE,
   holder_name     VARCHAR(120) NOT NULL,

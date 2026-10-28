@@ -43,3 +43,4 @@
     <?php foreach ($g['subs'] as $s) View::render('partials/subjob_row', ['s' => $s, 'href' => url('inspector/subjobs/' . $s['id']), 'hideInspector' => true], null); ?>
   </div>
 <?php endforeach; ?>
+<?php View::render('partials/pager', ['meta' => $meta], null); ?>

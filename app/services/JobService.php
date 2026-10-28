@@ -70,6 +70,53 @@ final class JobService
         });
     }
 
+    /** Operator assessment: a sub-job with no checklist/certificate. The card is issued on creation; uploading the document closes it. */
+    public static function addOperatorSubJob(int $jobId, int $inspectorId): int
+    {
+        return DB::tx(function () use ($jobId, $inspectorId) {
+            $job = DB::one('SELECT * FROM jobs WHERE id = ? FOR UPDATE', [$jobId]);
+            if (!$job) throw new DomainException('Job not found.');
+            if (in_array($job['status'], ['completed', 'cancelled'], true)) {
+                throw new DomainException('Cannot add sub-jobs to a ' . Workflow::label($job['status']) . ' job.');
+            }
+            $typeId = (int) DB::value("SELECT id FROM inspection_types WHERE code = 'OPA'");
+            if (!$typeId) throw new DomainException('Operator assessment is not set up yet. Run php database/migrate.php.');
+            $seq = (int) DB::value('SELECT COALESCE(MAX(seq),0)+1 FROM sub_jobs WHERE job_id = ?', [$jobId]);
+            $id = DB::insert('sub_jobs', [
+                'job_id' => $jobId, 'seq' => $seq, 'kind' => 'operator', 'sub_job_no' => $job['job_no'] . '.' . $seq,
+                'inspection_type_id' => $typeId, 'inspector_id' => $inspectorId, 'status' => 'in_progress',
+                'scheduled_date' => $job['scheduled_date'], 'started_at' => now(),
+            ]);
+            DB::insert('job_assignments', ['job_id' => $jobId, 'sub_job_id' => $id, 'inspector_id' => $inspectorId, 'assigned_by' => Auth::id(), 'note' => 'Operator assessment']);
+            Audit::log('subjob.created', 'sub_job', $id, ['job_id' => $jobId, 'seq' => $seq, 'kind' => 'operator']);
+            self::recompute($jobId);
+            return $id;
+        });
+    }
+
+    /** Save / complete the Certificate of Competence details of a closed operator assessment (e.g. one closed before they were asked for). */
+    public static function saveOperatorCertificate(int $subJobId, array $training): void
+    {
+        $sj = DB::one('SELECT * FROM sub_jobs WHERE id = ?', [$subJobId]);
+        if (!$sj || $sj['kind'] !== 'operator') throw new DomainException('Not an operator assessment.');
+        $old = json_decode((string) $sj['operator_data'], true) ?: [];
+        $training['cert_no'] = $old['cert_no'] ?? ('TE-CT-' . date('Y') . '-' . sprintf('%04d', Numbering::next('training_cert', date('Y'))));
+        DB::update('sub_jobs', ['operator_data' => json_encode($training, JSON_UNESCAPED_UNICODE)], 'id = ?', [$subJobId]);
+        Audit::log('subjob.operator_certificate_saved', 'sub_job', $subJobId, []);
+    }
+
+    /** Operator assessment finished (card issued + document uploaded): the sub-job is closed without QC. */
+    public static function closeOperatorSubJob(int $subJobId, array $training = []): void
+    {
+        $sj = DB::one('SELECT * FROM sub_jobs WHERE id = ?', [$subJobId]);
+        if (!$sj || $sj['kind'] !== 'operator') throw new DomainException('Not an operator assessment.');
+        $training['cert_no'] = 'TE-CT-' . date('Y') . '-' . sprintf('%04d', Numbering::next('training_cert', date('Y')));
+        DB::update('sub_jobs', ['status' => 'approved', 'result' => 'accepted', 'submitted_at' => now(), 'approved_at' => now(),
+            'operator_data' => json_encode($training, JSON_UNESCAPED_UNICODE)], 'id = ?', [$subJobId]);
+        Audit::log('subjob.operator_closed', 'sub_job', $subJobId, []);
+        self::recompute((int) $sj['job_id']);
+    }
+
     public static function addSubJob(int $jobId, array $sj): int
     {
         return DB::tx(function () use ($jobId, $sj) {

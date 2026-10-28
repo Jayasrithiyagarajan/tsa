@@ -102,6 +102,58 @@ if (!DB::one("SHOW COLUMNS FROM jobs LIKE 'closed_by_name'")) {
     echo "+ jobs: closed_by_name / closed_by_role saved\n";
 }
 
+if (!DB::one("SHOW COLUMNS FROM sub_jobs LIKE 'kind'")) {
+    DB::pdo()->exec("ALTER TABLE sub_jobs ADD kind ENUM('inspection','operator') NOT NULL DEFAULT 'inspection' AFTER seq");
+    echo "✓ added sub_jobs.kind\n";
+}
+if (!DB::one("SHOW COLUMNS FROM sub_jobs LIKE 'operator_data'")) {
+    DB::pdo()->exec("ALTER TABLE sub_jobs ADD operator_data TEXT NULL AFTER kind");
+    echo "✓ added sub_jobs.operator_data\n";
+}
+if (!DB::one("SHOW COLUMNS FROM inspector_cards LIKE 'sub_job_id'")) {
+    DB::pdo()->exec("ALTER TABLE inspector_cards ADD sub_job_id INT UNSIGNED NULL AFTER client_id");
+    echo "✓ added inspector_cards.sub_job_id\n";
+}
+if (!DB::value("SELECT id FROM inspection_types WHERE code = 'OPA'")) {
+    DB::insert('inspection_types', ['code' => 'OPA', 'name' => 'Operator Assessment', 'category' => 'Operator Assessment', 'validity_months' => 12,
+        'requires_checklist' => 0, 'requires_certificate' => 0, 'requires_sticker' => 0]);
+    echo "✓ inspection type OPA (Operator Assessment) created\n";
+}
+
+/** Performance indexes for large data (50 000+ jobs). Skips an index when an existing one already starts with the same columns. */
+function ensure_index(string $table, string $name, array $cols): void
+{
+    if (!DB::one("SHOW TABLES LIKE '$table'")) return;
+    $have = [];
+    foreach (DB::all("SHOW INDEX FROM `$table`") as $r) $have[$r['Key_name']][(int) $r['Seq_in_index']] = $r['Column_name'];
+    foreach ($have as $idx) {
+        ksort($idx);
+        if (array_slice(array_values($idx), 0, count($cols)) === $cols) return;
+    }
+    foreach ($cols as $c) if (!DB::one("SHOW COLUMNS FROM `$table` LIKE '$c'")) return;
+    DB::pdo()->exec("ALTER TABLE `$table` ADD INDEX `$name` (" . implode(', ', array_map(fn ($c) => "`$c`", $cols)) . ')');
+    echo "✓ index $table.$name (" . implode(', ', $cols) . ")\n";
+}
+foreach ([
+    ['jobs', 'idx_jobs_status_id', ['status', 'id']],
+    ['jobs', 'idx_jobs_client_id', ['client_id', 'id']],
+    ['jobs', 'idx_jobs_lead_status', ['lead_inspector_id', 'status']],
+    ['jobs', 'idx_jobs_sched', ['scheduled_date']],
+    ['jobs', 'idx_jobs_job_no', ['job_no']],
+    ['sub_jobs', 'idx_sj_job_status', ['job_id', 'status']],
+    ['sub_jobs', 'idx_sj_status_job', ['status', 'job_id']],
+    ['sub_jobs', 'idx_sj_status_submitted', ['status', 'submitted_at']],
+    ['sub_jobs', 'idx_sj_status_approved', ['status', 'approved_at']],
+    ['sub_jobs', 'idx_sj_type_status', ['inspection_type_id', 'status']],
+    ['certificates', 'idx_cert_no', ['certificate_no']],
+    ['certificates', 'idx_cert_token', ['verify_token']],
+    ['certificates', 'idx_cert_sj', ['sub_job_id']],
+    ['stickers', 'idx_st_sj_status', ['sub_job_id', 'status']],
+    ['attachments', 'idx_att_sj_kind', ['sub_job_id', 'kind']],
+    ['audit_logs', 'idx_audit_entity', ['entity_type', 'entity_id']],
+    ['notifications', 'idx_notif_user', ['user_id', 'id']],
+] as [$t, $n, $c]) ensure_index($t, $n, $c);
+
 $sig = fn (array $sections) => md5(json_encode(array_map(fn ($items) => array_values($items), $sections)));
 
 foreach (require __DIR__ . '/seed_templates.php' as $def) {
@@ -112,6 +164,13 @@ foreach (require __DIR__ . '/seed_templates.php' as $def) {
         echo "✓ inspection type $code created\n";
     } else {
         $typeId = (int) $type['id'];
+    }
+
+    // Motorcycle (F-7.5.1-14) and Trailer (F-7.5.1-12) moved from the Checklists folder to the Certificates folder: the whole report is now a certificate template
+    if (in_array($code, ['MOTS', 'TRLR'], true) && !$def['checklist'] && $type && ((int) $type['requires_checklist'] === 1 || (int) $type['requires_certificate'] === 0)) {
+        DB::update('inspection_types', ['requires_checklist' => 0, 'requires_certificate' => 1], 'id = ?', [$typeId]);
+        DB::update('checklist_templates', ['is_active' => 0], 'inspection_type_id = ?', [$typeId]);
+        echo "✓ $code moved to certificate templates (checklist template deactivated)\n";
     }
 
     if ($def['checklist']) {
@@ -144,7 +203,7 @@ foreach (require __DIR__ . '/seed_templates.php' as $def) {
     elseif ($def['certificate'] && !empty($def['certificate']['layout'])) {
         $cur = InspectionService::activeCertificateTemplate($typeId);
         $c = $def['certificate'];
-        $norm = fn (array $fs) => array_map(fn ($f) => [$f['key'], $f['label'], $f['source'] ?? '', $f['type'] ?? '', array_values($f['options'] ?? []), !empty($f['required']), !empty($f['carry'])], $fs);
+        $norm = fn (array $fs) => array_map(fn ($f) => [$f['key'], $f['label'], $f['source'] ?? '', $f['type'] ?? '', array_values($f['options'] ?? []), !empty($f['required']), !empty($f['carry']), $f['section'] ?? '', $f['item'] ?? ''], $fs);
         $same = (string) $cur['layout'] === (string) $c['layout'] && $cur['title'] === $c['title'] && $cur['revision'] === $c['revision']
             && $cur['inspector_label'] === $c['inspector_label'] && (string) $cur['default_statement'] === (string) $c['default_statement']
             && (string) $cur['notes'] === (string) ($c['notes'] ?? '') && $norm(json_decode($cur['fields'], true) ?: []) === $norm($c['fields']);

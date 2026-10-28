@@ -192,7 +192,10 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <?php if ($editable): ?><span class="save-state" id="cf-save-state">Autosave on</span><?php endif; ?>
           </div>
           <div class="form-grid">
-            <?php foreach ($fields as $f): ?>
+            <?php $lastSec = null; foreach ($fields as $f): ?>
+              <?php if (!empty($f['section']) && $f['section'] !== $lastSec): $lastSec = $f['section']; $sp = explode('|', $f['section']); ?>
+                <div class="form-section mt-1"><?= icon('check', 'sm') ?> <?= e(($sp[1] ?? '') !== '' ? $sp[0] . '. ' . $sp[1] : 'Section ' . $sp[0]) ?></div>
+              <?php endif; ?>
               <div class="field <?= ($f['type'] ?? '') === 'textarea' ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && !$f['bound'] ? ' <span class="req">*</span>' : '' ?></label>
                 <?php if ($f['bound']): ?>
                   <div class="bound" title="From job record"><?= icon('lock', 'sm') ?><?= e($f['value'] !== '' ? $f['value'] : ($f['source'] === 'cert.issue_date' ? 'Set when QC issues' : '—')) ?></div>

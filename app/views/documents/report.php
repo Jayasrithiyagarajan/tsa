@@ -339,7 +339,8 @@ echo View::partial('documents/frame', [
     'title'     => $tpl['title'] . ' · ' . $m['sj']['sub_job_no'],
     'pages'     => $pages,
     'sidetext'  => 'Doc Ref.  ' . $tpl['doc_ref'] . '   l   Rev. ' . $tpl['revision'] . '   l   Date: ' . $tpl['revision_date'],
-    'qr'        => null,
+    'qr'        => DocumentService::qr(abs_url('verify') . '?certificate_no=' . rawurlencode((string) ($m['certificate_no'] ?? ''))),
+    'qr_pos'    => 'top',
     'toolbar'   => $toolbar ?? null,
     'watermark' => $m['checklist']['status'] === 'draft' ? 'DRAFT' : null,
 ]);

@@ -1,0 +1,345 @@
+<?php
+/** Inspection workspace — one sub-job. Mobile-first; autosaves checklist and certificate. */
+$st = $sj['status'];
+$dis = $editable ? '' : ' disabled';
+$stepState = function (string $step) use ($st, $sj, $clStats, $cert) {
+    $order = ['assigned' => 1, 'in_progress' => 2, 'rework' => 2, 'submitted' => 4, 'approved' => 5];
+    $pos = $order[$st] ?? 0;
+    switch ($step) {
+        case 'assigned': return $pos >= 1 ? 'done' : 'cur';
+        case 'started': return $pos >= 2 ? 'done' : ($pos === 1 ? 'cur' : '');
+        case 'docs': return $pos >= 4 ? 'done' : ($pos === 2 ? ($st === 'rework' ? 'bad' : 'cur') : '');
+        case 'qc': return $pos >= 5 ? 'done' : ($pos === 4 ? 'cur' : '');
+        case 'issued': return $pos >= 5 ? 'done' : '';
+    }
+    return '';
+};
+$certBadge = $cert ? Workflow::label($cert['status']) : '—';
+?>
+<div class="ws-head">
+  <div class="row between wrap" style="align-items:flex-start;gap:14px">
+    <div style="min-width:0;flex:1 1 280px">
+      <div class="eyebrow"><?= e($sj['type_name']) ?> · <?= e($sj['type_category']) ?></div>
+      <h1 style="font-size:21px" class="row wrap"><span class="mono"><?= (int) substr($sj['job_no'], -4) ?>.<?= (int) $sj['seq'] ?></span> <?= e($sj['eq_description'] ?: 'Equipment') ?> <?= $sj['equipment_no'] ? '<span class="pill mono">' . e($sj['equipment_no']) . '</span>' : '' ?> <?= badge($st) ?></h1>
+      <div class="muted small mt-1 mono"><?= e($sj['sub_job_no']) ?></div>
+    </div>
+    <div class="row wrap">
+      <?php if (in_array($st, ['assigned', 'rework'], true)): ?>
+        <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/start') ?>"><?= Csrf::field() ?><button class="btn btn-primary btn-lg"><?= icon('play', 'sm') ?> <?= $st === 'rework' ? 'Resume for rework' : 'Start inspection' ?></button></form>
+      <?php elseif ($st === 'in_progress'): ?>
+        <a class="btn btn-primary btn-lg" href="#tab-submit" data-tab-link="tab-submit"><?= icon('send', 'sm') ?> Review & submit</a>
+      <?php endif; ?>
+      <?php if ($qcEdit): ?><a class="btn btn-primary btn-lg" href="<?= url('qc/review/' . $sj['id']) ?>"><?= icon('shield', 'sm') ?> Back to QC review</a><?php endif; ?>
+      <?php if ($checklist): ?><a class="btn btn-secondary" href="<?= url('documents/checklist/' . $sj['id']) ?>" target="_blank"><?= icon('clipboard', 'sm') ?> Checklist</a><?php endif; ?>
+      <?php if ($cert && $cert['template_id']): ?><a class="btn btn-secondary" href="<?= url('documents/certificate/' . $sj['id']) ?>" target="_blank"><?= icon('award', 'sm') ?> Certificate</a><?php endif; ?>
+    </div>
+  </div>
+  <div class="ws-meta">
+    <div><small>Client</small><b><?= e($sj['client_name']) ?></b></div>
+    <div><small>Location</small><b><?= e($sj['location'] ?: '—') ?></b></div>
+    <div><small>Scheduled</small><b><?= e(fmt_date($sj['scheduled_date']) ?: '—') ?></b></div>
+    <div><small>Serial No.</small><b><?= e($sj['eq_serial_no'] ?: '—') ?></b></div>
+    <div><small>Make / model</small><b><?= e(trim($sj['manufacturer'] . ' ' . $sj['eq_model']) ?: '—') ?></b></div>
+    <div><small>Certificate No.</small><b class="mono" style="font-size:12.5px"><?= e($cert['certificate_no'] ?? 'Assigned on start') ?></b></div>
+  </div>
+  <div class="stepper mt-2">
+    <div class="step <?= $stepState('assigned') ?>">Assigned</div>
+    <div class="step <?= $stepState('started') ?>">Started</div>
+    <div class="step <?= $stepState('docs') ?>">Checklist & certificate</div>
+    <div class="step <?= $stepState('qc') ?>">QC review</div>
+    <div class="step <?= $stepState('issued') ?>">Issued</div>
+  </div>
+</div>
+
+<?php if (in_array($st, ['rework', 'in_progress'], true) && $reviews && $reviews[0]['decision'] === 'rework'): ?>
+  <div class="alert alert-error"><?= icon('alert') ?><div><b>Returned by QC (<?= e($reviews[0]['reviewer']) ?>, <?= e(time_ago($reviews[0]['created_at'])) ?>):</b><br><?= nl2br(e($reviews[0]['comments'])) ?></div></div>
+<?php endif; ?>
+<?php if ($st === 'assigned'): ?>
+  <div class="alert alert-info"><?= icon('info') ?><div>Press <b>Start inspection</b> when you are at the equipment. The checklist (<?= $sj['requires_checklist'] ? 'required' : 'not required' ?>) and the certificate draft are created with the current controlled template versions.</div></div>
+<?php elseif (in_array($st, ['submitted', 'approved'], true)): ?>
+  <div class="alert alert-<?= $st === 'approved' ? 'success' : 'info' ?>"><?= icon($st === 'approved' ? 'check' : 'clock') ?><div><?= $st === 'approved' ? 'Approved by QC — certificate issued. This record is locked.' : ($qcEdit ? 'Under QC review - you can correct the checklist and certificate below; changes save automatically. When done, go back to the review to approve or return it.' : 'Submitted to QC on ' . e(fmt_datetime($sj['submitted_at'])) . '. Editing is locked until QC decides.') ?></div></div>
+<?php endif; ?>
+
+<div class="card">
+  <div class="tabs" data-tabs role="tablist">
+    <?php if ($sj['requires_checklist']): ?><button data-tab="tab-checklist" role="tab"><?= icon('clipboard', 'sm') ?> Checklist <span class="t-count <?= $clStats ? ($clStats['missing'] ? 'warn' : 'ok') : '' ?>" id="tab-count-checklist"><?= $clStats ? $clStats['answered'] . '/' . $clStats['total'] : '—' ?></span></button><?php endif; ?>
+    <?php if ($sj['requires_certificate']): ?><button data-tab="tab-certificate" role="tab"><?= icon('award', 'sm') ?> Certificate <span class="t-count"><?= e($certBadge) ?></span></button><?php endif; ?>
+    <button data-tab="tab-files" role="tab"><?= icon('camera', 'sm') ?> Photos & files <span class="t-count"><?= count($attachments) ?></span></button>
+    <?php if ($sj['requires_sticker']): ?><button data-tab="tab-sticker" role="tab"><?= icon('tag', 'sm') ?> Sticker <span class="t-count <?= $sticker ? 'ok' : '' ?>"><?= $sticker ? e($sticker['sticker_no']) : 'none' ?></span></button><?php endif; ?>
+    <button data-tab="tab-submit" role="tab"><?= icon('send', 'sm') ?> Submit <?= $issues ? '<span class="t-count warn">' . count($issues) . '</span>' : '' ?></button>
+  </div>
+
+  <?php if ($sj['requires_checklist']): ?>
+  <section class="tab-panel" id="tab-checklist">
+    <?php if (!$checklist): ?>
+      <?php View::render('partials/empty', ['icon' => 'clipboard', 'title' => 'Checklist not started', 'text' => 'Start the inspection to open the checklist.'], null); ?>
+    <?php else: $n = 0; $sections = []; foreach ($items as $it) $sections[$it['section']][] = $it; ?>
+      <form id="checklist-form" method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/checklist') ?>" data-api="<?= url('api/v1/subjobs/' . $sj['id'] . '/checklist') ?>">
+        <?= Csrf::field() ?>
+        <?php
+          $clLayout = TemplateService::checklistLayout(DB::one('SELECT layout FROM checklist_templates WHERE id = ?', [$checklist['template_id']]) ?: []);
+          $isReport = $clLayout['kind'] === 'report';
+          $answers = $isReport ? ($clLayout['report']['answers'] ?? [['pass', 'Yes'], ['fail', 'No'], ['na', 'N/A']]) : [['pass', 'PASS'], ['fail', 'FAIL'], ['na', 'N/A']];
+          $segClass = ['pass' => 'p', 'fail' => 'f', 'na' => 'na'];
+          $clData = json_decode((string) ($checklist['data'] ?? ''), true) ?: [];
+          // '## ' = underlined heading line, '>> ' = right-aligned reference line (report forms)
+          $fmtLabel = function (string $label): string {
+              $out = [];
+              foreach (preg_split('/\R/', $label) as $ln) {
+                  if (str_starts_with($ln, '## ')) $out[] = '<u><b>' . e(substr($ln, 3)) . '</b></u>';
+                  elseif (str_starts_with($ln, '>> ')) $out[] = '<span class="muted" style="display:block;text-align:right">' . e(substr($ln, 3)) . '</span>';
+                  else $out[] = e($ln);
+              }
+              return implode('<br>', $out);
+          };
+        ?>
+        <div class="card-b" style="border-bottom:1px solid var(--border)"><div class="form-grid">
+          <div class="field col-4"><label><?= $isReport ? 'Report No.' : 'Certificate No.' ?></label><div class="bound mono"><?= icon('lock', 'sm') ?><?= e($cert['certificate_no'] ?? Numbering::certificate($sj)) ?></div></div>
+          <div class="field col-4"><label>Serial No.</label><input class="input" type="text" name="serial_no" value="<?= e($checklist['serial_no']) ?>"<?= $dis ?>></div>
+          <div class="field col-4"><label>Date of inspection</label><input class="input" type="date" name="inspection_date" value="<?= e($checklist['inspection_date']) ?>"<?= $dis ?>></div>
+          <?php if ($isReport): ?>
+            <div class="form-section mt-1"><?= icon('file', 'sm') ?> Report cover data <span class="muted small" style="font-weight:500">— client, model, brand, year and dates are filled from the job record</span></div>
+            <?php foreach (TemplateService::reportManualKeys($clLayout) as $key => $label): ?>
+              <div class="field <?= $key === 'vin' ? 'col-8' : 'col-4' ?>"><label><?= e($label) ?></label>
+                <input class="input<?= $key === 'vin' ? ' mono' : '' ?>" type="text" name="cl_data[<?= e($key) ?>]" value="<?= e(($clData[$key] ?? '') !== '' ? $clData[$key] : (isset(TemplateService::REPORT_DEFAULTS[$key]) ? ($sj[['description' => 'eq_description', 'model' => 'eq_model', 'manufacturer' => 'manufacturer', 'year_built' => 'eq_year'][TemplateService::REPORT_DEFAULTS[$key]]] ?? '') : '')) ?>"<?= $key === 'vin' ? ' maxlength="17" style="text-transform:uppercase;letter-spacing:.15em"' : '' ?><?= $dis ?>></div>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </div></div>
+        <?php foreach ($sections as $secName => $secItems): ?>
+          <div class="cl-section"><span><?= e(TemplateService::sectionLabel($secName)) ?> · <?= count($secItems) ?> items</span>
+            <?php if ($editable): ?><button type="button" class="btn btn-ghost btn-sm" style="height:24px;color:inherit" data-mark-all="<?= e($secName) ?>"><?= icon('check', 'sm') ?> Mark unanswered as <?= e($answers[array_search('pass', array_column($answers, 0), true)][1]) ?></button><?php endif; ?></div>
+          <?php foreach ($secItems as $it): $n++; $id = (int) $it['id']; ?>
+            <div class="cl-item<?= $it['remarks'] ? ' show-rem' : '' ?>" data-section="<?= e($secName) ?>">
+              <span class="n"><?= $n ?></span>
+              <span class="lbl"><?= $fmtLabel((string) $it['label']) ?><?= $it['is_mandatory'] ? '' : ' <span class="muted small">(optional)</span>' ?></span>
+              <span class="ctrl row" style="gap:6px">
+                <span class="seg" role="radiogroup" aria-label="<?= e($it['label']) ?>">
+                  <?php foreach ($answers as [$code, $alabel]): ?>
+                    <label><input type="radio" name="r[<?= $id ?>][result]" value="<?= e($code) ?>"<?= checked($it['result'] === $code) . $dis ?>><span class="<?= $segClass[$code] ?? 'na' ?>"><?= e($isReport ? $alabel : strtoupper($alabel)) ?></span></label>
+                  <?php endforeach; ?>
+                </span>
+                <button type="button" class="rem-toggle<?= $it['remarks'] ? ' has' : '' ?>" title="Remarks" aria-label="Remarks"><?= icon('edit', 'sm') ?></button>
+              </span>
+              <div class="rem"><input class="input" type="text" name="r[<?= $id ?>][remarks]" value="<?= e($it['remarks']) ?>" placeholder="Remarks<?= $it['result'] === 'fail' ? ' (required for FAIL)' : '' ?>" maxlength="255"<?= $dis ?>></div>
+            </div>
+          <?php endforeach; ?>
+        <?php endforeach; ?>
+        <?php if ($clLayout['remarks_box'] > 0 || !empty($clLayout['report']['notes_box'])): ?>
+          <div class="card-b" style="border-top:1px solid var(--border)"><div class="field"><label><?= $isReport ? e($clLayout['report']['notes_box']['label'] ?? 'Inspector Notes:') : 'Remarks /' ?> (printed on the <?= $isReport ? 'report' : 'checklist' ?>)</label>
+            <textarea class="textarea" name="cl_remarks"<?= $dis ?>><?= e($checklist['remarks'] ?? '') ?></textarea></div></div>
+        <?php endif; ?>
+        <div class="cl-bar">
+          <div class="stat"><span>Pass <b id="cl-pass">0</b></span><span>Fail <b id="cl-fail" style="color:var(--red)">0</b></span><span>N/A <b id="cl-na">0</b></span><span>Open <b id="cl-open">0</b></span>
+            <span style="flex:1;min-width:120px;max-width:220px;align-self:center"><span class="progress" style="display:block"><span id="cl-progress" style="width:0"></span></span></span><b id="cl-pct">0%</b></div>
+          <?php if ($editable): ?><span class="save-state" id="cl-save-state">Autosave on</span><button class="btn btn-secondary btn-sm">Save now</button><?php endif; ?>
+        </div>
+      </form>
+    <?php endif; ?>
+  </section>
+  <?php endif; ?>
+
+  <?php if ($sj['requires_certificate']): ?>
+  <section class="tab-panel" id="tab-certificate">
+    <?php if (!$cert): ?>
+      <?php View::render('partials/empty', ['icon' => 'award', 'title' => 'Certificate not prepared', 'text' => 'Start the inspection to reserve the certificate number and open the draft.'], null); ?>
+    <?php elseif (!$certTpl || !$cert['template_id']): ?>
+      <div class="card-b"><div class="alert alert-info"><?= icon('info') ?><div>No certificate template is configured for <?= e($sj['type_name']) ?>. Upload the signed certificate as a PDF in <b>Photos &amp; files</b> with type "Certificate (signed PDF)".</div></div></div>
+    <?php else: ?>
+
+      <?php
+        // Multi-page: if there are multiple cert pages show a page-picker + clone UI
+        $totalPages = count($allCerts);
+        $isMultiPage = $totalPages > 1;
+      ?>
+
+      <?php if ($editable): ?>
+      <!-- Clone / page-count panel (always shown so user can set quantity) -->
+      <div class="card-b" style="padding-bottom:0">
+        <div class="row wrap" style="gap:12px;align-items:center">
+          <div class="strong small"><?= icon('copy', 'sm') ?> Certificate pages</div>
+          <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/certificate/clone') ?>" class="row" style="gap:8px;align-items:center">
+            <?= Csrf::field() ?>
+            <label class="small" for="clone-qty">Total pages needed:</label>
+            <input id="clone-qty" class="input" type="number" name="qty" min="1" max="100" value="<?= $totalPages ?>" style="width:70px">
+            <button class="btn btn-secondary btn-sm" type="submit"><?= icon('copy', 'sm') ?> Apply</button>
+          </form>
+          <span class="small muted">Fill page 1, set the quantity, then click Apply — all other pages will be cloned from page 1. You can edit each page independently.</span>
+        </div>
+        <?php if ($isMultiPage): ?>
+        <!-- Page tabs -->
+        <div class="tab-row mt-2" style="border-bottom:none">
+          <?php foreach ($allCerts as $c): ?>
+            <a class="tab-btn<?= (int)$c['seq'] === $certSeq ? ' active' : '' ?>"
+               href="<?= url('inspector/subjobs/' . $sj['id'] . '?cert_page=' . $c['seq'] . '#tab-certificate') ?>">
+              Page <?= (int)$c['seq'] ?>
+              <?php if ($c['result']): ?><span class="badge badge-<?= $c['result'] === 'accepted' ? 'green' : 'red' ?> ms-1" style="font-size:10px"><?= e(Workflow::label($c['result'])) ?></span><?php endif; ?>
+            </a>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+      </div>
+      <?php endif; ?>
+
+      <form id="certificate-form" method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/certificate') ?>" data-api="<?= $editable ? url('api/v1/subjobs/' . $sj['id'] . '/certificate') : '' ?>">
+        <?= Csrf::field() ?>
+        <input type="hidden" name="seq" value="<?= $certSeq ?>">
+        <div class="card-b">
+          <div class="row between wrap mb-2">
+            <div>
+              <div class="strong"><?= e($certTpl['title']) ?><?= $isMultiPage ? ' — Page ' . $certSeq . ' of ' . $totalPages : '' ?></div>
+              <div class="small muted">Doc Ref. <?= e($certTpl['doc_ref']) ?> · Rev. <?= e($certTpl['revision']) ?> · fields with <?= icon('lock', 'sm') ?> are filled from the job record</div>
+            </div>
+            <?php if ($editable): ?><span class="save-state" id="cf-save-state">Autosave on</span><?php endif; ?>
+          </div>
+          <div class="form-grid">
+            <?php foreach ($fields as $f): ?>
+              <div class="field <?= ($f['type'] ?? '') === 'textarea' ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && !$f['bound'] ? ' <span class="req">*</span>' : '' ?></label>
+                <?php if ($f['bound']): ?>
+                  <div class="bound" title="From job record"><?= icon('lock', 'sm') ?><?= e($f['value'] !== '' ? $f['value'] : ($f['source'] === 'cert.issue_date' ? 'Set when QC issues' : '—')) ?></div>
+                <?php elseif (($f['type'] ?? 'text') === 'select'): ?>
+                  <select class="select" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><option value="">Select…</option><?php foreach ($f['options'] ?? [] as $o): ?><option<?= selected($o, $f['value']) ?>><?= e($o) ?></option><?php endforeach; ?></select>
+                <?php elseif (($f['type'] ?? 'text') === 'textarea'): ?>
+                  <textarea class="input" rows="6" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><?= e($f['value']) ?></textarea>
+                <?php else: ?>
+                  <input class="input" type="<?= ($f['type'] ?? '') === 'date' ? 'date' : (($f['type'] ?? '') === 'number' ? 'number' : 'text') ?>" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['value']) ?>"<?= $dis ?>>
+                <?php endif; ?>
+              </div>
+            <?php endforeach; ?>
+            <div class="form-section mt-1"><?= icon('calendar', 'sm') ?> Dates</div>
+            <div class="field col-6"><label>Inspection date</label><input class="input" type="date" name="inspection_date" value="<?= e($cert['inspection_date']) ?>"<?= $dis ?>></div>
+            <div class="field col-6"><label>Next inspection date</label><input class="input" type="date" name="next_inspection_date" value="<?= e($cert['next_inspection_date']) ?>"<?= $dis ?>><div class="help">Defaults to inspection date + <?= (int) $sj['validity_months'] ?> months − 1 day.</div></div>
+            <div class="form-section mt-1"><?= icon('check', 'sm') ?> Result</div>
+            <div class="col-12 result-pick">
+              <?php foreach (explode(',', $certTpl['result_options']) as $o): ?>
+                <label class="<?= e($o) ?>"><input type="radio" name="result" value="<?= e($o) ?>"<?= checked($cert['result'] === $o) . $dis ?>> <?= e(Workflow::label($o)) ?></label>
+              <?php endforeach; ?>
+            </div>
+            <div class="field col-12"><label>Result statement (printed under the result)</label><input class="input" name="result_statement" value="<?= e($cert['result_statement']) ?>"<?= $dis ?>></div>
+            <div class="field col-12"><label>Remarks \ Notes</label><textarea class="textarea" name="remarks"<?= $dis ?>><?= e($cert['remarks']) ?></textarea></div>
+          </div>
+        </div>
+        <?php if ($editable): ?>
+        <div class="card-f">
+          <a class="btn btn-ghost" href="<?= url('documents/certificate/' . $sj['id'] . ($certSeq > 1 ? '?seq=' . $certSeq : '')) ?>" target="_blank"><?= icon('eye', 'sm') ?> Preview<?= $isMultiPage ? ' page ' . $certSeq : ' certificate' ?></a>
+          <button class="btn btn-secondary">Save</button>
+        </div>
+        <?php endif; ?>
+      </form>
+    <?php endif; ?>
+  </section>
+  <?php endif; ?>
+
+  <section class="tab-panel" id="tab-files">
+    <?php $pageCount = count($allCerts ?? []); ?>
+    <div class="card-b">
+      <?php if ($editable): ?>
+      <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/upload') ?>" enctype="multipart/form-data" class="dropzone mb-2">
+        <?= Csrf::field() ?>
+        <div class="row wrap" style="justify-content:center;gap:10px">
+          <?= icon('camera', 'lg') ?>
+          <input type="file" name="files[]" multiple accept="image/*,application/pdf" capture="environment" class="input" style="max-width:320px;padding-top:7px">
+          <select class="select" name="kind" style="width:auto"><option value="photo">Photo</option><option value="document">Supporting document</option><?php if ($sj['requires_certificate']): ?><option value="certificate_upload">Certificate (signed PDF)</option><?php endif; ?></select>
+          <input class="input" name="caption" placeholder="Caption (optional)" style="max-width:220px">
+          <label class="check small"><input type="checkbox" name="on_certificate" value="1"<?= $pageCount > 1 ? ' checked' : '' ?>> Show on certificate</label>
+          <?php if ($pageCount > 1): ?>
+            <select class="select" name="cert_seq" style="width:auto" title="Which certificate page this photo prints on">
+              <option value="0">All certificate pages</option>
+              <?php foreach ($allCerts as $c): ?><option value="<?= (int) $c['seq'] ?>"<?= (int) $c['seq'] === (int) ($certSeq ?? 0) && $certSeq > 1 ? ' selected' : '' ?>>Certificate page <?= (int) $c['seq'] ?> only</option><?php endforeach; ?>
+            </select>
+          <?php endif; ?>
+          <button class="btn btn-primary"><?= icon('upload', 'sm') ?> Upload</button>
+        </div>
+        <div class="small mt-1">JPG, PNG, WEBP or PDF · max <?= (int) config('upload_max_mb') ?> MB each. Up to 4 photos marked "show on certificate" print in the report image area.</div>
+      </form>
+      <?php endif; ?>
+      <?php if ($attachments): ?>
+        <div class="photos">
+          <?php foreach ($attachments as $a): $img = str_starts_with($a['mime'], 'image/'); ?>
+            <div class="photo">
+              <?php if ($a['on_certificate']): ?><span class="tagc badge badge-green"><i></i>On certificate</span><?php endif; ?>
+              <a href="<?= url('documents/attachment/' . $a['id']) ?>" target="_blank"><?php if ($img): ?><img src="<?= url('documents/attachment/' . $a['id']) ?>" alt="<?= e($a['caption'] ?: $a['original_name']) ?>" loading="lazy"><?php else: ?><div style="height:120px;display:grid;place-items:center;color:var(--muted)"><?= icon('file', 'lg') ?></div><?php endif; ?></a>
+              <div class="ph-b"><span title="<?= e($a['original_name']) ?>"><?= e($a['caption'] ?: $a['original_name']) ?><br><span class="muted"><?= e(Workflow::label($a['kind'])) ?></span></span>
+                <?php if ($editable): ?><form method="post" action="<?= url('inspector/attachments/' . $a['id'] . '/delete') ?>" data-confirm="Delete this file?"><?= Csrf::field() ?><button class="btn btn-ghost btn-sm" title="Delete"><?= icon('trash', 'sm') ?></button></form><?php endif; ?></div>
+              <?php if ($pageCount > 1 && $a['on_certificate']): ?>
+                <div style="padding:0 10px 10px">
+                  <?php if ($editable): ?>
+                    <form method="post" action="<?= url('inspector/attachments/' . $a['id'] . '/page') ?>">
+                      <?= Csrf::field() ?>
+                      <select class="select" name="cert_seq" onchange="this.form.submit()" style="height:30px;font-size:12.5px;width:100%" title="Certificate page">
+                        <option value="0"<?= $a['cert_seq'] === null ? ' selected' : '' ?>>All certificate pages</option>
+                        <?php foreach ($allCerts as $c): ?><option value="<?= (int) $c['seq'] ?>"<?= (int) $a['cert_seq'] === (int) $c['seq'] ? ' selected' : '' ?>>Page <?= (int) $c['seq'] ?> only</option><?php endforeach; ?>
+                      </select>
+                    </form>
+                  <?php else: ?>
+                    <span class="small muted"><?= $a['cert_seq'] === null ? 'All certificate pages' : 'Certificate page ' . (int) $a['cert_seq'] ?></span>
+                  <?php endif; ?>
+                </div>
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php else: View::render('partials/empty', ['icon' => 'camera', 'title' => 'No photos or files yet', 'text' => 'Add photos of the equipment, nameplate and any defects.'], null); endif; ?>
+    </div>
+  </section>
+
+  <?php if ($sj['requires_sticker']): ?>
+  <section class="tab-panel" id="tab-sticker">
+    <div class="card-b">
+      <?php if ($sticker): $red = $sticker['color'] === 'red'; ?>
+        <div class="row wrap" style="gap:16px;align-items:center">
+          <div class="kpi" style="flex:1;min-width:240px"><span class="k-ic <?= $red ? 't-red' : 't-blue' ?>"><?= icon('lock') ?></span><span>
+            <div class="k-v mono" style="font-size:20px"><?= e($sticker['sticker_no']) ?></div>
+            <div class="k-l"><?= badge('closed') ?> <?= $red ? 'Red · Failed' : 'Blue · Accepted' ?> sticker</div>
+            <div class="k-t">Linked <?= e(fmt_datetime($sticker['linked_at'])) ?> · locked to this job<?= $sticker['issued_at'] ? ' · valid until ' . e(fmt_date($sticker['expiry_date'])) : '' ?></div></span></div>
+          <a class="btn btn-secondary" href="<?= url('documents/sticker/' . $sticker['id']) ?>" target="_blank"><?= icon('eye', 'sm') ?> Digital sticker</a>
+        </div>
+        <p class="small muted mt-1">A linked sticker cannot be changed. If it was damaged or linked by mistake, ask an administrator to void it — you can then link a new one.</p>
+      <?php elseif ($editable): ?>
+        <form class="row wrap" method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/sticker') ?>" style="max-width:620px"
+              data-confirm="Link this sticker to <?= e($sj['sub_job_no']) ?>? Once linked it is closed and cannot be changed.">
+          <?= Csrf::field() ?>
+          <div class="field" style="flex:1;min-width:220px"><label>Sticker number affixed to the equipment</label>
+            <input class="input mono" name="sticker_no" list="my-stickers" placeholder="TE-001003" required autocomplete="off" style="text-transform:uppercase">
+            <datalist id="my-stickers"><?php foreach ($myStickers as $m): ?><option value="<?= e($m['sticker_no']) ?>"><?= $m['color'] === 'red' ? 'Red · Failed' : 'Blue · Accepted' ?></option><?php endforeach; ?></datalist></div>
+          <button class="btn btn-primary" style="align-self:flex-end"><?= icon('lock', 'sm') ?> Link sticker</button>
+        </form>
+        <p class="small muted mt-1">
+          <?php $blue = count(array_filter($myStickers, fn ($m) => $m['color'] !== 'red')); ?>
+          You hold <?= $blue ?> blue and <?= count($myStickers) - $blue ?> red sticker(s). Use <b>blue</b> for an Accepted result and <b>red</b> for Failed / repair.
+          Only stickers allocated to you can be linked, and a linked sticker is locked to this job.</p>
+      <?php else: View::render('partials/empty', ['icon' => 'tag', 'title' => 'No sticker linked', 'text' => ''], null); endif; ?>
+    </div>
+  </section>
+  <?php endif; ?>
+
+  <section class="tab-panel" id="tab-submit">
+    <div class="card-b">
+      <?php if ($st === 'in_progress'): ?>
+        <h3 style="font-size:15px" class="mb-2">Completeness check</h3>
+        <?php if ($issues): ?>
+          <ul class="issue-list"><?php foreach ($issues as $i): ?><li><?= icon('alert', 'sm') ?><span><?= e($i) ?></span></li><?php endforeach; ?></ul>
+          <p class="small muted mt-1">Incomplete inspections cannot be submitted. If an item genuinely cannot be completed, ask an administrator to force-submit with an override reason.</p>
+        <?php else: ?>
+          <div class="ok-line"><?= icon('check') ?> Everything required is complete. Ready for QC.</div>
+        <?php endif; ?>
+        <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/submit') ?>" class="mt-2" data-confirm="Submit this inspection to QC? You will not be able to edit it until QC responds.">
+          <?= Csrf::field() ?>
+          <button class="btn btn-success btn-lg"<?= $issues ? ' disabled' : '' ?>><?= icon('send', 'sm') ?> Submit to QC</button>
+        </form>
+      <?php else: ?>
+        <p class="muted"><?= $st === 'assigned' ? 'Start the inspection first.' : 'Current status: ' . e(Workflow::label($st)) ?></p>
+      <?php endif; ?>
+      <?php if ($reviews): ?>
+        <div class="divider"></div>
+        <h3 style="font-size:15px" class="mb-2">QC review history</h3>
+        <ul class="timeline"><?php foreach ($reviews as $rv): ?>
+          <li><?= badge($rv['decision'] === 'approved' ? 'approved' : 'rework') ?> <b><?= e($rv['reviewer']) ?></b><?= $rv['comments'] ? '<div class="small">' . nl2br(e($rv['comments'])) . '</div>' : '' ?><div class="tl-t"><?= e(fmt_datetime($rv['created_at'])) ?></div></li>
+        <?php endforeach; ?></ul>
+      <?php endif; ?>
+      <?php if ($sj['override_by']): ?><div class="alert alert-warning mt-2"><?= icon('alert') ?><div>Submitted with an authorized override: <?= e($sj['override_reason']) ?></div></div><?php endif; ?>
+    </div>
+  </section>
+</div>
+<script>
+document.querySelectorAll('[data-tab-link]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); const b = document.querySelector('[data-tab="' + a.dataset.tabLink + '"]'); b && b.click(); b && b.scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
+</script>

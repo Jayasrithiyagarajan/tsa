@@ -19,5 +19,6 @@
       </tr>
     <?php endforeach; ?></tbody>
   </table></div>
+  <?php View::render('partials/pager', ['meta' => $meta], null); ?>
   <?php else: View::render('partials/empty', ['icon' => 'check', 'title' => 'All caught up', 'text' => 'No inspections are waiting for QC.'], null); endif; ?>
 </div>

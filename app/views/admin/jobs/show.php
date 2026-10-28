@@ -16,9 +16,9 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
     </div>
   </div>
   <div class="actions">
+    <a class="btn btn-secondary" href="<?= url('admin/jobs') ?>">&larr; Back to jobs</a>
     <?php if ($open): ?>
       <button class="btn btn-secondary" data-modal="edit-job"><?= icon('edit', 'sm') ?> Edit</button>
-      <button class="btn btn-secondary" data-modal="add-sub"><?= icon('plus', 'sm') ?> Add sub-job</button>
       <button class="btn btn-danger" data-modal="cancel-job"><?= icon('x', 'sm') ?> Cancel job</button>
     <?php endif; ?>
   </div>
@@ -149,18 +149,6 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
   <div class="m-f"><button type="button" class="btn btn-ghost" data-modal-close>Cancel</button><button class="btn btn-primary">Save</button></div>
 </form></dialog>
 
-<dialog class="modal" id="add-sub"><form method="post" action="<?= url('admin/jobs/' . $job['id'] . '/subjobs') ?>"><?= Csrf::field() ?>
-  <div class="m-h"><h3>Add sub-job</h3><button type="button" class="icon-btn" data-modal-close><?= icon('x', 'sm') ?></button></div>
-  <div class="m-b"><div class="form-grid">
-    <div class="field col-12"><label>Inspection type</label><select class="select" name="inspection_type_id" required><option value="">Select…</option><?php foreach ($types as $t): ?><option value="<?= $t['id'] ?>"><?= e($t['name']) ?></option><?php endforeach; ?></select></div>
-    <div class="field col-12"><label>Registered equipment</label><select class="select" name="equipment_id"><option value="">— New equipment —</option><?php foreach ($equipment as $eq): ?><option value="<?= $eq['id'] ?>"><?= e(($eq['equipment_no'] ? $eq['equipment_no'] . ' · ' : '') . $eq['description']) ?></option><?php endforeach; ?></select></div>
-    <div class="field col-6"><label>…or new equipment description</label><input class="input" name="equipment_description"></div>
-    <div class="field col-3"><label>Equipment ID</label><input class="input" name="equipment_no"></div>
-    <div class="field col-3"><label>Serial No.</label><input class="input" name="serial_no"></div>
-    <div class="field col-12"><label>Inspector (optional)</label><select class="select" name="inspector_id"><option value="">Assign later</option><?php foreach ($inspectors as $u): ?><option value="<?= $u['id'] ?>"><?= e($u['name']) ?> (<?= e($u['skills']) ?>)</option><?php endforeach; ?></select></div>
-  </div></div>
-  <div class="m-f"><button type="button" class="btn btn-ghost" data-modal-close>Cancel</button><button class="btn btn-primary">Add sub-job</button></div>
-</form></dialog>
 
 <dialog class="modal" id="cancel-job"><form method="post" action="<?= url('admin/jobs/' . $job['id'] . '/cancel') ?>"><?= Csrf::field() ?>
   <div class="m-h"><h3>Cancel job <?= e($job['job_no']) ?>?</h3></div>

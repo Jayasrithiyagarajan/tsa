@@ -19,24 +19,50 @@ final class AdminJobController extends Controller
             'newest' => 'j.id DESC', 'scheduled' => 'j.scheduled_date IS NULL, j.scheduled_date', 'priority' => "FIELD(j.priority,'urgent','high','normal','low'), j.id DESC",
             'client' => 'c.name',
         ][input('sort', 'newest')] ?? 'j.id DESC';
-        $sql = "SELECT j.*, c.name client_name, u.name lead_name,
-                   (SELECT COUNT(*) FROM sub_jobs s WHERE s.job_id = j.id AND s.status <> 'cancelled') n_total,
-                   (SELECT COUNT(*) FROM sub_jobs s WHERE s.job_id = j.id AND s.status = 'approved') n_done,
-                   (SELECT COUNT(*) FROM sub_jobs s WHERE s.job_id = j.id AND s.status = 'pending') n_pending,
-                   (SELECT COUNT(*) FROM sub_jobs s WHERE s.job_id = j.id AND s.status = 'submitted') n_qc
-                FROM jobs j JOIN clients c ON c.id = j.client_id LEFT JOIN users u ON u.id = j.lead_inspector_id
-                WHERE " . implode(' AND ', $where) . " ORDER BY $sort";
+        $from = "FROM jobs j JOIN clients c ON c.id = j.client_id LEFT JOIN users u ON u.id = j.lead_inspector_id WHERE " . implode(' AND ', $where);
+        $sql = "SELECT j.*, c.name client_name, u.name lead_name $from ORDER BY $sort";
+        $countSql = "SELECT COUNT(*) FROM jobs j JOIN clients c ON c.id = j.client_id WHERE " . implode(' AND ', $where);
+        $csvCols = ['job_no' => 'Job No', 'title' => 'Title', 'client_name' => 'Client', 'location' => 'Location', 'po_no' => 'PO',
+            'scheduled_date' => 'Scheduled', 'priority' => 'Priority', 'status' => 'Status', 'lead_name' => 'Lead Inspector', 'n_total' => 'Sub-jobs', 'n_done' => 'Approved'];
         if ($this->wantsCsv()) {
-            csv_export('jobs', DB::all($sql, $p), ['job_no' => 'Job No', 'title' => 'Title', 'client_name' => 'Client', 'location' => 'Location', 'po_no' => 'PO',
-                'scheduled_date' => 'Scheduled', 'priority' => 'Priority', 'status' => 'Status', 'lead_name' => 'Lead Inspector', 'n_total' => 'Sub-jobs', 'n_done' => 'Approved']);
+            csv_export('jobs', self::withCounts(DB::all($sql . ' LIMIT 20000', $p)), $csvCols);
         }
-        [$rows, $meta] = paginate($sql, $p);
         $counts = array_column(DB::all('SELECT status, COUNT(*) n FROM jobs GROUP BY status'), 'n', 'status');
+        // no client / inspector / search filter: the total is already known from the status tabs, so skip the COUNT(*) over 50k+ rows
+        $known = null;
+        if (!$client && !$inspector && $q === '') {
+            if ($status === '') $known = (int) array_sum($counts);
+            elseif ($status === 'open') $known = (int) array_sum($counts) - (int) ($counts['completed'] ?? 0) - (int) ($counts['cancelled'] ?? 0);
+            else $known = (int) ($counts[$status] ?? 0);
+        }
+        // two steps: sort/limit on the narrow job ids first, then load the 20 full rows
+        [$idRows, $meta] = paginate("SELECT j.id $from ORDER BY $sort", $p, 20, $countSql, null, $known);
+        $ids = array_map('intval', array_column($idRows, 'id'));
+        $rows = $ids ? DB::all("SELECT j.*, c.name client_name, u.name lead_name FROM jobs j JOIN clients c ON c.id = j.client_id LEFT JOIN users u ON u.id = j.lead_inspector_id
+                                WHERE j.id IN (" . implode(',', $ids) . ') ORDER BY FIELD(j.id, ' . implode(',', $ids) . ')') : [];
+        $rows = self::withCounts($rows);     // sub-job counts for the 20 rows shown only, in one grouped query
         $this->view('admin/jobs/index', compact('rows', 'meta', 'status', 'q', 'counts', 'client', 'inspector') + [
             'title' => 'Jobs', 'crumbs' => ['Jobs & Sub-jobs' => null],
             'clients' => DB::all('SELECT id, name FROM clients ORDER BY name'),
             'inspectors' => DB::all("SELECT id, name FROM users WHERE role='inspector' ORDER BY name"),
         ]);
+    }
+
+    /** Adds n_total / n_done / n_pending / n_qc to a page of jobs with ONE grouped query (no per-row sub-selects). */
+    private static function withCounts(array $rows): array
+    {
+        $ids = array_map('intval', array_column($rows, 'id'));
+        $c = [];
+        if ($ids) {
+            foreach (DB::all("SELECT job_id, SUM(status <> 'cancelled') n_total, SUM(status = 'approved') n_done, SUM(status = 'pending') n_pending, SUM(status = 'submitted') n_qc
+                              FROM sub_jobs WHERE job_id IN (" . implode(',', $ids) . ') GROUP BY job_id') as $r) $c[(int) $r['job_id']] = $r;
+        }
+        foreach ($rows as &$r) {
+            $x = $c[(int) $r['id']] ?? [];
+            foreach (['n_total', 'n_done', 'n_pending', 'n_qc'] as $k) $r[$k] = (int) ($x[$k] ?? 0);
+        }
+        unset($r);
+        return $rows;
     }
 
     public function create(): void
@@ -204,7 +230,13 @@ final class AdminJobController extends Controller
     /** Assignment board: all unassigned sub-jobs with qualified inspectors and their workload. */
     public function board(): void
     {
-        $pending = DB::all(JobService::SUBJOB_SQL . " WHERE sj.status = 'pending' AND j.status <> 'cancelled' ORDER BY FIELD(j.priority,'urgent','high','normal','low'), j.scheduled_date IS NULL, j.scheduled_date, sj.job_id, sj.seq");
+        // page through JOBS that still have unassigned sub-jobs (20 per page), then load only those jobs' sub-jobs
+        $jobSql = "SELECT j.id FROM jobs j WHERE j.status <> 'cancelled' AND EXISTS (SELECT 1 FROM sub_jobs s WHERE s.job_id = j.id AND s.status = 'pending')
+                   ORDER BY FIELD(j.priority,'urgent','high','normal','low'), j.scheduled_date IS NULL, j.scheduled_date, j.id";
+        [$jobRows, $meta] = paginate($jobSql, [], 20, "SELECT COUNT(DISTINCT s.job_id) FROM sub_jobs s JOIN jobs j ON j.id = s.job_id WHERE s.status = 'pending' AND j.status <> 'cancelled'");
+        $ids = array_map('intval', array_column($jobRows, 'id'));
+        $pending = $ids ? DB::all(JobService::SUBJOB_SQL . " WHERE sj.status = 'pending' AND sj.job_id IN (" . implode(',', $ids) . ')
+                        ORDER BY FIELD(j.priority,\'urgent\',\'high\',\'normal\',\'low\'), j.scheduled_date IS NULL, j.scheduled_date, sj.job_id, sj.seq') : [];
         $byJob = [];
         foreach ($pending as $s) $byJob[$s['job_id']][] = $s;
         $inspectors = JobService::inspectorsFor();
@@ -212,7 +244,7 @@ final class AdminJobController extends Controller
         foreach (DB::all('SELECT k.user_id, t.code FROM inspector_skills k JOIN inspection_types t ON t.id = k.inspection_type_id') as $r) {
             $skills[$r['user_id']][] = $r['code'];
         }
-        $this->view('admin/jobs/board', compact('byJob', 'inspectors', 'skills') + [
+        $this->view('admin/jobs/board', compact('byJob', 'inspectors', 'skills', 'meta') + [
             'title' => 'Assignment Board', 'crumbs' => ['Assignment Board' => null],
         ]);
     }

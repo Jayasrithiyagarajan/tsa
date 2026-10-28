@@ -83,7 +83,7 @@ final class DocumentService
             $f['value'] = CertificateService::fieldValue($f, $sj, $cert, $data);
             $fields[] = $f;
         }
-        $photoLimit = ['ec' => 12, 'sc' => 30, 'ss' => 70][$tpl['layout'] ?? ''] ?? 4;
+        $photoLimit = ['ec' => 12, 'sc' => 30, 'ss' => 96, 'mo' => 7, 'tr' => 6][$tpl['layout'] ?? ''] ?? 4;
         // photos tagged for this page, plus untagged ones (cert_seq NULL = every page); page-specific photos print first
         $photos = DB::all("SELECT * FROM attachments WHERE sub_job_id = ? AND on_certificate = 1 AND mime LIKE 'image/%' AND (cert_seq IS NULL OR cert_seq = ?) ORDER BY cert_seq IS NULL, id LIMIT $photoLimit", [$subJobId, $seq]);
         foreach ($photos as &$p) {
@@ -172,6 +172,21 @@ final class DocumentService
     }
 
     /**
+     * Dompdf looks up its bundled DejaVu Sans (the font that draws all Arabic) by bare name inside "fontDir".
+     * Because fontDir is storage/fonts, the TTFs must be there too, otherwise Arabic falls back to a core font
+     * and prints as garbage on hosts that have no system fonts (cPanel / Linux). Copy them from vendor if missing.
+     */
+    private static function ensureBundledFonts(string $dir): void
+    {
+        $src = ROOT_PATH . '/vendor/dompdf/dompdf/lib/fonts';
+        foreach (['DejaVuSans', 'DejaVuSans-Bold', 'DejaVuSans-Oblique', 'DejaVuSans-BoldOblique'] as $f) {
+            foreach (['.ttf', '.ufm'] as $ext) {
+                if (!is_file("$dir/$f$ext") && is_file("$src/$f$ext")) @copy("$src/$f$ext", "$dir/$f$ext");
+            }
+        }
+    }
+
+    /**
      * Width in mm of $text in Calibri (bold or regular) at $pt points, measured from the real font so that
      * page breaks of the printed checklists land where they do in the Word forms. Null if no font/GD.
      */
@@ -194,6 +209,7 @@ final class DocumentService
         // The forms are set in Calibri. Use a project copy of Carlito (metric-compatible, OFL) if present in
         // storage/fonts, otherwise the Calibri installed on a Windows host; Dompdf falls back to DejaVu Sans.
         if (!is_dir(ROOT_PATH . '/storage/fonts')) mkdir(ROOT_PATH . '/storage/fonts', 0775, true);
+        self::ensureBundledFonts(ROOT_PATH . '/storage/fonts');
         $fontSet = self::fontFiles();
         $opt = new Options();
         $opt->set('isRemoteEnabled', false);
