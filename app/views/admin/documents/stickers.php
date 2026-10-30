@@ -13,6 +13,7 @@ $blueSeries = null; $redSeries = null;
 foreach ($series as $sr) { if ($sr['color'] === 'red') $redSeries ??= $sr; else $blueSeries ??= $sr; }
 $printFrom = (string) input('print_from', '');
 ?>
+<div class="stk-page">
 <div class="page-head">
   <div class="ph-text"><h1>Sticker stock</h1><div class="sub">Bulk stickers generated here (Super Admin only) → printed → allocated to inspectors. Once an inspector links a sticker to a job it moves to <a href="<?= url('admin/project-stickers') ?>">Project Stickers</a> and is closed.</div></div>
   <div class="actions">
@@ -41,15 +42,15 @@ $printFrom = (string) input('print_from', '');
   <div class="card">
     <div class="card-h"><h2><?= icon('layers', 'sm') ?> Sticker series</h2></div>
     <?php if ($series): ?>
-    <div class="table-wrap"><table class="t">
+    <div class="table-wrap"><table class="t stack-sm">
       <thead><tr><th>Series</th><th>Generated</th><th>In stock</th><th>Next to allocate</th><th>Next to generate</th></tr></thead>
       <tbody><?php foreach ($series as $sr): ?>
         <tr>
-          <td><span class="row" style="gap:8px"><?= $swatch($sr['color']) ?><span class="mono strong"><?= e($sr['prefix']) ?></span></span></td>
-          <td><?= (int) $sr['total'] ?></td>
-          <td><?= (int) $sr['in_stock'] ?></td>
-          <td class="mono small"><?= e($sr['next_free'] ?: '—') ?></td>
-          <td class="mono small"><?= e($sr['prefix'] . $pad($sr['next_generate'])) ?></td>
+          <td data-label="Series"><span class="row" style="gap:8px"><?= $swatch($sr['color']) ?><span class="mono strong"><?= e($sr['prefix']) ?></span></span></td>
+          <td data-label="Generated"><?= (int) $sr['total'] ?></td>
+          <td data-label="In stock"><?= (int) $sr['in_stock'] ?></td>
+          <td data-label="Next to allocate" class="mono small"><?= e($sr['next_free'] ?: '—') ?></td>
+          <td data-label="Next to generate" class="mono small"><?= e($sr['prefix'] . $pad($sr['next_generate'])) ?></td>
         </tr>
       <?php endforeach; ?></tbody>
     </table></div>
@@ -57,14 +58,14 @@ $printFrom = (string) input('print_from', '');
   </div>
   <div class="card">
     <div class="card-h"><h2><?= icon('users', 'sm') ?> Held by inspectors</h2></div>
-    <div class="table-wrap"><table class="t">
+    <div class="table-wrap"><table class="t stack-sm">
       <thead><tr><th>Inspector</th><th>Blue</th><th>Red</th><th>Used</th><th></th></tr></thead>
       <tbody><?php foreach ($inspectors as $i): ?>
         <tr>
-          <td class="strong"><?= e($i['name']) ?><div class="sub"><?= $i['last_allocated'] ? 'Last allocation ' . e(fmt_date($i['last_allocated'])) : 'Nothing allocated yet' ?></div></td>
-          <td><?= (int) $i['in_hand'] - (int) $i['in_hand_red'] ?></td>
-          <td><?= (int) $i['in_hand_red'] ?></td>
-          <td><a href="<?= url('admin/project-stickers', ['inspector' => $i['id']]) ?>"><?= (int) $i['used'] ?></a></td>
+          <td data-label="Inspector" class="strong"><?= e($i['name']) ?><div class="sub"><?= $i['last_allocated'] ? 'Last allocation ' . e(fmt_date($i['last_allocated'])) : 'Nothing allocated yet' ?></div></td>
+          <td data-label="Blue"><?= (int) $i['in_hand'] - (int) $i['in_hand_red'] ?></td>
+          <td data-label="Red"><?= (int) $i['in_hand_red'] ?></td>
+          <td data-label="Used"><a href="<?= url('admin/project-stickers', ['inspector' => $i['id']]) ?>"><?= (int) $i['used'] ?></a></td>
           <td class="actions"><a class="btn btn-ghost btn-sm" href="<?= url('admin/stickers', ['inspector' => $i['id'], 'status' => 'allocated']) ?>">View</a></td>
         </tr>
       <?php endforeach; ?></tbody>
@@ -76,7 +77,7 @@ $printFrom = (string) input('print_from', '');
   <div class="toolbar">
     <div class="seg-tabs"><?= $tab('', 'All') ?><?= $tab('allocated', 'Allocated') ?><?= $tab('in_stock', 'In stock') ?><?= $tab('void', 'Void') ?></div>
     <span class="grow"></span>
-    <form class="row" method="get" style="gap:8px" data-autosubmit>
+    <form class="row stk-filter" method="get" style="gap:8px" data-autosubmit>
       <input type="hidden" name="status" value="<?= e($status) ?>">
       <select class="select" name="inspector" style="width:auto"><option value="">All inspectors</option>
         <?php foreach ($inspectors as $i): ?><option value="<?= (int) $i['id'] ?>" <?= $insp === (int) $i['id'] ? 'selected' : '' ?>><?= e($i['name']) ?></option><?php endforeach; ?></select>
@@ -85,7 +86,7 @@ $printFrom = (string) input('print_from', '');
   </div>
 
   <form method="post" id="bulk" action="<?= url('admin/stickers/allocate') ?>"><?= Csrf::field() ?>
-    <div class="toolbar" style="border-top:1px solid var(--border);gap:8px;flex-wrap:wrap"<?= Auth::isSuper() ? '' : ' hidden' ?>>
+    <div class="toolbar stk-bulk" style="border-top:1px solid var(--border);gap:8px;flex-wrap:wrap"<?= Auth::isSuper() ? '' : ' hidden' ?>>
       <span class="small muted"><b data-sel>0</b> selected</span>
       <select class="select" name="inspector_id" style="width:auto"><?= $inspOptions() ?></select>
       <button class="btn btn-secondary btn-sm" data-need-insp><?= icon('send', 'sm') ?> Allocate selected</button>
@@ -96,7 +97,7 @@ $printFrom = (string) input('print_from', '');
       <thead><tr><th style="width:32px"><input type="checkbox" data-all title="Select all on this page"></th><th>Sticker</th><th>Batch</th><th>Generated</th><th>Allocated to</th><th>Status</th><th></th></tr></thead>
       <tbody><?php foreach ($rows as $s): ?>
         <tr>
-          <td><?php if ($s['status'] !== 'void'): ?><input type="checkbox" name="ids[]" value="<?= (int) $s['id'] ?>"><?php endif; ?></td>
+          <td class="stk-chk"><?php if ($s['status'] !== 'void'): ?><input type="checkbox" name="ids[]" value="<?= (int) $s['id'] ?>"><?php endif; ?></td>
           <td data-label="Sticker"><span class="row" style="gap:8px"><?= $swatch($s['color']) ?><span class="mono strong"><?= e($s['sticker_no']) ?></span></span></td>
           <td data-label="Batch" class="sub"><?= e($s['batch_no'] ?: '—') ?></td>
           <td data-label="Generated" class="small nowrap"><?= e(fmt_date($s['created_at'])) ?></td>
@@ -115,6 +116,7 @@ $printFrom = (string) input('print_from', '');
   <?php View::render('partials/pager', ['meta' => $meta], null); ?>
 </div>
 <form method="post" id="void-form"><?= Csrf::field() ?><input type="hidden" name="reason"></form>
+</div>
 
 <dialog class="modal" id="batch"><form method="post" action="<?= url('admin/stickers') ?>" data-gen><?= Csrf::field() ?>
   <div class="m-h"><h3>Generate sticker batch</h3><button type="button" class="icon-btn" data-modal-close><?= icon('x', 'sm') ?></button></div>

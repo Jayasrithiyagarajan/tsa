@@ -547,3 +547,82 @@ a.sub-row:hover { background: var(--surface-2); text-decoration: none; }
 .cl-section, .cl-item, .cl-bar,
 .cl-section *, .cl-item *, .cl-bar * { font-family: Calibri, Carlito, "Segoe UI", Arial, sans-serif; }
 .cl-item input, .cl-item textarea, .cl-item select, .cl-item button, .cl-bar button { font-family: inherit; }
+
+
+/* ---- /admin/stickers responsive (scoped; no effect on other pages) ---- */
+.stk-page { min-width: 0; }
+.stk-page .card { min-width: 0; }
+.stk-page .stk-filter { flex-wrap: wrap; }
+.stk-page .stk-bulk { align-items: center; }
+@media (max-width: 960px) {
+  .stk-page .toolbar .grow { display: none; }
+  .stk-page .stk-filter { width: 100%; }
+  .stk-page .stk-filter .search { max-width: none; flex: 1; }
+}
+@media (max-width: 640px) {
+  .stk-page .page-head { align-items: stretch; }
+  .stk-page .page-head .actions { width: 100%; }
+  .stk-page .page-head .actions .btn { flex: 1 1 calc(50% - 8px); justify-content: center; }
+  .stk-page .page-head .actions .btn-primary { flex-basis: 100%; }
+  .stk-page .alert .btn { margin: 8px 0 0 0 !important; }
+  .stk-page .toolbar { padding: 10px; }
+  .stk-page .seg-tabs { width: 100%; }
+  .stk-page .seg-tabs a { flex: 1; text-align: center; padding: 6px 8px; }
+  .stk-page .stk-filter select,
+  .stk-page .stk-filter .search { width: 100% !important; max-width: none; flex: 1 1 100%; min-width: 0; }
+  .stk-page .stk-bulk select { width: 100% !important; flex: 1 1 100%; min-width: 0; }
+  .stk-page .stk-bulk .btn { flex: 1 1 calc(50% - 8px); justify-content: center; }
+  .stk-page .stk-bulk .small { width: 100%; }
+  .stk-page table.t.stack-sm tr { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; padding: 10px 14px; }
+  .stk-page table.t.stack-sm td { padding: 4px 0; width: auto; min-width: 0; word-break: break-word; }
+  .stk-page table.t.stack-sm td.stk-chk { grid-column: 1 / -1; }
+  .stk-page table.t.stack-sm td.stk-chk:empty { display: none; }
+  .stk-page table.t.stack-sm td.actions { grid-column: 1 / -1; }
+  .stk-page table.t.stack-sm td:first-child:not(.stk-chk) { grid-column: 1 / -1; }
+  .stk-page table.t.stack-sm td[data-label="Allocated to"],
+  .stk-page table.t.stack-sm td[data-label="Status"] { grid-column: auto; }
+  .stk-page table.t.stack-sm td[data-label="Inspector"] { grid-column: 1 / -1; }
+}
+dialog.modal#batch, dialog.modal#allocate, dialog.modal#print { max-height: calc(100dvh - 24px); overflow-y: auto; }
+@media (max-width: 640px) {
+  dialog.modal#batch, dialog.modal#allocate, dialog.modal#print { width: calc(100vw - 20px); }
+  dialog.modal#batch .col-4, dialog.modal#batch .col-6,
+  dialog.modal#allocate .col-6, dialog.modal#print .col-6 { grid-column: span 12; }
+  dialog.modal#batch .m-f, dialog.modal#allocate .m-f, dialog.modal#print .m-f { flex-direction: column-reverse; }
+  dialog.modal#batch .m-f .btn, dialog.modal#allocate .m-f .btn, dialog.modal#print .m-f .btn { width: 100%; justify-content: center; }
+  dialog.modal#batch .m-h, dialog.modal#allocate .m-h, dialog.modal#print .m-h { padding: 14px 16px 4px; }
+  dialog.modal#batch .m-b, dialog.modal#allocate .m-b, dialog.modal#print .m-b { padding: 8px 16px 14px; }
+}
+@media (min-width: 400px) and (max-width: 640px) {
+  dialog.modal#batch .col-4 { grid-column: span 4; }
+}
+
+
+/* ---- /admin/certificates responsive (scoped) ---- */
+.cert-page { min-width: 0; }
+.cert-page .card { min-width: 0; }
+@media (max-width: 960px) {
+  .cert-page .toolbar .grow { display: none; }
+  .cert-page .cert-filter { width: 100%; flex-wrap: wrap; }
+  .cert-page .cert-filter .search { max-width: none; flex: 1 1 220px; }
+  .cert-page .cert-filter .select { flex: 1 1 160px; }
+}
+@media (max-width: 640px) {
+  .cert-page .page-head .actions { width: 100%; }
+  .cert-page .toolbar { padding: 10px; }
+  .cert-page .seg-tabs { width: 100%; }
+  .cert-page .cert-filter .search, .cert-page .cert-filter .select { flex: 1 1 100%; width: 100% !important; min-width: 0; max-width: none; }
+  .cert-page table.t.stack-sm tr { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; padding: 10px 14px; }
+  .cert-page table.t.stack-sm td { padding: 4px 0; width: auto; min-width: 0; word-break: break-word; }
+  .cert-page table.t.stack-sm td[data-label="Certificate"],
+  .cert-page table.t.stack-sm td[data-label="Client"],
+  .cert-page table.t.stack-sm td[data-label="Inspection"],
+  .cert-page table.t.stack-sm td.actions { grid-column: 1 / -1; }
+  .cert-page .cert-actions { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 8px !important; }
+}
+dialog.modal[id^="revoke-"] { max-height: calc(100dvh - 24px); overflow-y: auto; }
+@media (max-width: 640px) {
+  dialog.modal[id^="revoke-"] { width: calc(100vw - 20px); }
+  dialog.modal[id^="revoke-"] .m-f { flex-direction: column-reverse; }
+  dialog.modal[id^="revoke-"] .m-f .btn { width: 100%; justify-content: center; }
+}

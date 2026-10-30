@@ -113,7 +113,9 @@ final class AdminUserController extends Controller
                 InspectorCardService::setProfilePhoto($id, $f['path']);
             }
             if ($wasNew && $data['role'] === 'customer') MailEvents::customerAccount((int) $id, (string) input('password'));
-            return 'admin/users/' . $id;
+            // back to the list of this kind of user (superadmin / admin share the Administrators tab)
+            $tab = in_array($data['role'], ['superadmin', 'admin'], true) ? 'admin' : $data['role'];
+            return 'admin/users?role=' . $tab;
         }, 'User saved.');
     }
 }
