@@ -191,11 +191,27 @@ final class StickerService
      */
     public static function series(): array
     {
-        return DB::all("SELECT REGEXP_REPLACE(sticker_no, '[0-9]+$', '') prefix, MAX(color) color, COUNT(*) total,
-                               SUM(status = 'in_stock') in_stock,
-                               MAX(CAST(REGEXP_SUBSTR(sticker_no, '[0-9]+$') AS UNSIGNED)) + 1 next_generate,
-                               MIN(CASE WHEN status = 'in_stock' THEN sticker_no END) next_free
-                        FROM stickers GROUP BY prefix ORDER BY MAX(color) <> 'red' DESC, prefix");
+        // Grouped in PHP: REGEXP_REPLACE / REGEXP_SUBSTR exist only in MariaDB 10+ / MySQL 8, not on MySQL 5.7 hosting.
+        $series = [];
+        foreach (DB::all('SELECT sticker_no, color, status FROM stickers') as $r) {
+            $no = (string) $r['sticker_no'];
+            $prefix = preg_replace('/\d+$/', '', $no);
+            $n = preg_match('/\d+$/', $no, $m) ? (int) $m[0] : 0;
+            $g = &$series[$prefix];
+            if ($g === null) $g = ['prefix' => $prefix, 'color' => $r['color'], 'total' => 0, 'in_stock' => 0, 'max' => 0, 'next_free' => null];
+            if (strcmp((string) $r['color'], (string) $g['color']) > 0) $g['color'] = $r['color'];
+            $g['total']++;
+            if ($r['status'] === 'in_stock') {
+                $g['in_stock']++;
+                if ($g['next_free'] === null || strcmp($no, $g['next_free']) < 0) $g['next_free'] = $no;
+            }
+            $g['max'] = max($g['max'], $n);
+            unset($g);
+        }
+        foreach ($series as &$g) { $g['next_generate'] = $g['max'] + 1; unset($g['max']); }
+        unset($g);
+        usort($series, fn ($x, $y) => [$x['color'] !== 'red' ? 0 : 1, $x['prefix']] <=> [$y['color'] !== 'red' ? 0 : 1, $y['prefix']]);
+        return array_values($series);
     }
 
     /** Ids of the next $qty stickers still in office stock, starting at $fromNo within its series. */

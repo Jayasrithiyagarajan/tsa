@@ -32,7 +32,7 @@ $old = fn ($k, $d = '') => old($k, $d);
         <div class="card-h"><h2><?= icon('layers', 'sm') ?> Inspection details</h2></div>
         <div class="card-b"><div class="form-grid">
           <div class="field col-6">
-            <label>Inspection type <span class="req">*</span></label>
+            <label>Checklist / Inspection type <span class="req">*</span></label>
             <select class="select" name="inspection_type_id" id="type-select" required>
               <option value="">Select…</option>
               <?php foreach ($types as $t): ?>
@@ -41,14 +41,14 @@ $old = fn ($k, $d = '') => old($k, $d);
             </select>
           </div>
           <div class="field col-6">
-            <label>Certificate type</label>
-            <select class="select" name="cert_template_id">
-              <option value="">— Auto (latest active) —</option>
+            <label>Certificate type <span class="req">*</span></label>
+            <select class="select" name="cert_template_id" id="cert-select" required>
+              <option value="">Select…</option>
               <?php foreach ($certTemplates as $ct): ?>
-                <option value="<?= $ct['id'] ?>"<?= selected($ct['id'], $old('cert_template_id')) ?>><?= e($ct['title']) ?><?= $ct['doc_ref'] ? ' · ' . e($ct['doc_ref']) : '' ?></option>
+                <option value="<?= $ct['id'] ?>" data-type="<?= (int) $ct['inspection_type_id'] ?>"<?= selected($ct['id'], $old('cert_template_id')) ?>><?= e($ct['title']) ?><?= $ct['doc_ref'] ? ' · ' . e($ct['doc_ref']) : '' ?></option>
               <?php endforeach; ?>
             </select>
-            <div class="help">Leave as Auto unless you need a specific template version.</div>
+            <div class="help">Pre-selected from the checklist / inspection type; change it if a different certificate is needed.</div>
           </div>
           <div class="field col-6">
             <label>Registered equipment</label>
@@ -124,6 +124,15 @@ $old = fn ($k, $d = '') => old($k, $d);
   </div>
 </form>
 <script>
+// Pre-select the matching certificate when the checklist / inspection type changes
+(function () {
+  const t = document.getElementById('type-select'), c = document.getElementById('cert-select');
+  if (!t || !c) return;
+  t.addEventListener('change', function () {
+    const m = Array.from(c.options).find(o => o.dataset.type === t.value);
+    if (m) c.value = m.value;
+  });
+})();
 // Equipment picker: show/hide new-equipment fields
 document.getElementById('eq-select').addEventListener('change', function () {
   document.getElementById('new-eq-fields').style.display = this.value ? 'none' : '';

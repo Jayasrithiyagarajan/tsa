@@ -74,8 +74,8 @@ final class InspectorController extends Controller
                     AND EXISTS (SELECT 1 FROM checklist_templates c WHERE c.inspection_type_id = t.id AND c.is_active = 1)
                     ORDER BY t.name"),
             'equipment'     => DB::all('SELECT id, description, equipment_no FROM equipment WHERE client_id = ? ORDER BY description', [$job['client_id']]),
-            'certTemplates' => DB::all("SELECT c.id, c.title, c.doc_ref FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
-                    WHERE c.is_active = 1 AND t.requires_checklist = 0
+            'certTemplates' => DB::all("SELECT c.id, c.title, c.doc_ref, c.inspection_type_id FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
+                    WHERE c.is_active = 1
                       AND c.version = (SELECT MAX(v.version) FROM certificate_templates v WHERE v.inspection_type_id = c.inspection_type_id AND v.is_active = 1)
                     ORDER BY t.category, t.name"),
             'title'         => 'Add Sub-job',
@@ -96,6 +96,7 @@ final class InspectorController extends Controller
             if (input('kind') === 'operator') {
                 return $this->storeOperatorAssessment($job);
             }
+            if (!(int) input('cert_template_id', 0)) throw new DomainException('Select the certificate type.');
             $qty = max(1, min(50, (int) input('quantity', 1)));
             for ($i = 0; $i < $qty; $i++) {
                 $sjId = JobService::addSubJob((int) $id, $_POST);
