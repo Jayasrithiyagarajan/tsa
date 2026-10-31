@@ -19,7 +19,7 @@ $clientId = $old('client_id', $r['client_id'] ?? '');
         <div class="card-h"><h2><?= icon('briefcase', 'sm') ?> Job details</h2></div>
         <div class="card-b"><div class="form-grid">
           <div class="field col-6"><label>Client <span class="req">*</span></label>
-            <select class="select" name="client_id" data-client-equipment <?= $r ? '' : 'required' ?>>
+            <select class="select" name="client_id" data-searchable data-client-equipment <?= $r ? '' : 'required' ?>>
               <option value=""><?= $r ? '— Register new client from request —' : 'Select client…' ?></option>
               <?php foreach ($clients as $c): ?><option value="<?= $c['id'] ?>"<?= selected($c['id'], $clientId) ?>><?= e($c['name']) ?> (<?= e($c['code']) ?>)</option><?php endforeach; ?>
             </select></div>
@@ -42,7 +42,7 @@ $clientId = $old('client_id', $r['client_id'] ?? '');
         <div class="card-h"><h2><?= icon('users', 'sm') ?> Assignment</h2></div>
         <div class="card-b">
           <div class="field"><label>Assign to inspector</label>
-            <select class="select" name="inspector_id"><option value="">Assign later</option>
+            <select class="select" name="inspector_id" data-searchable><option value="">Assign later</option>
               <?php foreach ($inspectors as $u): ?><option value="<?= $u['id'] ?>"><?= e($u['name']) ?> — <?= (int) $u['open_load'] ?> open</option><?php endforeach; ?></select>
             <div class="help">The assigned inspector will create sub-jobs for each piece of equipment they need to inspect.</div></div>
         </div>

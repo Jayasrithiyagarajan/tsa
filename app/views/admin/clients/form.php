@@ -4,7 +4,7 @@
   <?= Csrf::field() ?>
   <div class="card-b"><div class="form-grid">
     <?php if (!$client): ?>
-      <div class="field col-4"><label>Client code <span class="req">*</span></label><input class="input mono" name="code" value="<?= e($v('code')) ?>" required placeholder="22108"><div class="help">Appears in certificate numbers. Cannot be changed later.</div><?= field_error('code') ?></div>
+      <div class="field col-4"><label>Client code</label><input class="input mono" value="<?= e($nextCode ?? '') ?>" readonly disabled><div class="help">Generated automatically (next in sequence) when you save. Appears in certificate numbers and cannot be changed later.</div></div>
     <?php endif; ?>
     <div class="field col-8"><label>Company name <span class="req">*</span></label><input class="input" name="name" value="<?= e($v('name')) ?>" required><?= field_error('name') ?></div>
     <div class="field col-6"><label>Contact person</label><input class="input" name="contact_person" value="<?= e($v('contact_person')) ?>"></div>

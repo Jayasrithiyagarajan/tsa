@@ -108,13 +108,37 @@ final class RequestService
 
 final class ClientService
 {
+    /** First number handed out when no numeric client code exists yet. */
+    public const CODE_START = 22001;
+
+    /** Next sequential client code: highest all-digit code + 1 (codes such as 22108, 22131 ...). */
+    public static function nextCode(): string
+    {
+        $max = DB::value("SELECT MAX(CAST(code AS UNSIGNED)) FROM clients WHERE code REGEXP '^[0-9]+$'");
+        return (string) max(self::CODE_START, ((int) $max) + 1);
+    }
+
+    /** Pass 'code' to use a specific code (installer, request conversion); leave it empty to auto-generate the next one. */
     public static function create(array $d): int
     {
-        $code = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $d['code']));
-        if ($code === '') throw new DomainException('Client code is required.');
-        if (DB::value('SELECT id FROM clients WHERE code = ?', [$code])) {
-            throw new DomainException("Client code $code is already used.");
+        $auto = trim((string) ($d['code'] ?? '')) === '';
+        for ($try = 0; ; $try++) {
+            $code = $auto ? self::nextCode() : strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $d['code']));
+            if ($code === '') throw new DomainException('Client code is required.');
+            if (DB::value('SELECT id FROM clients WHERE code = ?', [$code])) {
+                if ($auto) continue;   // lost a race with another admin: take the following number
+                throw new DomainException("Client code $code is already used.");
+            }
+            try {
+                return self::insert($code, $d);
+            } catch (PDOException $e) {
+                if (!$auto || $try >= 5 || ($e->errorInfo[1] ?? 0) !== 1062) throw $e;   // duplicate key: retry with a fresh number
+            }
         }
+    }
+
+    private static function insert(string $code, array $d): int
+    {
         $id = DB::insert('clients', [
             'code'           => $code,
             'name'           => $d['name'],

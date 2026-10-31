@@ -10,6 +10,7 @@ $meter = function (?float $pct, ?float $target = null) {
 $tFpy = KpiService::target('first_pass_yield');
 $tOn = KpiService::target('on_time_rate');
 ?>
+<div class="kpi-admin">
 <div class="page-head">
   <div class="ph-text"><div class="eyebrow">Operations</div><h1>KPI dashboard</h1>
     <div class="sub">Request handling, assignment, delivery and quality across the whole inspection workflow.</div></div>
@@ -41,7 +42,7 @@ $tOn = KpiService::target('on_time_rate');
       <?php foreach ($channels as $c): ?>
         <div class="bar-row"><span><?= e(Workflow::label($c['channel'])) ?></span><div class="track"><span style="width:<?= round($c['n'] / $chMax * 100) ?>%;background:var(--primary)"></span></div>
           <span class="v"><?= (int) $c['n'] ?></span></div>
-        <div class="small muted" style="margin:-6px 0 2px 140px"><?= $c['n'] ? round($c['converted'] / $c['n'] * 100) : 0 ?>% converted</div>
+        <div class="small muted kpi-conv" style="margin:-6px 0 2px 140px"><?= $c['n'] ? round($c['converted'] / $c['n'] * 100) : 0 ?>% converted</div>
       <?php endforeach; ?>
       <?php if (!$channels): ?><p class="muted small">No requests in this period.</p><?php endif; ?>
     </div>
@@ -74,13 +75,13 @@ $tOn = KpiService::target('on_time_rate');
     <div><div class="small muted">Reviewed within 24 h</div><div class="kc-value" style="font-size:22px"><?= e(KpiService::fmt($qc_team['qc_sla'], '%')) ?></div></div>
     <div><div class="small muted">Rework rate</div><div class="kc-value" style="font-size:22px"><?= e(KpiService::fmt($qc_team['qc_rework_rate'], '%')) ?></div></div>
   </div></div>
-  <div class="table-wrap"><table class="t"><tbody><?php foreach ($qc_people as $q): ?>
+  <div class="table-wrap"><table class="t kpi-qc"><tbody><?php foreach ($qc_people as $q): ?>
     <tr class="row-link" data-href="<?= url('admin/kpi/qc/' . $q['id'], ['period' => $P['key'], 'from' => $P['from'], 'to' => $P['to']]) ?>"><td><span class="person"><span class="avatar sm"><?= e(initials($q['name'])) ?></span><span class="p-n"><?= e($q['name']) ?></span></span></td>
       <td class="num"><b><?= (int) $q['reviews'] ?></b> <span class="sub">reviews</span></td><td class="num"><?= (int) $q['reworks'] ?> <span class="sub">returned</span></td></tr>
   <?php endforeach; ?></tbody></table></div>
 </div>
 
-<div class="grid grid-2 mt-2" style="align-items:start">
+<div class="grid grid-2 mt-2 kpi-split" style="align-items:start">
   <div class="card"><div class="card-h"><h2><?= icon('building', 'sm') ?> Client volume</h2></div>
     <div class="table-wrap"><table class="t">
       <thead><tr><th>Client</th><th class="num">Requests</th><th class="num">Completed</th><th class="num">Certificates</th><th class="num">Open</th></tr></thead>
@@ -101,6 +102,8 @@ $tOn = KpiService::target('on_time_rate');
   <div class="card-b"><div class="grid grid-2 small" style="gap:6px 24px">
     <?php foreach ($cards as $c): ?><div><b><?= e($c['label']) ?></b> — <span class="muted"><?= e($c['desc']) ?></span></div><?php endforeach; ?>
   </div><p class="small muted mt-2">Status: <b style="color:var(--green)">On target</b> meets the target · <b style="color:var(--amber)">Watch</b> within 10 % of it · <b style="color:var(--red)">Off target</b> worse. Arrows compare with the previous period of the same length.</p></div></div>
+
+</div>
 
 <dialog class="modal" id="kpi-targets" style="width:min(720px,calc(100vw - 32px))"><form method="post" action="<?= url('admin/kpi/targets') ?>"><?= Csrf::field() ?>
   <div class="m-h"><h3>KPI targets</h3><button type="button" class="icon-btn" data-modal-close><?= icon('x', 'sm') ?></button></div>

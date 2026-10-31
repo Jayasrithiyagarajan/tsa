@@ -175,6 +175,65 @@
     });
   }
 
+  // searchable select: <select data-searchable> becomes a dropdown with a search box (the native select stays the source of truth)
+  $$('select[data-searchable]').forEach((sel) => {
+    const wrap = document.createElement('div'); wrap.className = 'ss';
+    sel.parentNode.insertBefore(wrap, sel); wrap.appendChild(sel);
+    sel.classList.add('ss-native'); sel.tabIndex = -1;
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'select ss-btn'; btn.setAttribute('aria-haspopup', 'listbox');
+    const pop = document.createElement('div'); pop.className = 'ss-pop'; pop.hidden = true;
+    const q = document.createElement('input'); q.type = 'text'; q.className = 'input ss-q'; q.placeholder = 'Type to search…'; q.autocomplete = 'off'; q.setAttribute('aria-label', 'Search');
+    const list = document.createElement('ul'); list.className = 'ss-list'; list.setAttribute('role', 'listbox');
+    pop.append(q, list); wrap.append(btn, pop);
+    let items = [], active = -1;
+    const label = () => { const o = sel.selectedOptions[0]; btn.textContent = o ? o.textContent : ''; btn.classList.toggle('ss-empty', !sel.value); };
+    const build = () => {
+      const term = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      list.replaceChildren(); items = [];
+      Array.from(sel.options).forEach((o) => {
+        const t = o.textContent; const low = t.toLowerCase();
+        if (term.length && o.value !== '' && !term.every((w) => low.includes(w))) return;
+        if (term.length && o.value === '') return;
+        const li = document.createElement('li'); li.setAttribute('role', 'option'); li.textContent = t; li.dataset.value = o.value;
+        if (o.disabled) li.className = 'ss-dis';
+        if (o.value === sel.value) li.classList.add('ss-sel');
+        list.appendChild(li); items.push(li);
+      });
+      if (!items.length) { const li = document.createElement('li'); li.className = 'ss-none'; li.textContent = 'No matches'; list.appendChild(li); }
+      setActive(items.findIndex((li) => li.classList.contains('ss-sel')) >= 0 && !term.length ? items.findIndex((li) => li.classList.contains('ss-sel')) : (items.length ? (term.length && items[0].dataset.value === '' ? Math.min(1, items.length - 1) : 0) : -1));
+    };
+    const setActive = (i) => {
+      items.forEach((li) => li.classList.remove('ss-act')); active = i;
+      if (items[i]) { items[i].classList.add('ss-act'); items[i].scrollIntoView({ block: 'nearest' }); }
+    };
+    const open = () => { if (sel.disabled) return; pop.hidden = false; wrap.classList.add('open'); q.value = ''; build(); q.focus(); };
+    const close = (focusBtn) => { pop.hidden = true; wrap.classList.remove('open'); if (focusBtn) btn.focus(); };
+    const choose = (li) => {
+      if (!li || li.classList.contains('ss-dis')) return;
+      const changed = sel.value !== li.dataset.value; sel.value = li.dataset.value; label(); close(true);
+      sel.classList.remove('is-invalid');
+      if (changed) sel.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    btn.addEventListener('click', () => (pop.hidden ? open() : close(true)));
+    btn.addEventListener('keydown', (e) => { if (['ArrowDown', 'ArrowUp'].includes(e.key)) { e.preventDefault(); open(); } });
+    q.addEventListener('input', build);
+    q.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(items.length - 1, active + 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(0, active - 1)); }
+      else if (e.key === 'Enter') { e.preventDefault(); choose(items[active]); }
+      else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+      else if (e.key === 'Tab') close(false);
+    });
+    list.addEventListener('mousedown', (e) => e.preventDefault());
+    list.addEventListener('click', (e) => choose(e.target.closest('li[data-value]')));
+    list.addEventListener('mousemove', (e) => { const li = e.target.closest('li[data-value]'); if (li) { const i = items.indexOf(li); if (i !== active) setActive(i); } });
+    document.addEventListener('click', (e) => { if (!pop.hidden && !wrap.contains(e.target)) close(false); });
+    sel.addEventListener('invalid', () => { btn.classList.add('is-invalid'); });
+    sel.addEventListener('change', () => { label(); btn.classList.remove('is-invalid'); });
+    if (sel.form) sel.form.addEventListener('reset', () => setTimeout(label));
+    label();
+  });
+
   // demo login helper
   $$('[data-demo]').forEach((b) => b.addEventListener('click', () => { $('#email').value = b.dataset.demo; $('#password').focus(); }));
 })();
