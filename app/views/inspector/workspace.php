@@ -166,6 +166,12 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <input id="clone-qty" class="input" type="number" name="qty" min="1" max="100" value="<?= $totalPages ?>" style="width:70px">
             <button class="btn btn-secondary btn-sm" type="submit"><?= icon('copy', 'sm') ?> Apply</button>
           </form>
+          <?php if ($isMultiPage && $certSeq > 1): ?>
+          <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/certificate/' . $certSeq . '/delete') ?>" data-confirm="<?= e('Delete certificate page ' . $certSeq . '?' . "\n\n" . 'This removes the page, its data and the photos set to print on this page only. Later pages are renumbered. This cannot be undone.') ?>">
+            <?= Csrf::field() ?>
+            <button class="btn btn-ghost btn-sm" type="submit" style="color:var(--red)"><?= icon('trash', 'sm') ?> Delete page <?= (int) $certSeq ?></button>
+          </form>
+          <?php endif; ?>
           <span class="small muted">Fill page 1, set the quantity, then click Apply — all other pages will be cloned from page 1. You can edit each page independently.</span>
         </div>
         <?php if ($isMultiPage): ?>

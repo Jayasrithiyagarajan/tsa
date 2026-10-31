@@ -245,6 +245,16 @@ final class InspectorController extends Controller
         );
     }
 
+    /** Delete one cloned certificate page (and its page-only photos). */
+    public function deleteCertificatePage(string $id, string $seq): void
+    {
+        $this->attempt(
+            fn () => InspectionService::deleteCertificatePage((int) $id, (int) $seq),
+            'Certificate page ' . (int) $seq . ' deleted.',
+            'inspector/subjobs/' . (int) $id . '#tab-certificate'
+        );
+    }
+
     /** Links an allocated sticker to the sub-job. Once linked the sticker is closed and cannot be changed. */
     public function sticker(string $id): void
     {

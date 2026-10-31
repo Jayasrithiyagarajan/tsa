@@ -269,6 +269,43 @@ final class InspectionService
     }
 
     /**
+     * Delete one cloned certificate page (page 1 is the master and cannot be deleted; lower "Total pages" to drop
+     * trailing pages instead). Removes the page row, the photos tagged for that page only (records and files),
+     * then renumbers the later pages so there is no gap (cert no. suffix /P{n}, photo page tags).
+     */
+    public static function deleteCertificatePage(int $subJobId, int $seq): void
+    {
+        $files = [];
+        DB::tx(function () use ($subJobId, $seq, &$files) {
+            $sj = JobService::subJob($subJobId);
+            if (!$sj) throw new DomainException('Sub-job not found.');
+            self::authorizeWork($sj);
+            self::assertEditable($sj);
+            if ($seq < 2) throw new DomainException('Page 1 is the main certificate and cannot be deleted.');
+            $page = DB::one('SELECT id, certificate_no FROM certificates WHERE sub_job_id = ? AND seq = ?', [$subJobId, $seq]);
+            if (!$page) throw new DomainException('Certificate page not found.');
+
+            // stickers pointing at this page (column is ON DELETE SET NULL, but be explicit)
+            DB::run('UPDATE stickers SET certificate_id = NULL WHERE certificate_id = ?', [$page['id']]);
+            // photos printed on this page only
+            $atts = DB::all('SELECT id, file_path FROM attachments WHERE sub_job_id = ? AND cert_seq = ?', [$subJobId, $seq]);
+            foreach ($atts as $a) { $files[] = $a['file_path']; DB::run('DELETE FROM attachments WHERE id = ?', [$a['id']]); }
+            DB::run('DELETE FROM certificates WHERE id = ?', [$page['id']]);
+
+            // close the gap: later pages move down one place, in ascending order
+            $later = DB::all('SELECT id, seq, certificate_no FROM certificates WHERE sub_job_id = ? AND seq > ? ORDER BY seq', [$subJobId, $seq]);
+            foreach ($later as $c) {
+                $new = (int) $c['seq'] - 1;
+                $no = preg_match('#/P\d+$#', (string) $c['certificate_no']) ? preg_replace('#/P\d+$#', '/P' . $new, (string) $c['certificate_no']) : $c['certificate_no'];
+                DB::run('UPDATE certificates SET seq = ?, certificate_no = ? WHERE id = ?', [$new, $no, $c['id']]);
+            }
+            DB::run('UPDATE attachments SET cert_seq = cert_seq - 1 WHERE sub_job_id = ? AND cert_seq > ?', [$subJobId, $seq]);
+            Audit::log('certificate.page_deleted', 'sub_job', $subJobId, ['seq' => $seq, 'certificate_no' => $page['certificate_no'], 'photos_removed' => count($atts)]);
+        });
+        foreach ($files as $f) @unlink(upload_abs($f));
+    }
+
+    /**
      * Links a physical sticker to the sub-job. The sticker must be allocated to the inspector doing the job
      * (an admin may use any sticker from stock). Linking closes the sticker: it can no longer be changed,
      * released or moved to another job — only an administrator can void it.

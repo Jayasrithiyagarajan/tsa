@@ -124,6 +124,7 @@ $r->post('/inspector/subjobs/{id}/start',      [InspectorController::class, 'sta
 $r->post('/inspector/subjobs/{id}/checklist',  [InspectorController::class, 'saveChecklist'], ['inspector', 'qc', 'admin']);
 $r->post('/inspector/subjobs/{id}/certificate',       [InspectorController::class, 'saveCertificate'],  ['inspector', 'qc', 'admin']);
 $r->post('/inspector/subjobs/{id}/certificate/clone', [InspectorController::class, 'cloneCertificate'], ['inspector', 'qc', 'admin']);
+$r->post('/inspector/subjobs/{id}/certificate/{seq}/delete', [InspectorController::class, 'deleteCertificatePage'], ['inspector', 'qc', 'admin']);
 $r->post('/inspector/subjobs/{id}/sticker',           [InspectorController::class, 'sticker'],           ['inspector', 'admin']);
 $r->post('/inspector/subjobs/{id}/operator-document', [InspectorController::class, 'operatorDocument'], ['inspector']);
 $r->post('/inspector/subjobs/{id}/operator-certificate', [InspectorController::class, 'operatorCertificateDetails'], ['inspector']);
