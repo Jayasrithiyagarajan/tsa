@@ -84,6 +84,9 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
                   <?php if (Workflow::can('sub_job', $s['status'], 'cancelled')): ?>
                     <a class="dd-item" href="#" data-modal="cancel-sub-<?= $s['id'] ?>" style="color:var(--red)"><b>Cancel sub-job…</b></a>
                   <?php endif; ?>
+                  <?php if (JobService::deleteBlocker($s) === null): ?>
+                    <button type="submit" class="dd-item" style="width:100%;text-align:left;border:0;background:none;cursor:pointer;color:var(--red)" formaction="<?= url('inspector/subjobs/' . $s['id'] . '/delete') ?>" formnovalidate onclick="return confirm('<?= e('Permanently delete sub-job ' . $s['sub_job_no'] . '? This removes its checklist, certificate, QC history and every uploaded file. This cannot be undone.') ?>')"><b>Delete sub-job…</b></button>
+                  <?php endif; ?>
                 </div>
               </div>
             </td>

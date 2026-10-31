@@ -282,6 +282,95 @@ final class JobService
         });
     }
 
+    /**
+     * Why the signed-in user may not delete this sub-job, or null when they may.
+     * Super Admin: any sub-job. Admin: any except approved (issued certificate). Inspector: own sub-jobs not yet submitted to QC.
+     * Nobody can delete from a closed job.
+     */
+    public static function deleteBlocker(array $sj): ?string
+    {
+        $job = DB::one('SELECT status, lead_inspector_id FROM jobs WHERE id = ?', [(int) $sj['job_id']]);
+        if (!$job) return 'Job not found.';
+        if ($job['status'] === 'completed') return 'The job is closed, so its sub-jobs can no longer be deleted.';
+        if (Auth::isSuper()) return null;
+        if ($sj['status'] === 'approved') return 'An approved sub-job (issued certificate) can only be deleted by a Super Admin.';
+        if (Auth::is('admin')) return null;
+        if (Auth::is('inspector')) {
+            if ((int) $sj['inspector_id'] !== Auth::id() && (int) $job['lead_inspector_id'] !== Auth::id()) return 'This sub-job is not assigned to you.';
+            if (!in_array($sj['status'], ['pending', 'assigned', 'in_progress', 'rework'], true)) return 'A sub-job already sent to QC can only be deleted by an admin.';
+            return null;
+        }
+        return 'You cannot delete sub-jobs.';
+    }
+
+    /**
+     * Permanently delete a sub-job with everything that belongs to it: checklist and answers, certificate, QC history,
+     * assignments, uploaded photos / documents (rows and files) and, for an operator assessment, its worker ID card.
+     * Stickers already stuck on equipment are kept on record but voided. Returns what was removed.
+     */
+    public static function deleteSubJob(int $subJobId): array
+    {
+        $sj = self::subJob($subJobId);
+        if (!$sj) throw new DomainException('Sub-job not found.');
+        if ($why = self::deleteBlocker($sj)) throw new DomainException($why);
+        $jobId = (int) $sj['job_id'];
+        $files = [];
+        $summary = DB::tx(function () use ($sj, $subJobId, &$files) {
+            $atts = DB::all('SELECT file_path FROM attachments WHERE sub_job_id = ?', [$subJobId]);
+            foreach ($atts as $a) $files[] = $a['file_path'];
+            $cert = DB::one('SELECT certificate_no, status, upload_path FROM certificates WHERE sub_job_id = ?', [$subJobId]);
+            if ($cert && $cert['upload_path']) $files[] = $cert['upload_path'];
+            $hasChecklist = (bool) DB::value('SELECT 1 FROM checklists WHERE sub_job_id = ?', [$subJobId]);
+
+            // operator assessment: the worker ID card issued for this sub-job goes with it (and its photo, unless another card reuses it)
+            $cards = 0;
+            if (DB::one("SHOW COLUMNS FROM inspector_cards LIKE 'sub_job_id'")) {
+                foreach (DB::all("SELECT id, photo_path FROM inspector_cards WHERE sub_job_id = ? AND holder_type = 'worker'", [$subJobId]) as $card) {
+                    if ($card['photo_path'] && !DB::value('SELECT 1 FROM inspector_cards WHERE photo_path = ? AND id <> ? LIMIT 1', [$card['photo_path'], $card['id']])) {
+                        $files[] = $card['photo_path'];
+                    }
+                    DB::run('DELETE FROM inspector_cards WHERE id = ?', [$card['id']]);
+                    $cards++;
+                }
+            }
+            // a sticker already linked sits on the equipment: keep the record, void it (same rule as cancelling)
+            DB::update('stickers', ['status' => 'void', 'void_reason' => 'Sub-job deleted: ' . $sj['sub_job_no']], "sub_job_id = ? AND status = 'closed'", [$subJobId]);
+            DB::run('DELETE FROM notifications WHERE link IN (?, ?) OR link LIKE ?', ['inspector/subjobs/' . $subJobId, 'qc/review/' . $subJobId, 'inspector/subjobs/' . $subJobId . '#%']);
+
+            $summary = [
+                'sub_job_no' => $sj['sub_job_no'], 'job_id' => (int) $sj['job_id'], 'status' => $sj['status'],
+                'checklist' => $hasChecklist, 'certificate_no' => $cert['certificate_no'] ?? null, 'certificate_status' => $cert['status'] ?? null,
+                'files' => count($files), 'cards' => $cards,
+            ];
+            Audit::log('subjob.deleted', 'sub_job', $subJobId, $summary);
+            DB::run('DELETE FROM sub_jobs WHERE id = ?', [$subJobId]);   // checklist, answers, certificate, QC reviews, assignments and attachment rows cascade
+            self::recompute((int) $sj['job_id']);
+            return $summary;
+        });
+
+        // files go only after the database change is committed
+        foreach ($files as $rel) @unlink(upload_abs($rel));
+        self::removeDir(upload_abs('subjobs/' . $subJobId));
+
+        // tell the inspector when somebody else removed their sub-job
+        if ($sj['inspector_id'] && (int) $sj['inspector_id'] !== Auth::id()) {
+            Notify::user((int) $sj['inspector_id'], 'Sub-job ' . $sj['sub_job_no'] . ' was deleted', 'It was removed from job ' . $sj['job_no'] . ' by ' . (Auth::user()['name'] ?? 'an administrator') . '.', 'inspector/jobs/' . $jobId);
+        }
+        return $summary;
+    }
+
+    /** Remove a folder created for one sub-job's uploads (never anything outside the upload directory). */
+    private static function removeDir(string $dir): void
+    {
+        $root = realpath(config('upload_dir'));
+        $real = realpath($dir);
+        if (!$root || !$real || !str_starts_with($real, $root . DIRECTORY_SEPARATOR) || !is_dir($real)) return;
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($real, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $f) {
+            $f->isDir() ? @rmdir($f->getPathname()) : @unlink($f->getPathname());
+        }
+        @rmdir($real);
+    }
+
     public static function cancelJob(int $jobId, string $reason): void
     {
         DB::tx(function () use ($jobId, $reason) {

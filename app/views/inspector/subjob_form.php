@@ -117,7 +117,7 @@ $old = fn ($k, $d = '') => old($k, $d);
         </dl></div>
         <div class="card-f">
           <a class="btn btn-ghost" href="<?= url('inspector/jobs/' . $job['id']) ?>">Cancel</a>
-          <button class="btn btn-primary"><?= icon('plus', 'sm') ?> Add sub-job</button>
+          <button class="btn btn-primary"><?= icon('check', 'sm') ?> Save sub-job</button>
         </div>
       </div>
     </div>
@@ -145,7 +145,7 @@ document.getElementById('eq-select').addEventListener('change', function () {
     insp.disabled = operator; insp.style.display = operator ? 'none' : '';
     op.disabled = !operator; op.style.display = operator ? '' : 'none';
     form.querySelectorAll('input[name=kind]').forEach(r => { const l = r.parentNode; l.style.background = r.checked ? '#fff' : ''; l.style.boxShadow = r.checked ? 'var(--shadow-sm)' : ''; });
-    form.querySelector('.card-f .btn-primary').lastChild.textContent = operator ? ' Issue card' : ' Add sub-job';
+    form.querySelector('.card-f .btn-primary').lastChild.textContent = operator ? ' Issue card' : ' Save sub-job';
   };
   form.addEventListener('change', e => { if (e.target.name === 'kind') sync(); });
   sync();

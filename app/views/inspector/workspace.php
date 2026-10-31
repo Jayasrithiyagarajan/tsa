@@ -32,6 +32,9 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
       <?php if ($qcEdit): ?><a class="btn btn-primary btn-lg" href="<?= url('qc/review/' . $sj['id']) ?>"><?= icon('shield', 'sm') ?> Back to QC review</a><?php endif; ?>
       <?php if ($checklist): ?><a class="btn btn-secondary" href="<?= url('documents/checklist/' . $sj['id']) ?>" target="_blank"><?= icon('clipboard', 'sm') ?> Checklist</a><?php endif; ?>
       <?php if ($cert && $cert['template_id']): ?><a class="btn btn-secondary" href="<?= url('documents/certificate/' . $sj['id']) ?>" target="_blank"><?= icon('award', 'sm') ?> Certificate</a><?php endif; ?>
+      <?php if (JobService::deleteBlocker($sj) === null): ?>
+        <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/delete') ?>" data-confirm="<?= e("Permanently delete sub-job " . $sj['sub_job_no'] . "?\n\nThis removes its checklist, certificate, QC history and every uploaded photo / file. This cannot be undone.") ?>"><?= Csrf::field() ?><button class="btn btn-danger"><?= icon('trash', 'sm') ?> Delete sub-job</button></form>
+      <?php endif; ?>
     </div>
   </div>
   <div class="ws-meta">

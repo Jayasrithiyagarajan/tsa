@@ -287,6 +287,17 @@ final class InspectorController extends Controller
         }
     }
 
+    /** Permanently delete a sub-job and all its files (rules in JobService::deleteBlocker). */
+    public function deleteSubJob(string $id): void
+    {
+        $this->attempt(function () use ($id) {
+            $jobId = (int) DB::value('SELECT job_id FROM sub_jobs WHERE id = ?', [(int) $id]);
+            $r = JobService::deleteSubJob((int) $id);
+            flash('success', 'Sub-job ' . $r['sub_job_no'] . ' and all its related files were deleted.');
+            return ($jobId && Auth::is('admin') ? 'admin/jobs/' : 'inspector/jobs/') . $jobId;
+        });
+    }
+
     public function deleteAttachment(string $id): void
     {
         $this->attempt(fn () => InspectionService::deleteAttachment((int) $id), 'Attachment removed.');

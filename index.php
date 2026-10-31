@@ -127,6 +127,7 @@ $r->post('/inspector/subjobs/{id}/sticker',           [InspectorController::clas
 $r->post('/inspector/subjobs/{id}/operator-document', [InspectorController::class, 'operatorDocument'], ['inspector']);
 $r->post('/inspector/subjobs/{id}/operator-certificate', [InspectorController::class, 'operatorCertificateDetails'], ['inspector']);
 $r->post('/inspector/subjobs/{id}/upload',     [InspectorController::class, 'upload'], ['inspector', 'admin']);
+$r->post('/inspector/subjobs/{id}/delete',     [InspectorController::class, 'deleteSubJob'], ['inspector', 'admin']);
 $r->post('/inspector/attachments/{id}/delete', [InspectorController::class, 'deleteAttachment'], ['inspector', 'admin']);
 $r->post('/inspector/attachments/{id}/page',   [InspectorController::class, 'attachmentPage'], ['inspector', 'admin']);
 $r->post('/inspector/subjobs/{id}/submit',     [InspectorController::class, 'submit'], ['inspector', 'admin']);
