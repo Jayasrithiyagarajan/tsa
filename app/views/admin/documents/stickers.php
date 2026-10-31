@@ -104,6 +104,9 @@ $printFrom = (string) input('print_from', '');
           <td data-label="Allocated to" class="small"><?php if ($s['status'] === 'allocated'): ?><?= e($s['inspector_name']) ?><div class="sub">since <?= e(fmt_date($s['allocated_at'])) ?><?= $s['allocated_by_name'] ? ' · by ' . e($s['allocated_by_name']) : '' ?></div><?php else: ?><span class="muted">Office</span><?php endif; ?></td>
           <td data-label="Status"><?= badge($s['status']) ?><?= $s['void_reason'] ? '<div class="sub">' . e($s['void_reason']) . '</div>' : '' ?></td>
           <td class="actions">
+            <?php if ($s['status'] !== 'void'): ?>
+              <a class="btn btn-ghost btn-sm" href="<?= url('documents/sticker/' . $s['id'], ['download' => 1]) ?>" title="Download sticker as PDF"><?= icon('download', 'sm') ?> Download</a>
+            <?php endif; ?>
             <?php if (Workflow::can('sticker', $s['status'], 'void') && Auth::isSuper()): ?>
               <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red)" title="Void" data-void="<?= url('admin/stickers/' . $s['id'] . '/void') ?>" data-no="<?= e($s['sticker_no']) ?>"><?= icon('x', 'sm') ?></button>
             <?php endif; ?>

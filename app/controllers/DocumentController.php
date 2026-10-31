@@ -189,7 +189,15 @@ final class DocumentController extends Controller
         } else {
             $this->notFound();
         }
-        echo View::partial('documents/sticker', ['st' => $st, 'toolbar' => ['back' => $back]]);
+        $pdf = !empty($_GET['download']) || !empty($_GET['pdf']);
+        $html = View::partial('documents/sticker', ['st' => $st, 'toolbar' => $pdf ? null : ['back' => $back]]);
+        if ($pdf) {
+            // one 100 x 100 mm page, same label as the on-screen sticker / print-shop sheet
+            Audit::log('sticker.downloaded', 'sticker', (int) $st['id'], ['sticker_no' => $st['sticker_no']]);
+            $pt = 72 / 25.4;
+            DocumentService::pdf($html, 'Sticker-' . preg_replace('/[^A-Za-z0-9._-]+/', '_', $st['sticker_no']) . '.pdf', !empty($_GET['download']), [0, 0, 100 * $pt, 100 * $pt]);
+        }
+        echo $html;
     }
 
     /** Blank pre-printed stickers (number, colour and result only), 6 per A4 sheet, for the print shop. */
