@@ -91,6 +91,7 @@ $r->get('/admin/certificates',              [AdminDocumentController::class, 'ce
 $r->post('/admin/certificates/{id}/revoke', [AdminDocumentController::class, 'revoke'], $SA);
 $r->get('/admin/stickers',                  [AdminDocumentController::class, 'stickers'], $A);
 $r->post('/admin/stickers',                 [AdminDocumentController::class, 'addStickers'], $SA);
+$r->get('/admin/print-stickers',            [AdminDocumentController::class, 'printStickers'], $A);
 $r->get('/admin/project-stickers',          [AdminDocumentController::class, 'projectStickers'], $A);
 $r->post('/admin/stickers/allocate',        [AdminDocumentController::class, 'allocateStickers'], $SA);
 $r->post('/admin/stickers/return',          [AdminDocumentController::class, 'returnStickers'], $SA);

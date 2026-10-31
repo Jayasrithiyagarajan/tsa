@@ -203,11 +203,9 @@ final class DocumentService
         return $cache[$key];
     }
 
-    /** @param string|float[] $paper Dompdf paper name or [0, 0, width_pt, height_pt] */
-    public static function pdf(string $html, string $filename, bool $download, $paper = 'A4'): void
+    /** A configured Dompdf instance (fonts registered, local files only). */
+    private static function newDompdf(): Dompdf
     {
-        // The forms are set in Calibri. Use a project copy of Carlito (metric-compatible, OFL) if present in
-        // storage/fonts, otherwise the Calibri installed on a Windows host; Dompdf falls back to DejaVu Sans.
         if (!is_dir(ROOT_PATH . '/storage/fonts')) mkdir(ROOT_PATH . '/storage/fonts', 0775, true);
         self::ensureBundledFonts(ROOT_PATH . '/storage/fonts');
         $fontSet = self::fontFiles();
@@ -225,6 +223,15 @@ final class DocumentService
             $fm->registerFont(['family' => 'Calibri', 'weight' => 'normal', 'style' => 'normal'], $fontSet[0]);
             $fm->registerFont(['family' => 'Calibri', 'weight' => 'bold', 'style' => 'normal'], $fontSet[1]);
         }
+        return $pdf;
+    }
+
+    /** @param string|float[] $paper Dompdf paper name or [0, 0, width_pt, height_pt] */
+    public static function pdf(string $html, string $filename, bool $download, $paper = 'A4'): void
+    {
+        // The forms are set in Calibri. Use a project copy of Carlito (metric-compatible, OFL) if present in
+        // storage/fonts, otherwise the Calibri installed on a Windows host; Dompdf falls back to DejaVu Sans.
+        $pdf = self::newDompdf();
         $pdf->loadHtml($html, 'UTF-8');
         $pdf->setPaper($paper, 'portrait');
         $pdf->render();
@@ -234,5 +241,54 @@ final class DocumentService
         $pdf->getCanvas()->get_cpdf()->setEncryption('', $owner, ['print']);
         $pdf->stream($filename, ['Attachment' => $download]);
         exit;
+    }
+
+    /** CSS for the Dompdf sticker layout (tables instead of flexbox), on top of doc.css. */
+    public static function stickerPdfCss(): string
+    {
+        return "\n@page { size: 100mm 100mm; margin: 0; }\n.stk.pdf .no b { position: absolute; left: 0; top: 0; width: 7.9mm; height: 6mm; }\n.stk.pdf .no span { position: absolute; left: 7.9mm; top: 0; width: 17.1mm; height: 6mm; }\n.stk.pdf .rt { width: 92.7mm; border-collapse: separate; border-spacing: 0; }\n.stk.pdf .rt td { padding: 0; vertical-align: top; }\n.stk.pdf .rt td.k { width: 29.75mm; height: 7.7mm; padding-right: .8mm; white-space: nowrap; font-weight: bold; font-size: 9.45pt; line-height: 5.1mm; }\n.stk.pdf .rt td.v { padding-bottom: 1.05mm; }\n.stk.pdf .pv { height: 6.65mm; background: #e6e7e8; border-radius: 1.5mm; font-weight: bold; font-size: 9pt; line-height: 5.1mm; padding: 0 2mm; white-space: nowrap; overflow: hidden; color: #111; }\n.stk.pdf.fail .rt td.k { height: 9.6mm; color: #fff; }\n";
+    }
+
+    /**
+     * Blank numbered stickers, one 100 x 100 mm page each, as a single PDF. Dompdf slows down sharply as one
+     * document grows (about 2 minutes and 500 MB for 500 pages), so the stickers are laid out in chunks of 25
+     * that are drawn onto one shared canvas: 500 pages take under 30 seconds and about 120 MB.
+     * @param array $rows stickers: sticker_no, color, verify_token
+     */
+    public static function stickerSheetPdf(array $rows, string $filename, bool $download = true): void
+    {
+        @set_time_limit(0);
+        if ((int) ini_get('memory_limit') !== -1 && self::bytes((string) ini_get('memory_limit')) < 512 * 1048576) @ini_set('memory_limit', '512M');
+        $art = self::stickerArt();
+        $blank = array_fill_keys(['Equipment Type', 'Identification No', 'Equip S/N', 'Capacity / SWL', 'Inspection Date', 'Next Inspection Date', 'Inspected By'], '');
+        $css = file_get_contents(ROOT_PATH . '/assets/css/doc.css') . self::stickerPdfCss();
+        $pt = 72 / 25.4;
+        $canvas = null;
+        $pdf = null;
+        foreach (array_chunk($rows, 25) as $chunk) {
+            $body = '';
+            foreach ($chunk as $s) {
+                $body .= '<div class="stk-page">' . View::partial('documents/sticker_card', ['no' => $s['sticker_no'], 'passed' => $s['color'] !== 'red', 'values' => $blank, 'art' => $art, 'qr' => self::stickerQr($s['verify_token']), 'pdf' => true]) . '</div>';
+            }
+            $pdf = self::newDompdf();
+            $pdf->setPaper([0, 0, 100 * $pt, 100 * $pt]);
+            if ($canvas) { $canvas->new_page(); $pdf->setCanvas($canvas); }
+            $pdf->loadHtml('<!doctype html><html><head><meta charset="utf-8"><style>' . $css . '</style></head><body class="doc">' . $body . '</body></html>', 'UTF-8');
+            $pdf->render();
+            $canvas = $pdf->getCanvas();
+            unset($body, $chunk);
+            gc_collect_cycles();
+        }
+        $owner = getenv('PDF_OWNER_PASSWORD') ?: hash('sha256', 'tsa-pdf-lock|' . ROOT_PATH);
+        $pdf->getCanvas()->get_cpdf()->setEncryption('', $owner, ['print']);
+        $pdf->stream($filename, ['Attachment' => $download]);
+        exit;
+    }
+
+    private static function bytes(string $v): int
+    {
+        $n = (int) $v;
+        switch (strtolower(substr(trim($v), -1))) { case 'g': $n *= 1024; case 'm': $n *= 1024; case 'k': $n *= 1024; }
+        return $n;
     }
 }

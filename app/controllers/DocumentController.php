@@ -213,11 +213,26 @@ final class DocumentController extends Controller
         } else {
             $ids = [];
         }
-        $rows = $ids ? DB::all('SELECT id, sticker_no, verify_token, color, status FROM stickers WHERE id IN (' . implode(',', array_fill(0, count($ids), '?')) . ") AND status <> 'void' ORDER BY sticker_no", $ids) : [];
-        if (!$rows) { flash('error', 'No printable stickers selected.'); redirect('admin/stickers'); }
+        $stockOnly = (string) input('stock', '') === '1';   // "Print Sticker" page: only stickers still in office stock
+        $home = $stockOnly ? 'admin/print-stickers' : 'admin/stickers';
+        $rows = $ids ? DB::all('SELECT id, sticker_no, verify_token, color, status FROM stickers WHERE id IN (' . implode(',', array_fill(0, count($ids), '?')) . ") AND status " . ($stockOnly ? "= 'in_stock'" : "<> 'void'") . ' ORDER BY sticker_no', $ids) : [];
+        if (!$rows) { flash('error', $stockOnly ? 'No stickers in office stock for that range.' : 'No printable stickers selected.'); redirect($home); }
+        // numbers asked for in a range that are not printable (already allocated / void / never generated)
+        $skipped = 0;
+        if ($stockOnly && preg_match('/(\d+)$/', (string) input('from', ''), $m1) && preg_match('/(\d+)$/', (string) input('to', ''), $m2)) {
+            $skipped = max(0, abs((int) $m2[1] - (int) $m1[1]) + 1 - count($rows));
+        }
         set_time_limit(300);
-        Audit::log('sticker.printed', 'sticker', null, ['count' => count($rows), 'from' => $rows[0]['sticker_no'], 'to' => end($rows)['sticker_no']]);
-        echo View::partial('documents/sticker_sheet', ['rows' => $rows, 'back' => url('admin/stickers')]);
+        $from = $rows[0]['sticker_no'];
+        $to = end($rows)['sticker_no'];
+        if (!empty($_GET['download'])) {
+            if (count($rows) > 2000) { flash('error', 'Download up to 2,000 stickers at a time.'); redirect($home); }
+            Audit::log('sticker.downloaded', 'sticker', null, ['count' => count($rows), 'from' => $from, 'to' => $to]);
+            DocumentService::stickerSheetPdf($rows, 'Stickers-' . preg_replace('/[^A-Za-z0-9._-]+/', '_', $from . '_to_' . $to) . '.pdf', true);
+        }
+        Audit::log('sticker.printed', 'sticker', null, ['count' => count($rows), 'from' => $from, 'to' => $to]);
+        echo View::partial('documents/sticker_sheet', ['rows' => $rows, 'back' => url($home),
+            'download' => $_SERVER['REQUEST_METHOD'] === 'GET' ? url('admin/stickers/print', ['download' => 1] + $_GET) : null, 'skipped' => $skipped]);
     }
 
     public function attachment(string $id): void

@@ -32,6 +32,7 @@ $nav = [
         ['Documents', [
             ['admin/certificates', 'award', 'Certificates', ''],
             ['admin/stickers', 'layers', 'Sticker Stock', ''],
+            ['admin/print-stickers', 'printer', 'Print Sticker', ''],
             ['admin/project-stickers', 'tag', 'Project Stickers', ''],
             ['admin/templates', 'layers', 'Templates', ''],
         ]],

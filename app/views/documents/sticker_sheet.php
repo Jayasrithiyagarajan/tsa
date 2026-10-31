@@ -1,5 +1,6 @@
-<?php /** Blank numbered stickers for bulk printing: one 100 x 100 mm label per page (default) or 4 per A4 sheet. @var array $rows @var string $back */
-$art = DocumentService::stickerArt();
+<?php /** Blank numbered stickers for bulk printing: one 100 x 100 mm label per page (default) or 4 per A4 sheet. @var array $rows @var string $back @var ?string $download link to the same selection as one PDF @var ?int $skipped */
+// artwork by URL (cached once by the browser) instead of inline data: a 500-sticker sheet would otherwise be ~85 MB of HTML
+$art = ['logo' => asset('img/sticker-tuv.png'), 'uaf' => asset('img/sticker-uaf.png'), 'leea' => asset('img/sticker-leea.png')];
 $blank = array_fill_keys(['Equipment Type', 'Identification No', 'Equip S/N', 'Capacity / SWL', 'Inspection Date', 'Next Inspection Date', 'Inspected By'], '');
 $a4 = input('layout') === 'a4';
 $card = fn ($s) => View::render('documents/sticker_card', ['no' => $s['sticker_no'], 'passed' => $s['color'] !== 'red', 'values' => $blank, 'art' => $art, 'qr' => DocumentService::stickerQr($s['verify_token'])], null);
@@ -22,7 +23,9 @@ $switch = function (string $layout, string $label) use ($rows) {
   <div class="doc-toolbar">
     <a href="<?= e($back) ?>">&larr; Back</a>
     <span class="t"><?= count($rows) ?> stickers · <?= e($rows[0]['sticker_no']) ?> – <?= e(end($rows)['sticker_no']) ?> ·
+      <?= !empty($skipped) ? '<b style="color:#fbbf24">' . (int) $skipped . ' not in stock, skipped</b> · ' : '' ?>
       <?= $a4 ? (int) ceil(count($rows) / 4) . ' A4 sheet(s) · ' . $switch('label', '100 × 100 mm labels') : '100 × 100 mm, one per page · ' . $switch('a4', '4 per A4 sheet') ?></span>
+    <?php if (!empty($download)): ?><a class="primary" href="<?= e($download) ?>" title="Download all <?= count($rows) ?> stickers as one PDF">&darr; Download PDF</a><?php endif; ?>
     <button type="button" onclick="window.print()">Print</button>
   </div>
   <?php if ($a4): foreach (array_chunk($rows, 4) as $page): ?>

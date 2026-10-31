@@ -67,6 +67,22 @@ final class AdminDocumentController extends Controller
             + ['title' => 'Sticker Stock', 'crumbs' => ['Sticker Stock' => null]]);
     }
 
+    /** Print Sticker: every sticker still in office stock; Super Admin prints / downloads a number range from here. */
+    public function printStickers(): void
+    {
+        $q = trim((string) input('q', ''));
+        $prefix = (string) input('series', '');
+        $where = ["s.status = 'in_stock'"];
+        $p = [];
+        if ($prefix !== '') { $where[] = 's.sticker_no LIKE ?'; $p[] = $prefix . '%'; }
+        if ($q !== '') { $where[] = '(s.sticker_no LIKE ? OR s.batch_no LIKE ?)'; array_push($p, "%$q%", "%$q%"); }
+        [$rows, $meta] = paginate('SELECT s.id, s.sticker_no, s.color, s.batch_no, s.created_at FROM stickers s WHERE ' . implode(' AND ', $where) . ' ORDER BY s.sticker_no', $p, 50);
+        $series = array_values(array_filter(StickerService::series(), fn ($sr) => (int) $sr['in_stock'] > 0));
+        $total = (int) DB::value("SELECT COUNT(*) FROM stickers WHERE status = 'in_stock'");
+        $this->view('admin/documents/print_stickers', compact('rows', 'meta', 'q', 'prefix', 'series', 'total')
+            + ['title' => 'Print Sticker', 'crumbs' => ['Print Sticker' => null]]);
+    }
+
     /** Stickers linked to projects (jobs): closed, or voided after being linked. */
     public function projectStickers(): void
     {
