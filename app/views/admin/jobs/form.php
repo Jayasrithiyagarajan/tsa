@@ -30,7 +30,7 @@ $clientId = $old('client_id', $r['client_id'] ?? '');
           <div class="field col-12"><label>Job title <span class="req">*</span></label><input class="input" name="title" required value="<?= e($old('title', $r ? 'Inspection — ' . $r['company_name'] : '')) ?>"></div>
           <div class="field col-6"><label>Inspection location</label><input class="input" name="location" value="<?= e($old('location', $r['location'] ?? '')) ?>"></div>
           <div class="field col-6"><label>Request / P.O. No.</label><input class="input" name="po_no" value="<?= e($old('po_no', $r['po_no'] ?? '')) ?>"></div>
-          <div class="field col-4"><label>Scheduled date</label><input class="input" type="date" name="scheduled_date" value="<?= e($old('scheduled_date', $r['preferred_date'] ?? '')) ?>"></div>
+          <div class="field col-4"><label>Scheduled date</label><input class="input" type="date" name="scheduled_date" value="<?= e($old('scheduled_date', ($r['preferred_date'] ?? '') ?: date('Y-m-d'))) ?>"></div>
           <div class="field col-4"><label>Due date</label><input class="input" type="date" name="due_date" value="<?= e($old('due_date')) ?>"></div>
           <div class="field col-4"><label>Priority</label><select class="select" name="priority"><?php foreach (['normal', 'high', 'urgent', 'low'] as $p): ?><option value="<?= $p ?>"<?= selected($p, $old('priority', 'normal')) ?>><?= e(Workflow::label($p)) ?></option><?php endforeach; ?></select></div>
           <div class="field col-12"><label>Internal notes</label><textarea class="textarea" name="notes" style="min-height:70px"><?= e($old('notes', $r['description'] ?? '')) ?></textarea></div>

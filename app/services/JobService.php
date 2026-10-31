@@ -242,8 +242,18 @@ final class JobService
                 $skipped[] = $sj['sub_job_no'];
             }
         }
-        if ($ok) self::assign($ok, $inspectorId, $note);
+        $prevLead = (int) DB::value('SELECT lead_inspector_id FROM jobs WHERE id = ?', [$jobId]);
+        if ($ok) self::assign($ok, $inspectorId, $note);   // notifies the inspector when sub-jobs were assigned
         DB::update('jobs', ['lead_inspector_id' => $inspectorId], 'id = ?', [$jobId]);
+        // A job with no sub-jobs yet (or none this inspector is qualified for) still makes him the lead inspector: tell him too.
+        if (!$ok && $prevLead !== $inspectorId) {
+            $j = DB::one('SELECT j.job_no, j.title, j.location, j.scheduled_date, c.name client_name FROM jobs j JOIN clients c ON c.id = j.client_id WHERE j.id = ?', [$jobId]);
+            if ($j) {
+                $body = $j['title'] . ' — ' . $j['client_name'] . ($j['location'] ? ' · ' . $j['location'] : '')
+                      . ($j['scheduled_date'] ? ' · scheduled ' . $j['scheduled_date'] : '') . '. Add a sub-job for each piece of equipment you inspect.';
+                Notify::user($inspectorId, 'New job assigned: ' . $j['job_no'], $body, 'inspector/jobs/' . $jobId);
+            }
+        }
         return ['assigned' => count($ok), 'skipped' => $skipped];
     }
 
