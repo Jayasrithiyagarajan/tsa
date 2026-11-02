@@ -226,6 +226,10 @@ CREATE TABLE jobs (
   closed_by       INT UNSIGNED NULL,                      -- admin who gave the final approval
     closed_by_name  VARCHAR(120) NULL,                      -- name and role of the closer, saved when the job is closed
     closed_by_role  VARCHAR(20) NULL,
+    timesheet_path  VARCHAR(255) NULL,                      -- time sheet PDF uploaded by a Super Admin before the job can be closed
+    timesheet_name  VARCHAR(190) NULL,
+    timesheet_by    INT UNSIGNED NULL,
+    timesheet_at    DATETIME NULL,
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_jobs_status (status),

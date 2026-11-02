@@ -62,8 +62,9 @@ $r->get('/admin/assign',                    [AdminJobController::class, 'board']
 $r->get('/admin/jobs/{id}',                 [AdminJobController::class, 'show'], $A);
 $r->post('/admin/jobs/{id}/update',         [AdminJobController::class, 'update'], $A);
 $r->post('/admin/jobs/{id}/assign',         [AdminJobController::class, 'assign'], $A);
-$r->get('/admin/captcha',                   [AdminJobController::class, 'captcha'], ['admin', 'qc']);       // verification image for closing a job
-$r->post('/admin/jobs/{id}/close',          [AdminJobController::class, 'close'], $A);       // final approval after QC
+$r->post('/admin/jobs/{id}/close',          [AdminJobController::class, 'close'], ['superadmin']);       // final approval after QC - Super Admin only, needs the time sheet
+$r->get('/admin/jobs/{id}/timesheet',       [AdminJobController::class, 'timesheet'], $A);
+$r->post('/admin/jobs/{id}/timesheet',      [AdminJobController::class, 'uploadTimesheet'], ['superadmin']);       // final approval after QC
 $r->post('/admin/jobs/{id}/cancel',         [AdminJobController::class, 'cancel'], $A);
 $r->post('/admin/subjobs/{id}/unassign',    [AdminJobController::class, 'unassign'], $A);
 $r->post('/admin/subjobs/{id}/cancel',      [AdminJobController::class, 'cancelSubJob'], $A);

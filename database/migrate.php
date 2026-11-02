@@ -154,6 +154,12 @@ foreach ([
     ['notifications', 'idx_notif_user', ['user_id', 'id']],
 ] as [$t, $n, $c]) ensure_index($t, $n, $c);
 
+if (!DB::one("SHOW COLUMNS FROM jobs LIKE 'timesheet_path'")) {
+    // a Super Admin uploads the time sheet PDF before a job can be closed
+    DB::pdo()->exec("ALTER TABLE jobs ADD timesheet_path VARCHAR(255) NULL, ADD timesheet_name VARCHAR(190) NULL, ADD timesheet_by INT UNSIGNED NULL, ADD timesheet_at DATETIME NULL");
+    echo "+ jobs: time sheet columns\n";
+}
+
 $sig = fn (array $sections) => md5(json_encode(array_map(fn ($items) => array_values($items), $sections)));
 
 foreach (require __DIR__ . '/seed_templates.php' as $def) {

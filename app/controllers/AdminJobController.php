@@ -158,52 +158,35 @@ final class AdminJobController extends Controller
     /** Final approval after QC: closes the job and releases certificates to the client. */
     public function close(string $id): void
     {
-        // second check: the admin must type the text shown in the verification image (one-time, expires after 10 minutes)
+        $this->attempt(fn () => JobService::close((int) $id, (string) input('note', '')), 'Final approval given. The job is closed and the client can now download the certificates.');
+    }
+
+
+    /** Super Admin uploads (or replaces) the time sheet PDF; the job cannot be closed without it. */
+    public function uploadTimesheet(string $id): void
+    {
         $this->attempt(function () use ($id) {
-            $c = $_SESSION['close_captcha'] ?? null;
-            unset($_SESSION['close_captcha']);
-            if (!$c || time() - $c['t'] > 600 || strcasecmp(trim((string) input('captcha', '')), $c['code']) !== 0) {
-                throw new DomainException('The verification text does not match the image. Please try again.');
-            }
-            JobService::close((int) $id, (string) input('note', ''));
-        }, 'Final approval given. The job is closed and the client can now download the certificates.');
+            $job = DB::one('SELECT * FROM jobs WHERE id = ?', [(int) $id]);
+            if (!$job) throw new DomainException('Job not found.');
+            if ($job['status'] !== 'awaiting_approval') throw new DomainException('The time sheet is uploaded while the job is awaiting final approval.');
+            $f = store_upload($_FILES['timesheet'] ?? [], 'timesheets', ['application/pdf']);
+            DB::update('jobs', ['timesheet_path' => $f['path'], 'timesheet_name' => $f['name'], 'timesheet_by' => Auth::id(), 'timesheet_at' => now()], 'id = ?', [$job['id']]);
+            Audit::log('job.timesheet_uploaded', 'job', (int) $job['id'], ['file' => $f['name']]);
+        }, 'Time sheet uploaded. The job can now be closed.');
     }
 
-    /** One-time check of the typed verification text; throws when it does not match the image. */
-    public static function checkCaptcha(): void
+    /** View (inline) or download (?download=1) the time sheet PDF. */
+    public function timesheet(string $id): void
     {
-        $c = $_SESSION['close_captcha'] ?? null;
-        unset($_SESSION['close_captcha']);
-        if (!$c || time() - $c['t'] > 600 || strcasecmp(trim((string) input('captcha', '')), $c['code']) !== 0) {
-            throw new DomainException('The verification text does not match the image. Please try again.');
-        }
-    }
-
-    /** Verification image shown beside the "close job" and "QC approve" buttons. The code lives only in the session. */
-    public function captcha(): void
-    {
-        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';        // no 0/O/1/I to avoid misreading
-        $code = '';
-        for ($i = 0; $i < 5; $i++) $code .= $chars[random_int(0, strlen($chars) - 1)];
-        $_SESSION['close_captcha'] = ['code' => $code, 't' => time()];
-
-        $w = 190; $h = 60;
-        $img = imagecreatetruecolor($w, $h);
-        imagefilledrectangle($img, 0, 0, $w, $h, imagecolorallocate($img, 244, 246, 250));
-        for ($i = 0; $i < 7; $i++) {                         // noise lines
-            imageline($img, random_int(0, $w), random_int(0, $h), random_int(0, $w), random_int(0, $h), imagecolorallocate($img, random_int(150, 205), random_int(150, 205), random_int(150, 205)));
-        }
-        for ($i = 0; $i < 120; $i++) imagesetpixel($img, random_int(0, $w - 1), random_int(0, $h - 1), imagecolorallocate($img, 170, 170, 190));
-        $font = __DIR__ . '/../../vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf';
-        foreach (str_split($code) as $i => $ch) {
-            $col = imagecolorallocate($img, random_int(10, 90), random_int(10, 90), random_int(60, 140));
-            if (is_file($font)) imagettftext($img, 28, random_int(-22, 22), 14 + $i * 33, random_int(40, 50), $col, $font, $ch);
-            else imagestring($img, 5, 18 + $i * 33, 22, $ch, $col);
-        }
-        header('Content-Type: image/png');
-        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-        header('Pragma: no-cache');
-        imagepng($img);
+        $job = DB::one('SELECT timesheet_path, timesheet_name FROM jobs WHERE id = ?', [(int) $id]);
+        if (!$job || !$job['timesheet_path']) $this->notFound();
+        $f = upload_abs($job['timesheet_path']);
+        if (!is_file($f)) $this->notFound();
+        header('Content-Type: application/pdf');
+        header('Content-Length: ' . filesize($f));
+        header('Content-Disposition: ' . (!empty($_GET['download']) ? 'attachment' : 'inline') . '; filename="' . str_replace('"', '', $job['timesheet_name'] ?: 'timesheet.pdf') . '"');
+        header('Cache-Control: private, max-age=3600');
+        readfile($f);
         exit;
     }
 

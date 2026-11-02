@@ -438,6 +438,7 @@ final class JobService
         if ($job['status'] !== 'awaiting_approval') {
             throw new DomainException('Only a job whose inspections all passed QC review (Awaiting Final Approval) can be closed.');
         }
+        if (empty($job['timesheet_path'])) throw new DomainException('Upload the time sheet PDF before closing this job.');
         DB::tx(function () use ($job, $note) {
             DB::update('jobs', ['status' => 'completed', 'completed_at' => now(), 'closed_by' => Auth::id(), 'closed_by_name' => Auth::user()['name'] ?? null, 'closed_by_role' => Auth::role()], 'id = ?', [$job['id']]);
             Audit::log('job.closed', 'job', (int) $job['id'], ['note' => trim($note)]);

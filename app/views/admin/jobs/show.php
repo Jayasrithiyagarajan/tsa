@@ -24,21 +24,29 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
   </div>
 </div>
 
-<?php if ($job['status'] === 'awaiting_approval'): ?>
+<?php if ($job['status'] === 'awaiting_approval'): $hasTs = !empty($job['timesheet_path']); $canClose = $hasTs && Auth::isSuper(); ?>
+  <div class="alert alert-info" style="align-items:center;flex-wrap:wrap;gap:10px"><?= icon('file') ?>
+    <div style="flex:1;min-width:240px"><b>Time sheet</b> -
+      <?php if ($hasTs): ?>uploaded <b><?= e($job['timesheet_name']) ?></b> on <?= e(fmt_datetime($job['timesheet_at'])) ?>
+        <a class="btn btn-secondary btn-sm" style="margin-left:8px" href="<?= url('admin/jobs/' . $job['id'] . '/timesheet') ?>" target="_blank" rel="noopener"><?= icon('eye', 'sm') ?> View time sheet</a>
+      <?php else: ?>not uploaded yet. <?= Auth::isSuper() ? 'Upload the time sheet PDF to be able to close this job.' : 'A Super Admin must upload the time sheet PDF before the job can be closed.' ?><?php endif; ?></div>
+    <?php if (Auth::isSuper()): ?>
+    <form method="post" action="<?= url('admin/jobs/' . $job['id'] . '/timesheet') ?>" enctype="multipart/form-data" class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+      <?= Csrf::field() ?>
+      <input class="input" type="file" name="timesheet" accept="application/pdf,.pdf" required style="max-width:280px">
+      <button class="btn btn-secondary btn-sm"><?= icon('upload', 'sm') ?> <?= $hasTs ? 'Replace' : 'Upload' ?> time sheet</button>
+    </form>
+    <?php endif; ?>
+  </div>
   <form class="alert alert-warning" method="post" action="<?= url('admin/jobs/' . $job['id'] . '/close') ?>" onsubmit="return confirm('Give final approval and close <?= e($job['job_no']) ?>? The client will be able to download the certificates.')">
     <?= Csrf::field() ?><?= icon('check') ?>
     <div style="flex:1"><b>Final approval needed.</b> Every inspection passed QC review. Check the documents below, then close the job —
       only then are the certificates and reports released to <?= e($job['client_name']) ?>.
-      <input class="input mt-1" name="note" maxlength="255" placeholder="Note (optional)" style="max-width:420px">
-      <div class="row mt-1" style="gap:10px;align-items:center;flex-wrap:wrap">
-        <img id="cap-img" src="<?= url('admin/captcha') ?>?t=<?= time() ?>" alt="Verification text" width="190" height="60" style="border:1px solid var(--border);border-radius:8px;background:#fff">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('cap-img').src='<?= url('admin/captcha') ?>?t='+Date.now()"><?= icon('rotate', 'sm') ?> New image</button>
-        <input class="input" name="captcha" required autocomplete="off" maxlength="5" placeholder="Type the text in the image" style="max-width:240px">
-      </div></div>
-    <button class="btn btn-primary"><?= icon('check', 'sm') ?> Final approval &amp; close job</button>
+      <input class="input mt-1" name="note" maxlength="255" placeholder="Note (optional)" style="max-width:420px"></div>
+    <button class="btn btn-primary"<?= $canClose ? '' : ' disabled title="' . (Auth::isSuper() ? 'Upload the time sheet first' : 'Only a Super Admin can close the job') . '"' ?>><?= icon('check', 'sm') ?> Final approval &amp; close job</button>
   </form>
 <?php elseif ($job['status'] === 'completed' && !empty($job['closed_by'])): ?>
-  <div class="alert alert-success"><?= icon('check') ?><div>Closed with final approval by <b><?= e($job['closed_by_name'] ?: DB::value('SELECT name FROM users WHERE id = ?', [$job['closed_by']])) ?></b><?= $job['closed_by_role'] ? ' (' . e(Workflow::label($job['closed_by_role'])) . ')' : '' ?> on <?= e(fmt_datetime($job['completed_at'])) ?>.</div></div>
+  <div class="alert alert-success"><?= icon('check') ?><div>Closed with final approval by <b><?= e($job['closed_by_name'] ?: DB::value('SELECT name FROM users WHERE id = ?', [$job['closed_by']])) ?></b><?= $job['closed_by_role'] ? ' (' . e(Workflow::label($job['closed_by_role'])) . ')' : '' ?> on <?= e(fmt_datetime($job['completed_at'])) ?>.<?php if (!empty($job['timesheet_path'])): ?> <a href="<?= url('admin/jobs/' . $job['id'] . '/timesheet') ?>" target="_blank" rel="noopener">View time sheet</a><?php endif; ?></div></div>
 <?php endif; ?>
 <div class="card card-b mb-2">
   <div class="progress-label"><span class="strong" style="color:var(--text)">Job progress</span><span><?= $progress['approved'] ?> of <?= $progress['total'] ?> sub-jobs approved · <?= $progress['submitted'] ?> at QC · <?= $progress['active'] ?> in inspection · <?= $progress['unassigned'] ?> unassigned</span></div>
