@@ -318,7 +318,7 @@ table.f.sc-ph.ss.last img { max-width: 44mm; max-height: 36mm; }
 .df-title { position: absolute; left: 3mm; top: 23.4mm; width: 210mm; text-align: center; font-weight: bold; font-size: 16pt; color: #ff0000; text-decoration: underline; }
 table.f.df td { border: 0.5pt solid #7f7f7f; padding: 0 1.8mm; font-size: 10pt; line-height: 1.1; vertical-align: middle; }
 table.f.df td.l { background: #b4c6e7; font-weight: bold; }
-table.f.df tr.h63 td:not(.l), table.f.df tr.h87 td:not(.l) { padding-left: 1.9mm; padding-right: 0.5mm; white-space: nowrap; letter-spacing: -0.12pt; }   /* Dompdf measures text ~2% wider than Word: spare right padding keeps one-line values on one line */
+table.f.df tr.h63 td:not(.l), table.f.df tr.h87 td:not(.l) { padding-left: 1.9mm; padding-right: 0.5mm; letter-spacing: -0.12pt; }   /* Dompdf measures text ~2% wider than Word: spare right padding keeps one-line values on one line */
 table.f.df td.band { background: #b4c6e7; font-weight: bold; font-size: 12pt; }
 table.f.df td.c { text-align: center; }
 table.f.df td.b { font-weight: bold; }

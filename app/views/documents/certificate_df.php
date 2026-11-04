@@ -21,7 +21,7 @@ $pairs = [
 ];
 $t1 = '<table class="f df">' . doc_sizer([34.7, 50.8, 58.7, 46]);
 foreach ($pairs as $i => $r) {
-    $t1 .= '<tr class="' . ($i === 6 ? 'h87' : 'h63') . '"><td class="l">' . $r[0] . '</td><td>' . $r[1] . '</td><td class="l">' . $r[2] . '</td><td>' . ($i === 6 ? $r[3] : '<span style="white-space:nowrap">' . $r[3] . '</span>') . '</td></tr>';
+    $t1 .= '<tr class="' . ($i === 6 ? 'h87' : 'h63') . '"><td class="l">' . $r[0] . '</td><td>' . $r[1] . '</td><td class="l">' . $r[2] . '</td><td>' . ($i === 6 ? $r[3] : (mb_strlen(strip_tags((string) $r[3])) <= 30 ? '<span style="white-space:nowrap">' . $r[3] . '</span>' : $r[3])) . '</td></tr>';
 }
 $t1 .= '</table>';
 
