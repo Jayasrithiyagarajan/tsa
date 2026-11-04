@@ -68,7 +68,7 @@ $typePicked = array_map(fn ($x) => $x === 'Visual Examination/Checks' ? 'Visual'
 $types = $choice('TYPE OF INSPECTION', ['Pre-Inspection', 'Document and QC Record Review', 'Visual', 'Examination/Checks', 'Witnessing Tests', 'Final Inspection'], $typePicked, [56.2, 70.6, 53.8], 9.1, 21.5, 8.9, 5.2);
 
 $intro = '<table class="f sst"' . $gap(5.1) . '>' . doc_sizer([180.6])
-    . '<tr><td class="hd grey" style="height:9.7mm">INTRODUCTION:</td></tr><tr><td class="tx" style="height:21.6mm"><div style="padding-top:2.1mm">' . $tx('intro') . '</div></td></tr></table>';
+    . '<tr><td class="hd grey" style="height:9.7mm;vertical-align:top">INTRODUCTION:</td></tr><tr><td class="tx" style="height:21.6mm"><div style="padding-top:2.1mm">' . $tx('intro') . '</div></td></tr></table>';
 
 $std = '<table class="f sst"' . $gap(5.1) . '>' . doc_sizer([61.7, 50.8, 68.1])
     . '<tr><td class="band c" colspan="3" style="height:10mm">Reference Standard</td></tr>'
@@ -129,17 +129,17 @@ $sign = '<table class="f sst sgn"' . $gap(7.1) . '>' . doc_sizer([95.7, 91.6])
     . '<tr><td class="sl" style="height:5.1mm">Stamp:</td></tr>'
     . '<tr><td class="sl" style="height:7.8mm">Reviewed By:</td><td style="height:7.8mm">' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td></tr></table>';
 
-// ---------------- attachments: captions containing "draw" are drawings (one per page, max 2), the rest are photographs (max 96)
+// ---------------- attachments: captions containing "draw" are drawings (one per page, max 2), the rest are photographs (max 64)
 $drawings = $pics = [];
 foreach ($m['photos'] ?? [] as $p) {
     if (preg_match('/draw/i', (string) ($p['caption'] ?? ''))) $drawings[] = $p; else $pics[] = $p;
 }
 $pages = [];
 $title = '<div class="cert-title sst-t">' . e($tpl['title']) . '</div>';
-$pages[] = ['body' => $t1 . $t2 . $stage . $types . $intro . $std, 'top' => 40.7, 'left' => 14.85, 'width' => 180.6, 'extra' => $lhCss . $title];
-$pages[] = ['body' => $res . $cn . $att . $det . $cert, 'top' => 28.6, 'left' => 14.7, 'width' => 182.6];
+$pages[] = ['body' => $t1 . $t2 . $stage . $types . $intro . $std, 'top' => 39.9, 'left' => 14.85, 'width' => 180.6, 'extra' => $lhCss . $title];
+$pages[] = ['body' => $res . $cn . $att . $det . $cert, 'top' => 27.9, 'left' => 14.7, 'width' => 182.6];
 
-// Fixed to the form: pages 3-4 = two drawing boxes, pages 5-10 = six photo pages of 4 x 4 boxes (96), sign-off on page 8. Extra images are ignored.
+// Fixed to the form: pages 3-4 = two drawing boxes, pages 5-8 = four photo pages of 4 x 4 boxes (64), sign-off on page 8. Extra images are ignored.
 $drawTitle = trim($fv['draw_title'] ?? '') !== '' ? $v('draw_title') : 'Structure Visual inspection Picture As Per Drawing &amp; Site Visit :';
 $dbox = [208.3, 228.6];
 for ($i = 0; $i < 2; $i++) {
@@ -155,11 +155,9 @@ $pg = [
     [52.4, 12.8, [44.1, 46.3, 47.6, 47.6], 50.8],
     [52.4, 12.8, [44.1, 47.9, 46.0, 47.6], 50.8],
     [40.9, 11.1, [45.6, 47.2, 46.9, 47.6], 48.25],
-    [52.4, 12.8, [44.1, 47.9, 46.0, 47.6], 50.8],   // pages 9-10: two more photo pages, same grid as page 7
-    [52.4, 12.8, [44.1, 47.9, 46.0, 47.6], 50.8],
 ];
-$pics = array_slice($pics, 0, 96);
-for ($i = 0; $i < 6; $i++) {
+$pics = array_slice($pics, 0, 64);
+for ($i = 0; $i < 4; $i++) {
     [$top, $left, $cols, $rh] = $pg[$i];
     $chunk = array_slice($pics, $i * 16, 16);
     $g = '<table class="f sst sst-ph">' . doc_sizer($cols);

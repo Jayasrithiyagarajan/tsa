@@ -21,7 +21,7 @@ $pairs = [
 ];
 $t1 = '<table class="f df">' . doc_sizer([34.7, 50.8, 58.7, 46]);
 foreach ($pairs as $i => $r) {
-    $t1 .= '<tr class="' . ($i === 6 ? 'h87' : 'h63') . '"><td class="l">' . $r[0] . '</td><td>' . $r[1] . '</td><td class="l">' . $r[2] . '</td><td>' . $r[3] . '</td></tr>';
+    $t1 .= '<tr class="' . ($i === 6 ? 'h87' : 'h63') . '"><td class="l">' . $r[0] . '</td><td>' . $r[1] . '</td><td class="l">' . $r[2] . '</td><td>' . ($i === 6 ? $r[3] : '<span style="white-space:nowrap">' . $r[3] . '</span>') . '</td></tr>';
 }
 $t1 .= '</table>';
 
@@ -30,7 +30,7 @@ $intro = '<div class="intro df-intro">The equipment mentioned below was inspecte
 // ---- item table
 $desc = $lines('item_desc');
 $descHtml = '';
-foreach ($desc as $k => $l) $descHtml .= ($k === 0 ? '<b>' . e($l) . '</b><br><br>' : e($l) . '<br>');
+foreach ($desc as $k => $l) $descHtml .= ($k === 0 ? '<b>' . e($l) . '</b><div style="height:1.9mm;line-height:1.9mm"></div>' : e($l) . '<br>');
 $reasons = '';
 foreach ($lines('item_reason') as $l) $reasons .= e($l) . '<br>';
 $t2 = '<table class="f df" style="margin-top:2.6mm">' . doc_sizer([34.9, 54, 22.9, 78.7])
@@ -71,8 +71,8 @@ $g .= '</table>';
 
 $title = '<div class="df-title">Defect Report</div>';
 $pages = [
-    ['body' => $t1 . $intro . $t2 . $res . $t3 . $t4, 'top' => 37.7, 'left' => 10.5, 'width' => 190, 'extra' => $title],
-    ['body' => $g, 'top' => 38, 'left' => 10.5, 'width' => 190, 'extra' => $title],
+    ['body' => $t1 . $intro . $t2 . $res . $t3 . $t4, 'top' => 36.6, 'left' => 9.6, 'width' => 190, 'extra' => $title],
+    ['body' => $g, 'top' => 38, 'left' => 9.6, 'width' => 190, 'extra' => $title],
 ];
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;
 

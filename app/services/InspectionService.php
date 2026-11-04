@@ -187,7 +187,15 @@ final class InspectionService
 
             $data = json_decode($cert['data'] ?? '{}', true) ?: [];
             foreach ($tpl ? (json_decode($tpl['fields'], true) ?: []) : [] as $f) {
-                if (!empty($f['source'])) continue;                 // bound to system data, not editable
+                if (!empty($f['source'])) {                          // bound field: editable override of the system value
+                    if (array_key_exists($f['key'], $in['fields'] ?? [])) {
+                        $v = mb_substr(trim((string) $in['fields'][$f['key']]), 0, 190);
+                        $rest = $data; unset($rest[$f['key']]);
+                        $auto = CertificateService::fieldValue($f, $sj, $cert, $rest);
+                        if ($v === '' || $v === $auto) unset($data[$f['key']]); else $data[$f['key']] = $v;
+                    }
+                    continue;
+                }
                 if (array_key_exists($f['key'], $in['fields'] ?? [])) {
                     $v = mb_substr(trim((string) $in['fields'][$f['key']]), 0, ($f['type'] ?? '') === 'textarea' ? 1500 : 190);
                     if (($f['type'] ?? '') === 'select' && $v !== '' && !in_array($v, $f['options'] ?? [], true)) continue;

@@ -10,7 +10,7 @@ $R = $L['report'];
 $AR = $R['ar'] ?? [];
 $mmPt = 0.3528;
 $arPt = (float) ($AR['pt'] ?? 8);
-$FORM = ['top' => 30.1, 'top_next' => 25.5, 'left' => 12.1, 'tbl_ml' => 2.2, 'sign_gap' => 8.1, 'row_min' => 8.65];
+$FORM = ['top' => 29.0, 'top_next' => 24.4, 'left' => 12.1, 'tbl_ml' => 2.2, 'sign_gap' => 8.1, 'row_min' => 8.65];
 $font = (float) ($AR['font'] ?? 10);
 $enLine = (float) ($AR['en_line'] ?? 1.23);
 $arLine = (float) ($AR['line'] ?? 1.1);
@@ -163,7 +163,10 @@ $tail[] = ['<table class="f mo" style="margin-left:3.8mm;margin-top:' . $FORM['s
 $bottom = (float) ($AR['bottom'] ?? 268.5);
 $top1 = $FORM['top'];
 $topN = $FORM['top_next'];
-$open = '<table class="f mo cl" style="margin-left:' . $FORM['tbl_ml'] . 'mm;font-size:' . $font . 'pt">' . $sizer . $hdr0;
+// the Word form prints the column header once; page 2 only starts with the bottom sliver of that header row
+$sliverH = 4.7;
+$sliver = '<tr style="background:' . $BL . '" class="b"><td colspan="4" style="' . $h($sliverH) . ';padding:0"></td><td class="c" style="' . $h($sliverH) . ';padding:0">No</td></tr>';
+$open = '<table class="f mo cl" style="margin-left:' . $FORM['tbl_ml'] . 'mm;font-size:' . $font . 'pt">' . $sizer;
 $pages = [];
 $body = $cover . '<div style="height:' . ($AR['hdr_gap'] ?? 8) . 'mm"></div>' . '<table class="f mo" style="margin-left:' . $FORM['tbl_ml'] . 'mm;font-size:' . $font . 'pt">' . $sizer . $hdr0 . '</table>';
 $used = $top1 + $coverH + ($AR['hdr_gap'] ?? 8) + $hdr0H;
@@ -174,14 +177,16 @@ $newPage = function () use (&$pages, &$body, &$table, &$used, $topN) {
 };
 $first = true;
 foreach ($flow as $b) {
-    $need = $b['h'] + $b['preh'] + ($table === '' ? $hdr0H : 0);
+    $need = $b['h'] + $b['preh'];
     if ($used + $need > $bottom) $newPage();
-    if ($table === '') { $table = $open; $used += $hdr0H; }
+    if ($table === '') { $table = $open . ($first ? $sliver : ''); if ($first) $used += $sliverH; $first = false; }
     $table .= $b['pre'] . $b['html'];
     $used += $b['h'] + $b['preh'];
 }
 if ($table !== '') { $body .= $table . '</table>'; $table = ''; }
-foreach ($tail as [$html, $th, $gap]) {
+foreach ($tail as $ti => [$html, $th, $gap]) {
+    // the Word form starts the six motorcycle pictures on a new sheet (the heading band stays at the foot of the previous one)
+    if ($ti === 3 && $body !== '') { $pages[] = $body; $body = ''; $used = $topN; $gap = 0; }
     if ($used + $gap + $th > $bottom) { $pages[] = $body; $body = ''; $used = $topN; $gap = 0; }
     if ($gap > 0 && $body !== '') { $body .= '<div style="height:' . $gap . 'mm"></div>'; $used += $gap; }
     $body .= $html;

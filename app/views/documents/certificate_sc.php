@@ -84,7 +84,7 @@ $att .= '<tr class="h75"><td class="hd0 c" colspan="3">SCOPE OF INSPECTION</td><
     . '<tr class="h85"><td class="l c">INSPECTION METHOD</td><td class="l c">SCOPE</td><td class="l c">REMARKS</td></tr>'
     . '<tr class="h78"><td class="c">' . $v('scope_method') . '</td><td class="c">' . $v('scope_scope') . '</td><td class="c">' . $v('scope_remarks') . '</td></tr></table>';
 
-$det = '<table class="f scf g49">' . doc_sizer([183.1])
+$det = '<table class="f scf g40">' . doc_sizer([183.1])
     . '<tr><td class="hd dh">DETAIL OF INSPECTION ACTIVITIES</td></tr>'
     . '<tr><td class="band bh">VISUAL INSPECTION</td></tr>'
     . '<tr><td class="tx dg"><b>General Description:</b> ' . $v('gen_desc') . '</td></tr>'
@@ -104,7 +104,7 @@ $sgImg = ($signed && $insp && !empty($insp['signature'])) ? '<img class="sg" src
 $stImg = $m['issued'] ? '<img class="sp" src="' . $brand['stamp'] . '" alt="">' : '';
 $sign = '<table class="f scf sgn" style="width:174.7mm; margin-left:-1.6mm; margin-top:17.8mm">' . doc_sizer([87.4, 87.3])
     . '<tr class="h75"><td class="sl">' . e($tpl['inspector_label']) . '</td><td>' . $who($insp) . '</td></tr>'
-    . '<tr class="h75"><td class="sl">Signature:</td><td rowspan="2" class="c sgc">' . $sgImg . $stImg . '</td></tr>'
+    . '<tr class="h75"><td class="sl">Signature:</td><td rowspan="2" class="c sgc"><div class="spw">' . $sgImg . $stImg . '</div></td></tr>'
     . '<tr class="h75"><td class="sl">Stamp:</td></tr>'
     . '<tr class="h76"><td class="sl">Reviewed By:</td><td>' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td></tr></table>';
 
@@ -115,8 +115,8 @@ foreach ($m['photos'] ?? [] as $p) {
 }
 $pages = [];
 $title = '<div class="cert-title scf-t">' . e($tpl['title']) . '</div>';
-$pages[] = ['body' => $t1 . $t2 . $stage . $types . $intro . $std, 'top' => 37.6, 'left' => 13.45, 'width' => 183.1, 'extra' => $title];
-$pages[] = ['body' => $res . $att . $det . $cert, 'top' => 25.5, 'left' => 13.45, 'width' => 183.1];
+$pages[] = ['body' => $t1 . $t2 . $stage . $types . $intro . $std, 'top' => 36.75, 'left' => 13.45, 'width' => 183.1, 'extra' => $title];
+$pages[] = ['body' => $res . $att . $det . $cert, 'top' => 24.7, 'left' => 13.45, 'width' => 183.1];
 
 // Fixed to the form: pages 3-5 = three drawing boxes, pages 6-8 = 6 + 6 + 4 photo boxes (16), sign-off on page 8. Extra images are ignored.
 // [body top, box left, box width, heading indent] - measured per page from the form (A4 centring applied)

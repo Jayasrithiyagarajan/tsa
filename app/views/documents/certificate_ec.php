@@ -58,7 +58,7 @@ $t2 = '<table class="f ec" style="margin-top:4.3mm">' . doc_sizer([39.7, 19.0, 4
 
 $pages = [[
     'body'  => $t1 . $t2,
-    'top'   => 34.3,
+    'top'   => 33.0,
     'left'  => 12.8,
     'width' => 184.1,
     'extra' => '<div class="cert-title ec-t">' . e($tpl['title']) . '</div>',
@@ -67,7 +67,7 @@ $pages = [[
 // The Word form (F-7.5.1-09) always has this second bordered sheet, so it is always output.
 {
     $box = '<div class="ec-page2">';
-    foreach ($rest as $p) $box .= '<img src="' . $p['src'] . '" alt="">';
+    foreach (array_slice($rest, 0, 8) as $p) $box .= '<img src="' . $p['src'] . '" alt="">';
     $box .= '</div>';
     $pages[] = ['body' => $box, 'top' => 25.4, 'left' => 12.8, 'width' => 182.6, 'extra' => ''];
 }

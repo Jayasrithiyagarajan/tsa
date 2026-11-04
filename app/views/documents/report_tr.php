@@ -52,7 +52,7 @@ $rA = '';
 foreach ($rowsA as [, $en, $ar, $key, $hh]) {
     $rA .= '<tr><td class="c" style="' . $h($hh) . '">' . (isset($cv[$key]) ? $cv[$key] : $val($key, (string) ($sjFallback[$key] ?? ''))) . '</td>' . $lab($ar, $en, $hh) . '</tr>';
 }
-$title = '<div style="text-align:center;font-weight:bold;font-size:12pt;line-height:1;height:5.6mm;padding-top:0.2mm">' . e($tpl['title']) . '</div>'
+$title = '<div style="position:relative;top:-0.8mm;text-align:center;font-weight:bold;font-size:12pt;line-height:1;height:5.6mm;padding-top:0.2mm">' . e($tpl['title']) . '</div>'
     . '<div style="text-align:center;font-weight:bold;font-size:12pt;line-height:1;height:5.9mm">' . $arh('تقرير التفتيش للمقطورات و نصف المقطورات', 0, 12, true) . '</div>';
 
 $vinChars = preg_split('//u', strtoupper(html_entity_decode($val('vin'), ENT_QUOTES, 'UTF-8')), -1, PREG_SPLIT_NO_EMPTY);
@@ -90,7 +90,7 @@ $gr = '<table class="f mo trl" style="font-size:11pt;line-height:0.85;margin-top
     . '<tr><td style="background:' . $GR . ';' . $gb . ';' . $h(10.2) . '">General Requirements:</td><td style="background:' . $GR . ';' . $gb . '">' . $arh('المتطلبات العامة:', 0, 9) . '</td></tr>'
     . '<tr><td style="background:' . $BL . ';' . $gb . ';' . $h(11.0) . '"><div style="line-height:1.0">The result (Yes\No\N/A) should be placed only after completing the inspection</div></td>'
     . '<td style="background:' . $BL . ';' . $gb . '"><div style="line-height:1.1;font-size:9pt">' . $arh('يجب وضع نتيجة (نعم\لا\لاينطبق) فقط بعد الانتهاء من التفتيش', $cols[4] - 4, 9) . '</div></td></tr></table>';
-$hdrH = 15.3; $hdrP1 = 9.8;
+$hdrH = 13.5; $hdrP1 = 9.8;
 $hl = fn ($ar, $en, $w) => '<div style="height:4.0mm;line-height:4.0mm;font-size:9pt;font-weight:bold;white-space:nowrap">' . $arh($ar, 0, 9) . '</div><div style="height:5.3mm;line-height:4.0mm;font-weight:bold;font-size:11pt">' . e($en) . '</div>';
 $hdrCells = function (int $off, float $hh) use ($hl, $BL, $h, $arh) {
     $wrap = fn ($inner) => '<div style="height:' . $hh . 'mm;overflow:hidden"><div style="position:relative;top:-' . $off . 'mm;height:' . ($off + $hh) . 'mm">' . $inner . '</div></div>';
@@ -167,7 +167,7 @@ $frag = function (int $i, float $off, float $hh, bool $split) use ($items, $desc
 };
 $open = '<table class="f mo trl cl" style="font-size:10pt">' . $sizer;
 $pages = [];
-$pages[] = ['body' => $cover . $gr, 'top' => 28.6, 'left' => $LEFT, 'width' => $TW];
+$pages[] = ['body' => $cover . $gr, 'top' => 27.8, 'left' => $LEFT, 'width' => $TW];
 $carry = null;      // [row, offset] of a row continued from the previous page
 if ($useTable) {
     foreach ($PAGES as $pi => [$a, $b]) {

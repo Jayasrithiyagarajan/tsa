@@ -33,13 +33,22 @@ $img = '<div class="ut-img">';
 foreach ($photos as $p) $img .= '<img style="max-width:' . $mw . 'mm; max-height:' . $mh . 'mm" src="' . $p['src'] . '" alt="">';
 $img .= '</div>';
 
+// a reading cell is always one line (long text, e.g. template-preview placeholders, is shrunk and clipped so rows never grow)
+$cell = function (string $k) use ($fv) {
+    $t = trim((string) ($fv[$k] ?? ''));
+    if ($t === '') return '';
+    $len = mb_strlen($t);
+    if ($len > 8) { $t = mb_substr($t, 0, 12); $st = 'font-size:6.5pt;'; } else { $st = ''; }
+    return '<span style="white-space:nowrap;' . $st . '">' . e($t) . '</span>';
+};
+
 // ---- readings: points 1-10 left, 11-20 right
 $rd = '<table class="f ut" style="margin-top:7.6mm">' . doc_sizer([11.6, 18.4, 13.3, 18.4, 13, 115.3])
     . '<tr class="hh"><td class="l c">Point<br>No.</td><td class="l c">Readings<br>(mm)</td><td class="l c">Point<br>No.</td><td class="l c">Readings<br>(mm)</td><td class="sp" rowspan="11"></td><td class="imgbox" rowspan="11">' . $img . '</td></tr>';
 for ($i = 1; $i <= 10; $i++) {
     $a = sprintf('rd_%02d', $i);
     $b = sprintf('rd_%02d', $i + 10);
-    $rd .= '<tr class="h61"><td class="c">' . $i . '</td><td class="c">' . $v($a) . '</td><td class="c">' . ($i + 10) . '</td><td class="c">' . $v($b) . '</td></tr>';
+    $rd .= '<tr class="h61"><td class="c">' . $i . '</td><td class="c">' . $cell($a) . '</td><td class="c">' . ($i + 10) . '</td><td class="c">' . $cell($b) . '</td></tr>';
 }
 $rd .= '</table>';
 

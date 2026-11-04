@@ -207,7 +207,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
               <?php endif; ?>
               <div class="field <?= ($f['type'] ?? '') === 'textarea' ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && !$f['bound'] ? ' <span class="req">*</span>' : '' ?></label>
                 <?php if ($f['bound']): ?>
-                  <div class="bound" title="From job record"><?= icon('lock', 'sm') ?><?= e($f['value'] !== '' ? $f['value'] : ($f['source'] === 'cert.issue_date' ? 'Set when QC issues' : '—')) ?></div>
+                  <input class="input" type="text" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['value']) ?>" placeholder="<?= e($f['source'] === 'cert.issue_date' ? 'Set when QC issues' : 'From job record') ?>" title="Pre-filled from the job record — you can edit it"<?= $dis ?>>
                 <?php elseif (($f['type'] ?? 'text') === 'select'): ?>
                   <select class="select" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><option value="">Select…</option><?php foreach ($f['options'] ?? [] as $o): ?><option<?= selected($o, $f['value']) ?>><?= e($o) ?></option><?php endforeach; ?></select>
                 <?php elseif (($f['type'] ?? 'text') === 'textarea'): ?>

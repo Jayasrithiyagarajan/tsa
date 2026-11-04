@@ -112,7 +112,11 @@ final class CertificateService
             'equipment.capacity'        => $sj['eq_capacity'],
             'equipment.year_built'      => $sj['eq_year'],
         ];
-        if ($src !== '') return (string) ($map[$src] ?? '');
+        if ($src !== '') {
+            // Development: bound fields can be overridden by the inspector (stored under the field key)
+            $ov = trim((string) ($data[$f['key']] ?? ''));
+            return $ov !== '' ? $ov : (string) ($map[$src] ?? '');
+        }
         $v = (string) ($data[$f['key']] ?? '');
         return ($f['type'] ?? '') === 'date' ? fmt_date($v) : $v;
     }

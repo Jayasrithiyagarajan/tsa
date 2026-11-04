@@ -66,7 +66,7 @@ $li = '';
 $n = 0;
 foreach ($sent as $s) if (trim($s) !== '') $li .= '<li' . ($n++ === 0 ? ' style="letter-spacing:0"' : '') . '><span class="bu">&bull;</span>' . e($s) . '</li>';
 $t6 = '<table class="f sp gap">' . doc_sizer([31.7, 156.2])
-    . '<tr style="' . $hh(10.6) . '"><td class="b c">Inspection Results:</td><td class="irt"><ul>' . $li . '</ul></td></tr></table>';
+    . '<tr style="' . $hh(24) . '"><td class="b c">Inspection Results:</td><td class="irt"><ul>' . $li . '</ul></td></tr></table>';
 
 // ---- sign-off
 $insp = $m['inspector'];
@@ -80,7 +80,7 @@ $t7 = '<table class="f sp gap">' . doc_sizer([80.8, 107.1])
     . '<tr style="' . $hh(7.62) . '"><td class="b">Stamp:</td></tr>'
     . '<tr style="' . $hh(7.62) . '"><td class="b">Reviewed / Approved by:</td><td>' . ($m['issued'] ? e($rev['name'] ?? '') : '<span class="muted">Pending QC review</span>') . $sig2 . '</td></tr></table>';
 
-$stamp = $m['issued'] ? '<img class="stamp" style="left:164.8mm; top:212.7mm; width:29mm; height:29mm" src="' . $brand['stamp'] . '" alt="">' : '';
+$stamp = $m['issued'] ? '<img class="stamp" style="left:164.8mm; top:226.1mm; width:29mm; height:29mm" src="' . $brand['stamp'] . '" alt="">' : '';
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;
 
 echo View::partial('documents/frame', [
