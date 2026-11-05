@@ -22,7 +22,7 @@ $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
 <div class="grid grid-main">
   <div class="stack">
     <?php if ($card): ?>
-    <div class="card"><div class="card-h"><h2><?= icon('user', 'sm') ?> <?= e($card['holder_name']) ?> <span class="mono small muted"><?= e($card['card_no']) ?></span> <?= InspectorCardService::badge(InspectorCardService::state($card)) ?></h2></div>
+    <div class="card"><div class="card-h"><h2><?= icon('user', 'sm') ?> <?= e($card['holder_name']) ?> <span class="mono small muted"><?= e($card['card_no']) ?></span> <?= InspectorCardService::badge(InspectorCardService::state($card)) ?></h2><button type="button" class="btn btn-secondary btn-sm" data-modal="edit-card" style="margin-left:auto"><?= icon('edit', 'sm') ?> Edit details</button></div>
       <div class="card-b">
         <div class="idc-faces">
           <div><div class="cap">Front</div><?php View::render('partials/id_card', ['m' => $preview, 'side' => 'front'], null); ?></div>
@@ -70,3 +70,24 @@ $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
     </div>
   </div>
 </div>
+<?php if ($card): ?>
+<dialog class="modal" id="edit-card"><form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/operator-card') ?>" enctype="multipart/form-data" data-no-lock="1"><?= Csrf::field() ?>
+  <div class="m-h"><h3>Edit ID card details</h3><button type="button" class="icon-btn" data-modal-close><?= icon('x', 'sm') ?></button></div>
+  <div class="m-b"><div class="form-grid">
+    <div class="col-12 small strong">Front side</div>
+    <div class="field col-6"><label>Name on card <span class="req">*</span></label><input class="input" name="holder_name" value="<?= e($card['holder_name']) ?>" required maxlength="120"></div>
+    <div class="field col-6"><label>Iqama / ID No. <span class="req">*</span></label><input class="input mono" name="id_number" value="<?= e($card['id_number']) ?>" required maxlength="30"></div>
+    <div class="field col-6"><label>Company <span class="req">*</span></label><input class="input" name="company" value="<?= e($card['company']) ?>" required maxlength="120"></div>
+    <div class="field col-6"><label>Title (blue band) <span class="req">*</span></label><input class="input" name="title" value="<?= e($card['title']) ?>" required maxlength="80"></div>
+    <div class="field col-6"><label>Issue date <span class="req">*</span></label><input class="input" type="date" name="issue_date" value="<?= e($card['issue_date']) ?>" required></div>
+    <div class="field col-6"><label>Expiry date <span class="req">*</span></label><input class="input" type="date" name="expiry_date" value="<?= e($card['expiry_date']) ?>" required></div>
+    <div class="field col-12"><label>Replace photo (optional)</label><input class="input" type="file" name="photo" accept="image/jpeg,image/png,image/webp" style="padding-top:7px"></div>
+    <div class="col-12 small strong" style="margin-top:6px">Back side</div>
+    <div class="field col-6"><label>Job Ref <span class="req">*</span></label><input class="input mono" name="job_ref" value="<?= e($card['job_ref']) ?>" required maxlength="60"></div>
+    <div class="field col-6"><label>Certification <span class="req">*</span></label><input class="input" name="certification" value="<?= e($card['certification']) ?>" required maxlength="120"></div>
+    <div class="field col-12"><label>Assessor <span class="req">*</span></label><input class="input" name="assessor" value="<?= e($card['assessor']) ?>" required maxlength="120"></div>
+    <div class="field col-12"><label>Certificate of Competence <span class="req">*</span></label><textarea class="textarea" name="competence" rows="5" maxlength="1000" required><?= e($card['competence']) ?></textarea><div class="help">One line per competence.</div></div>
+  </div></div>
+  <div class="m-f"><button type="button" class="btn btn-ghost" data-modal-close>Cancel</button><button class="btn btn-primary"><?= icon('check', 'sm') ?> Save changes</button></div>
+</form></dialog>
+<?php endif; ?>

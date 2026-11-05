@@ -76,7 +76,6 @@ final class InspectorController extends Controller
             'equipment'     => DB::all('SELECT id, description, equipment_no FROM equipment WHERE client_id = ? ORDER BY description', [$job['client_id']]),
             'certTemplates' => DB::all("SELECT c.id, c.title, c.doc_ref, c.inspection_type_id FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
                     WHERE c.is_active = 1
-                      AND t.requires_checklist = 0   -- same list as Templates → Certificates (types with a checklist are not certificate layouts)
                       AND c.version = (SELECT MAX(v.version) FROM certificate_templates v WHERE v.inspection_type_id = c.inspection_type_id AND v.is_active = 1)
                     ORDER BY t.category, t.name"),
             'title'         => 'Add Sub-job',
@@ -115,8 +114,8 @@ final class InspectorController extends Controller
         $in = $_POST;
         $in['holder_type'] = 'worker';
         $in['client_id'] = $job['client_id'];
-        foreach (['holder_name', 'company', 'title', 'issue_date', 'expiry_date'] as $k) {
-            if (trim((string) ($in[$k] ?? '')) === '') throw new DomainException('Fill in all required card details.');
+        foreach (['holder_name', 'id_number', 'company', 'title', 'issue_date', 'expiry_date', 'job_ref', 'certification', 'assessor', 'competence'] as $k) {
+            if (trim((string) ($in[$k] ?? '')) === '') throw new DomainException('Fill in all required card details (front and back side).');
         }
         $photo = !empty($_FILES['photo']['name']) ? store_upload($_FILES['photo'], 'id-photos', ['image/jpeg', 'image/png', 'image/webp']) : null;
         return DB::tx(function () use ($job, $in, $photo) {
@@ -127,6 +126,29 @@ final class InspectorController extends Controller
             InspectorCardService::handOver($cardId);
             flash('success', 'Operator assessment created and the ID card issued. Upload the assessment document to close it.');
             return 'inspector/subjobs/' . $sjId;
+        });
+    }
+
+    /** Operator assessment: edit the issued ID card (front and back side), also after the sub-job is closed. */
+    public function updateOperatorCard(string $id): void
+    {
+        $this->attempt(function () use ($id) {
+            $sj = JobService::subJob((int) $id);
+            if (!$sj || $sj['kind'] !== 'operator') throw new DomainException('Operator assessment not found.');
+            if ((int) $sj['inspector_id'] !== Auth::id()) throw new DomainException('This sub-job is not assigned to you.');
+            $card = DB::one('SELECT * FROM inspector_cards WHERE sub_job_id = ? ORDER BY id DESC', [(int) $sj['id']]);
+            if (!$card) throw new DomainException('No ID card found for this operator assessment.');
+            $in = $_POST;
+            $in['holder_type'] = 'worker';
+            $in['client_id'] = $card['client_id'];
+            unset($in['card_no']);   // the ID code stays as issued
+            foreach (['holder_name', 'id_number', 'company', 'title', 'issue_date', 'expiry_date', 'job_ref', 'certification', 'assessor', 'competence'] as $k) {
+                if (trim((string) ($in[$k] ?? '')) === '') throw new DomainException('Fill in all required card details (front and back side).');
+            }
+            $photo = !empty($_FILES['photo']['name']) ? store_upload($_FILES['photo'], 'id-photos', ['image/jpeg', 'image/png', 'image/webp']) : null;
+            InspectorCardService::save((int) $card['id'], $in, $photo);
+            flash('success', 'ID card details updated.');
+            return 'inspector/subjobs/' . (int) $sj['id'];
         });
     }
 
