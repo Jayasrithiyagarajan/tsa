@@ -162,29 +162,29 @@ final class AdminJobController extends Controller
     }
 
 
-    /** Super Admin uploads (or replaces) the time sheet PDF; the job cannot be closed without it. */
+    /** Super Admin uploads (or replaces) the time sheet (PDF or image); the job cannot be closed without it. */
     public function uploadTimesheet(string $id): void
     {
         $this->attempt(function () use ($id) {
             $job = DB::one('SELECT * FROM jobs WHERE id = ?', [(int) $id]);
             if (!$job) throw new DomainException('Job not found.');
             if ($job['status'] !== 'awaiting_approval') throw new DomainException('The time sheet is uploaded while the job is awaiting final approval.');
-            $f = store_upload($_FILES['timesheet'] ?? [], 'timesheets', ['application/pdf']);
+            $f = store_upload($_FILES['timesheet'] ?? [], 'timesheets', ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);   // PDF or image
             DB::update('jobs', ['timesheet_path' => $f['path'], 'timesheet_name' => $f['name'], 'timesheet_by' => Auth::id(), 'timesheet_at' => now()], 'id = ?', [$job['id']]);
             Audit::log('job.timesheet_uploaded', 'job', (int) $job['id'], ['file' => $f['name']]);
         }, 'Time sheet uploaded. The job can now be closed.');
     }
 
-    /** View (inline) or download (?download=1) the time sheet PDF. */
+    /** View (inline) or download (?download=1) the time sheet. */
     public function timesheet(string $id): void
     {
         $job = DB::one('SELECT timesheet_path, timesheet_name FROM jobs WHERE id = ?', [(int) $id]);
         if (!$job || !$job['timesheet_path']) $this->notFound();
         $f = upload_abs($job['timesheet_path']);
         if (!is_file($f)) $this->notFound();
-        header('Content-Type: application/pdf');
+        header('Content-Type: ' . (mime_content_type($f) ?: 'application/octet-stream'));
         header('Content-Length: ' . filesize($f));
-        header('Content-Disposition: ' . (!empty($_GET['download']) ? 'attachment' : 'inline') . '; filename="' . str_replace('"', '', $job['timesheet_name'] ?: 'timesheet.pdf') . '"');
+        header('Content-Disposition: ' . (!empty($_GET['download']) ? 'attachment' : 'inline') . '; filename="' . str_replace('"', '', $job['timesheet_name'] ?: 'timesheet') . '"');
         header('Cache-Control: private, max-age=3600');
         readfile($f);
         exit;

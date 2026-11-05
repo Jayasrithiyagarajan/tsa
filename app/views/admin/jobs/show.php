@@ -29,11 +29,11 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
     <div style="flex:1;min-width:240px"><b>Time sheet</b> -
       <?php if ($hasTs): ?>uploaded <b><?= e($job['timesheet_name']) ?></b> on <?= e(fmt_datetime($job['timesheet_at'])) ?>
         <a class="btn btn-secondary btn-sm" style="margin-left:8px" href="<?= url('admin/jobs/' . $job['id'] . '/timesheet') ?>" target="_blank" rel="noopener"><?= icon('eye', 'sm') ?> View time sheet</a>
-      <?php else: ?>not uploaded yet. <?= Auth::isSuper() ? 'Upload the time sheet PDF to be able to close this job.' : 'A Super Admin must upload the time sheet PDF before the job can be closed.' ?><?php endif; ?></div>
+      <?php else: ?>not uploaded yet. <?= Auth::isSuper() ? 'Upload the time sheet (PDF or image) to be able to close this job.' : 'A Super Admin must upload the time sheet (PDF or image) before the job can be closed.' ?><?php endif; ?></div>
     <?php if (Auth::isSuper()): ?>
     <form method="post" action="<?= url('admin/jobs/' . $job['id'] . '/timesheet') ?>" enctype="multipart/form-data" class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
       <?= Csrf::field() ?>
-      <input class="input" type="file" name="timesheet" accept="application/pdf,.pdf" required style="max-width:280px">
+      <input class="input" type="file" name="timesheet" accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp" required style="max-width:280px">
       <button class="btn btn-secondary btn-sm"><?= icon('upload', 'sm') ?> <?= $hasTs ? 'Replace' : 'Upload' ?> time sheet</button>
     </form>
     <?php endif; ?>
