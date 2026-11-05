@@ -56,8 +56,8 @@ foreach ($sections as $name => $items) {
             : '<tr class="sec"><td colspan="6" style="' . $bandCss . '">' . $text . '</td></tr>', $L['row_h']];
     }
     foreach ($items as $it) {
-        $h = max($estimate($it['label'], $cLabel + $cValue, $L['font'], $L['item_bold']), $estimate((string) $it['remarks'], $cRem, 9, false));
-        $rows[] = ['<tr><td colspan="2" style="' . $rowCss . ';' . $cellFont . ';padding-left:1.9mm;padding-right:2.4mm' . ($L['item_bold'] ? '' : ';font-weight:normal') . '"><div style="line-height:' . $labelLh . '">' . nl2br(e($it['label'])) . '</div></td>'
+        $h = max($estimate($it['label'], $cLabel + $cValue, $L['font'], false), $estimate((string) $it['remarks'], $cRem, 9, false));
+        $rows[] = ['<tr><td colspan="2" style="' . $rowCss . ';' . $cellFont . ';padding-left:1.9mm;padding-right:2.4mm' . ';font-weight:normal' . '"><div style="line-height:' . $labelLh . '">' . nl2br(e($it['label'])) . '</div></td>'
             . '<td class="box">' . $box($it['result'] === 'pass') . '</td>'
             . '<td class="box">' . $box($it['result'] === 'fail') . '</td>'
             . '<td class="box">' . $box($it['result'] === 'na') . '</td>'
