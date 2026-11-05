@@ -76,6 +76,7 @@ final class InspectorController extends Controller
             'equipment'     => DB::all('SELECT id, description, equipment_no FROM equipment WHERE client_id = ? ORDER BY description', [$job['client_id']]),
             'certTemplates' => DB::all("SELECT c.id, c.title, c.doc_ref, c.inspection_type_id FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
                     WHERE c.is_active = 1
+                      AND t.requires_checklist = 0   -- same list as Templates → Certificates (types with a checklist are not certificate layouts)
                       AND c.version = (SELECT MAX(v.version) FROM certificate_templates v WHERE v.inspection_type_id = c.inspection_type_id AND v.is_active = 1)
                     ORDER BY t.category, t.name"),
             'title'         => 'Add Sub-job',
