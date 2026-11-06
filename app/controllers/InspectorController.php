@@ -70,11 +70,12 @@ final class InspectorController extends Controller
         }
         $this->view('inspector/subjob_form', [
             'job'           => $job,
-            'types'         => DB::all("SELECT t.id, t.code, t.name FROM inspection_types t WHERE t.status = 'active'
-                    AND EXISTS (SELECT 1 FROM checklist_templates c WHERE c.inspection_type_id = t.id AND c.is_active = 1)
+            'types'         => DB::all("SELECT t.id, t.code, t.name, t.category FROM inspection_types t WHERE t.status = 'active'
+                    AND ((t.category <> 'NDT' AND EXISTS (SELECT 1 FROM checklist_templates c WHERE c.inspection_type_id = t.id AND c.is_active = 1))
+                      OR (t.category = 'NDT' AND EXISTS (SELECT 1 FROM certificate_templates x WHERE x.inspection_type_id = t.id AND x.is_active = 1)))
                     ORDER BY t.name"),
             'equipment'     => DB::all('SELECT id, description, equipment_no FROM equipment WHERE client_id = ? ORDER BY description', [$job['client_id']]),
-            'certTemplates' => DB::all("SELECT c.id, c.title, c.doc_ref, c.inspection_type_id FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
+            'certTemplates' => DB::all("SELECT c.id, c.title, c.doc_ref, c.inspection_type_id, t.category FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
                     WHERE c.is_active = 1
                       AND c.version = (SELECT MAX(v.version) FROM certificate_templates v WHERE v.inspection_type_id = c.inspection_type_id AND v.is_active = 1)
                     ORDER BY t.category, t.name"),
@@ -97,6 +98,14 @@ final class InspectorController extends Controller
                 return $this->storeOperatorAssessment($job);
             }
             if (!(int) input('cert_template_id', 0)) throw new DomainException('Select the certificate type.');
+            // NDT / Non-NDT is chosen first; the inspection type and certificate must belong to that group
+            $mode = (string) input('ndt_mode', '');
+            if (!in_array($mode, ['ndt', 'non_ndt'], true)) throw new DomainException('Choose whether this is an NDT or a Non-NDT inspection.');
+            $typeCat = (string) DB::value('SELECT category FROM inspection_types WHERE id = ?', [(int) input('inspection_type_id', 0)]);
+            $certCat = (string) DB::value('SELECT t.category FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id WHERE c.id = ?', [(int) input('cert_template_id', 0)]);
+            if (($mode === 'ndt') !== ($typeCat === 'NDT') || ($mode === 'ndt') !== ($certCat === 'NDT')) {
+                throw new DomainException($mode === 'ndt' ? 'For an NDT job choose an NDT inspection type and an NDT certificate.' : 'This is a Non-NDT job - NDT types and certificates are chosen under NDT.');
+            }
             $qty = max(1, min(50, (int) input('quantity', 1)));
             for ($i = 0; $i < $qty; $i++) {
                 $sjId = JobService::addSubJob((int) $id, $_POST);

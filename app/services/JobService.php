@@ -8,7 +8,8 @@ final class JobService
                j.scheduled_date AS job_scheduled_date, j.priority,
                c.name AS client_name, c.code AS client_code,
                t.name AS type_name, t.code AS type_code, t.category AS type_category, t.procedure_ref, t.standard_ref,
-               t.validity_months, t.requires_checklist, (t.requires_certificate OR sj.cert_template_id IS NOT NULL) AS requires_certificate, t.requires_sticker,
+               t.validity_months, (t.requires_checklist AND t.category <> 'NDT') AS requires_checklist,
+               (t.requires_certificate OR sj.cert_template_id IS NOT NULL OR t.category = 'NDT') AS requires_certificate, (t.requires_sticker AND t.category <> 'NDT') AS requires_sticker,
                e.description AS eq_description, e.equipment_no, e.serial_no AS eq_serial_no, e.manufacturer,
                e.model AS eq_model, e.capacity AS eq_capacity, e.year_built AS eq_year,
                u.name AS inspector_name

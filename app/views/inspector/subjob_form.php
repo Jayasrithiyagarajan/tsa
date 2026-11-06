@@ -30,13 +30,21 @@ $old = fn ($k, $d = '') => old($k, $d);
       <fieldset id="kind-inspection" style="border:0;padding:0;margin:0;min-width:0">
       <div class="card">
         <div class="card-h"><h2><?= icon('layers', 'sm') ?> Inspection details</h2></div>
+        <div class="card-b" style="padding-bottom:0"><div class="field">
+          <label>Inspection category <span class="req">*</span></label>
+          <div role="radiogroup" style="display:flex;gap:22px;flex-wrap:wrap">
+            <label class="check"><input type="radio" name="ndt_mode" value="non_ndt" required<?= checked($old('ndt_mode') === 'non_ndt') ?>> Non-NDT</label>
+            <label class="check"><input type="radio" name="ndt_mode" value="ndt"<?= checked($old('ndt_mode') === 'ndt') ?>> NDT</label>
+          </div>
+          <div class="help" id="ndt-help">Choose first. Non-NDT: checklist, certificate, sticker and QC review. NDT: certificate only - no checklist and no sticker.</div>
+        </div></div>
         <div class="card-b"><div class="form-grid">
           <div class="field col-6">
-            <label>Checklist / Inspection type <span class="req">*</span></label>
+            <label id="type-label">Checklist / Inspection type <span class="req">*</span></label>
             <select class="select" name="inspection_type_id" id="type-select" required>
               <option value="">Select…</option>
               <?php foreach ($types as $t): ?>
-                <option value="<?= $t['id'] ?>"<?= selected($t['id'], $old('inspection_type_id')) ?>><?= e($t['name']) ?></option>
+                <option value="<?= $t['id'] ?>" data-group="<?= ($t['category'] ?? '') === 'NDT' ? 'ndt' : 'non_ndt' ?>"<?= selected($t['id'], $old('inspection_type_id')) ?>><?= e($t['name']) ?></option>
               <?php endforeach; ?>
             </select>
           </div>
@@ -45,7 +53,7 @@ $old = fn ($k, $d = '') => old($k, $d);
             <select class="select" name="cert_template_id" id="cert-select" required>
               <option value="">Select…</option>
               <?php foreach ($certTemplates as $ct): ?>
-                <option value="<?= $ct['id'] ?>" data-type="<?= (int) $ct['inspection_type_id'] ?>"<?= selected($ct['id'], $old('cert_template_id')) ?>><?= e($ct['title']) ?><?= $ct['doc_ref'] ? ' · ' . e($ct['doc_ref']) : '' ?></option>
+                <option value="<?= $ct['id'] ?>" data-type="<?= (int) $ct['inspection_type_id'] ?>" data-group="<?= ($ct['category'] ?? '') === 'NDT' ? 'ndt' : 'non_ndt' ?>"<?= selected($ct['id'], $old('cert_template_id')) ?>><?= e($ct['title']) ?><?= $ct['doc_ref'] ? ' · ' . e($ct['doc_ref']) : '' ?></option>
               <?php endforeach; ?>
             </select>
             <div class="help">Pre-selected from the checklist / inspection type; change it if a different certificate is needed.</div>
@@ -124,6 +132,29 @@ $old = fn ($k, $d = '') => old($k, $d);
   </div>
 </form>
 <script>
+// NDT / Non-NDT first: it decides which inspection types and certificates can be chosen
+(function () {
+  const form = document.getElementById('sj-form'), t = document.getElementById('type-select'), c = document.getElementById('cert-select');
+  if (!form || !t || !c) return;
+  const snap = (s) => ({ ph: s.options[0].cloneNode(true), all: Array.from(s.options).slice(1).map(o => o.cloneNode(true)) });
+  const T = snap(t), C = snap(c);
+  const fill = (sel, st, g) => {
+    const cur = sel.value; sel.innerHTML = ''; sel.appendChild(st.ph.cloneNode(true));
+    st.all.filter(o => o.dataset.group === g).forEach(o => sel.appendChild(o.cloneNode(true)));
+    if (Array.from(sel.options).some(o => o.value === cur)) sel.value = cur;
+  };
+  const sync = () => {
+    const r = form.querySelector('input[name=ndt_mode]:checked'), g = r ? r.value : '';
+    fill(t, T, g); fill(c, C, g);
+    t.disabled = c.disabled = !g;
+    document.getElementById('type-label').firstChild.textContent = g === 'ndt' ? 'NDT method ' : 'Checklist / Inspection type ';
+    document.getElementById('ndt-help').textContent = g === 'ndt'
+      ? 'NDT: certificate only - there is no checklist and no sticker for this sub-job.'
+      : (g === 'non_ndt' ? 'Non-NDT: checklist, certificate, sticker and QC review as usual.' : 'Choose first. Non-NDT: checklist, certificate, sticker and QC review. NDT: certificate only - no checklist and no sticker.');
+  };
+  form.addEventListener('change', e => { if (e.target.name === 'ndt_mode') sync(); });
+  sync();
+})();
 // Pre-select the matching certificate when the checklist / inspection type changes
 (function () {
   const t = document.getElementById('type-select'), c = document.getElementById('cert-select');

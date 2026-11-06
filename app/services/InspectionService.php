@@ -155,9 +155,74 @@ final class InspectionService
                 }
                 $upd['data'] = json_encode($data, JSON_UNESCAPED_UNICODE);
             }
-            if ($upd) DB::update('checklists', $upd, 'id = ?', [$cl['id']]);
+            if ($upd) {
+                DB::update('checklists', $upd, 'id = ?', [$cl['id']]);
+                self::syncChecklistToCertificates($sj, $cl, $upd);
+            }
             return self::checklistStats((int) $cl['id']);
         });
+    }
+
+    /**
+     * Push edited checklist header values to every certificate page that has the same field
+     * (serial no., inspection date, remarks and report-cover values). Only values that actually changed
+     * are pushed, so manual edits on the certificate survive later autosaves of unrelated checklist fields.
+     */
+    private static function syncChecklistToCertificates(array $sj, array $old, array $upd): void
+    {
+        $certs = DB::all('SELECT * FROM certificates WHERE sub_job_id = ?', [$sj['id']]);
+        if (!$certs) return;
+        // checklist value => [cert sources, cert field keys]
+        $map = [];
+        if (array_key_exists('serial_no', $upd) && (string) $upd['serial_no'] !== (string) $old['serial_no'])
+            $map[] = [(string) $upd['serial_no'], ['equipment.serial_no'], ['serial', 'serial_no']];
+        if (!empty($upd['data'])) {
+            $new = json_decode($upd['data'], true) ?: [];
+            $was = json_decode((string) ($old['data'] ?? ''), true) ?: [];
+            $alias = [
+                'eq_desc' => [['equipment.description'], ['description', 'eq_desc']],
+                'model'   => [['equipment.model'], ['model']],
+                'brand'   => [['equipment.manufacturer'], ['manufacturer', 'brand']],
+                'year'    => [['equipment.year_built'], ['year']],
+            ];
+            foreach ($new as $k => $v) {
+                if ((string) ($was[$k] ?? '') === (string) $v) continue;
+                [$srcs, $keys] = $alias[$k] ?? [[], [$k]];
+                $map[] = [(string) $v, $srcs, $keys];
+            }
+        }
+        $dateChanged = array_key_exists('inspection_date', $upd) && (string) $upd['inspection_date'] !== (string) $old['inspection_date'];
+        $remarksChanged = array_key_exists('remarks', $upd) && (string) $upd['remarks'] !== (string) ($old['remarks'] ?? '');
+        if (!$map && !$dateChanged && !$remarksChanged) return;
+
+        foreach ($certs as $cert) {
+            $cu = [];
+            $data = json_decode($cert['data'] ?? '{}', true) ?: [];
+            $tpl = $cert['template_id'] ? DB::one('SELECT fields FROM certificate_templates WHERE id = ?', [$cert['template_id']]) : null;
+            $fields = $tpl ? (json_decode($tpl['fields'], true) ?: []) : [];
+            if ($dateChanged) {
+                $cu['inspection_date'] = $upd['inspection_date'];
+                $cu['next_inspection_date'] = self::nextDate($upd['inspection_date'], (int) $sj['validity_months']);
+            }
+            if ($remarksChanged) $cu['remarks'] = $upd['remarks'];
+            $changed = false;
+            foreach ($fields as $f) {
+                foreach ($map as [$val, $srcs, $keys]) {
+                    $hit = (!empty($f['source']) && in_array($f['source'], $srcs, true)) || (empty($f['source']) && in_array($f['key'], $keys, true));
+                    if (!$hit) continue;
+                    if (!empty($f['source'])) {                      // bound field: store as override only when it differs from the job record
+                        $rest = $data; unset($rest[$f['key']]);
+                        $auto = CertificateService::fieldValue($f, $sj, $cert, $rest);
+                        if ($val === '' || $val === $auto) unset($data[$f['key']]); else $data[$f['key']] = $val;
+                    } else {
+                        $data[$f['key']] = ($f['type'] ?? '') === 'textarea' ? mb_substr($val, 0, 1500) : mb_substr($val, 0, 190);
+                    }
+                    $changed = true;
+                }
+            }
+            if ($changed) $cu['data'] = json_encode($data, JSON_UNESCAPED_UNICODE);
+            if ($cu) DB::update('certificates', $cu, 'id = ?', [$cert['id']]);
+        }
     }
 
     public static function checklistStats(int $checklistId): array
@@ -212,6 +277,40 @@ final class InspectionService
                 $upd['next_inspection_date'] = !empty($in['next_inspection_date']) && strtotime($in['next_inspection_date'])
                     ? $in['next_inspection_date']
                     : self::nextDate($in['inspection_date'], (int) $sj['validity_months']);
+            }
+            // push changed values back to the checklist (serial no., inspection date, remarks, report-cover values)
+            $oldData = json_decode($cert['data'] ?? '{}', true) ?: [];
+            $certNew = array_merge($cert, $upd);
+            $back = [];
+            foreach ($tpl ? (json_decode($tpl['fields'], true) ?: []) : [] as $f) {
+                $before = CertificateService::fieldValue($f, $sj, $cert, $oldData);
+                $after  = CertificateService::fieldValue($f, $sj, $certNew, $data);
+                if ($before === $after) continue;
+                $src = $f['source'] ?? ''; $k = $f['key'];
+                if ($src === 'equipment.serial_no' || (!$src && in_array($k, ['serial', 'serial_no'], true))) { $back['serial_no'] = $after; continue; }
+                $ck = ['equipment.description' => 'eq_desc', 'equipment.model' => 'model', 'equipment.manufacturer' => 'brand', 'equipment.year_built' => 'year'][$src]
+                    ?? (!$src ? (['description' => 'eq_desc', 'manufacturer' => 'brand'][$k] ?? $k) : null);
+                if ($ck) $back['data'][$ck] = $after;
+            }
+            if (isset($upd['inspection_date']) && (string) $upd['inspection_date'] !== (string) $cert['inspection_date']) $back['inspection_date'] = $upd['inspection_date'];
+            if (array_key_exists('remarks', $upd) && (string) $upd['remarks'] !== (string) ($cert['remarks'] ?? '')) $back['remarks'] = $upd['remarks'];
+            if ($back) {
+                $cl = DB::one('SELECT * FROM checklists WHERE sub_job_id = ?', [$subJobId]);
+                if ($cl) {
+                    $cu = [];
+                    if (isset($back['serial_no'])) $cu['serial_no'] = nullable(mb_substr($back['serial_no'], 0, 80));
+                    if (isset($back['inspection_date'])) $cu['inspection_date'] = $back['inspection_date'];
+                    if (array_key_exists('remarks', $back)) $cu['remarks'] = $back['remarks'];
+                    if (!empty($back['data'])) {
+                        $ctpl = DB::one('SELECT layout FROM checklist_templates WHERE id = ?', [$cl['template_id']]);
+                        $allowed = TemplateService::reportManualKeys(TemplateService::checklistLayout($ctpl ?: []));
+                        $cdata = json_decode((string) ($cl['data'] ?? ''), true) ?: [];
+                        $any = false;
+                        foreach ($back['data'] as $ck => $v) if (isset($allowed[$ck])) { $cdata[$ck] = mb_substr(trim((string) $v), 0, $ck === 'vin' ? 17 : 300); $any = true; }
+                        if ($any) $cu['data'] = json_encode($cdata, JSON_UNESCAPED_UNICODE);
+                    }
+                    if ($cu) DB::update('checklists', $cu, 'id = ?', [$cl['id']]);
+                }
             }
             DB::update('certificates', $upd, 'id = ?', [$cert['id']]);
             if (isset($upd['result'])) DB::update('sub_jobs', ['result' => $upd['result']], 'id = ?', [$subJobId]);
