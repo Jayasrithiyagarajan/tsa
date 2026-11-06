@@ -59,11 +59,11 @@ $printFrom = (string) input('print_from', '');
   <div class="card">
     <div class="card-h"><h2><?= icon('users', 'sm') ?> Held by inspectors</h2></div>
     <div class="table-wrap"><table class="t stack-sm">
-      <thead><tr><th>Inspector</th><th>Blue</th><th>Red</th><th>Used</th><th></th></tr></thead>
+      <thead><tr><th>Inspector</th><th>White</th><th>Red</th><th>Used</th><th></th></tr></thead>
       <tbody><?php foreach ($inspectors as $i): ?>
         <tr>
           <td data-label="Inspector" class="strong"><?= e($i['name']) ?><div class="sub"><?= $i['last_allocated'] ? 'Last allocation ' . e(fmt_date($i['last_allocated'])) : 'Nothing allocated yet' ?></div></td>
-          <td data-label="Blue"><?= (int) $i['in_hand'] - (int) $i['in_hand_red'] ?></td>
+          <td data-label="White"><?= (int) $i['in_hand'] - (int) $i['in_hand_red'] ?></td>
           <td data-label="Red"><?= (int) $i['in_hand_red'] ?></td>
           <td data-label="Used"><a href="<?= url('admin/project-stickers', ['inspector' => $i['id']]) ?>"><?= (int) $i['used'] ?></a></td>
           <td class="actions"><a class="btn btn-ghost btn-sm" href="<?= url('admin/stickers', ['inspector' => $i['id'], 'status' => 'allocated']) ?>">View</a></td>
@@ -124,7 +124,7 @@ $printFrom = (string) input('print_from', '');
 <dialog class="modal" id="batch"><form method="post" action="<?= url('admin/stickers') ?>" data-gen><?= Csrf::field() ?>
   <div class="m-h"><h3>Generate sticker batch</h3><button type="button" class="icon-btn" data-modal-close><?= icon('x', 'sm') ?></button></div>
   <div class="m-b"><div class="form-grid">
-    <div class="field col-6"><label>Colour</label><select class="select" name="color"><option value="green">Blue — Accepted</option><option value="red">Red — Failed</option></select></div>
+    <div class="field col-6"><label>Colour</label><select class="select" name="color"><option value="green">White — Accepted</option><option value="red">Red — Failed</option></select></div>
     <div class="field col-6"><label>Prefix</label><input class="input mono" name="prefix" value="<?= e($blueSeries['prefix'] ?? 'TE-') ?>" required style="text-transform:uppercase"></div>
     <div class="field col-4"><label>From No.</label><input class="input" type="number" min="1" name="from" value="<?= (int) ($blueSeries['next_generate'] ?? 1) ?>" required></div>
     <div class="field col-4"><label>Quantity</label><input class="input" type="number" min="1" max="2000" name="qty" value="50" required></div>
@@ -142,7 +142,7 @@ $printFrom = (string) input('print_from', '');
   <div class="m-b"><div class="form-grid">
     <div class="field col-12"><label>Series</label><select class="select" name="series">
       <?php foreach ($series as $sr): if (!$sr['next_free']) continue; ?>
-        <option value="<?= e($sr['prefix']) ?>" data-next="<?= e($sr['next_free']) ?>" data-stock="<?= (int) $sr['in_stock'] ?>"><?= e($sr['prefix']) ?> · <?= $sr['color'] === 'red' ? 'Red — Failed' : 'Blue — Accepted' ?> · <?= (int) $sr['in_stock'] ?> in stock</option>
+        <option value="<?= e($sr['prefix']) ?>" data-next="<?= e($sr['next_free']) ?>" data-stock="<?= (int) $sr['in_stock'] ?>"><?= e($sr['prefix']) ?> · <?= $sr['color'] === 'red' ? 'Red — Failed' : 'White — Accepted' ?> · <?= (int) $sr['in_stock'] ?> in stock</option>
       <?php endforeach; ?></select></div>
     <div class="field col-6"><label>From sticker No.</label><input class="input mono" name="from" required style="text-transform:uppercase" value="<?= e(($blueSeries ?: $redSeries)['next_free'] ?? '') ?>"></div>
     <div class="field col-6"><label>Quantity</label><input class="input" type="number" name="qty" min="1" max="2000" value="25" required></div>
