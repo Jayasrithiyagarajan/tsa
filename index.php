@@ -117,6 +117,7 @@ $r->post('/admin/settings',                 [AdminDocumentController::class, 'sa
 // ---------------------------------------------------------------- inspector portal
 $r->get('/inspector',                          [InspectorController::class, 'dashboard'], $I);
 $r->get('/inspector/jobs',                     [InspectorController::class, 'jobs'], $I);
+$r->get('/inspector/finished',                 [InspectorController::class, 'finished'], $I);
 $r->get('/inspector/jobs/{id}',                [InspectorController::class, 'job'], $I);
 $r->get('/inspector/jobs/{id}/subjobs/new',    [InspectorController::class, 'createSubJob'], $I);
 $r->post('/inspector/jobs/{id}/subjobs',       [InspectorController::class, 'storeSubJob'], $I);

@@ -21,10 +21,18 @@ final class InspectorController extends Controller
         $this->view('inspector/dashboard', compact('k', 'queue', 'reworkNotes', 'recent', 'profile') + ['title' => 'My Day', 'crumbs' => ['My Day' => null]]);
     }
 
-    public function jobs(): void
+    /** Finished work: sub-jobs submitted to QC or approved. */
+    public function finished(): void
     {
-        $filter = (string) input('f', 'open');
-        $statuses = $filter === 'all' ? "'assigned','in_progress','rework','submitted','approved'" : "'assigned','in_progress','rework'";
+        $this->jobs('done');
+    }
+
+    public function jobs(?string $force = null): void
+    {
+        $filter = $force ?? (string) input('f', 'open');
+        if (!in_array($filter, ['open', 'all', 'done'], true)) $filter = 'open';
+        $statuses = $filter === 'all' ? "'assigned','in_progress','rework','submitted','approved'"
+            : ($filter === 'done' ? "'submitted','approved'" : "'assigned','in_progress','rework'");
         // page through the inspector's JOBS (15 per page), then load only those jobs' sub-jobs
         $jobSql = "SELECT j.id FROM jobs j WHERE EXISTS (SELECT 1 FROM sub_jobs s WHERE s.job_id = j.id AND s.inspector_id = ? AND s.status IN ($statuses))
                    ORDER BY j.scheduled_date IS NULL, j.scheduled_date, j.id";
@@ -39,11 +47,11 @@ final class InspectorController extends Controller
             $jobs[$s['job_id']]['subs'][] = $s;
         }
         // also include jobs assigned to me but with no sub-jobs yet
-        $myJobs = DB::all("SELECT j.*, c.name client_name FROM jobs j JOIN clients c ON c.id = j.client_id
+        $myJobs = $filter === 'done' ? [] : DB::all("SELECT j.*, c.name client_name FROM jobs j JOIN clients c ON c.id = j.client_id
                            WHERE j.lead_inspector_id = ? AND j.status NOT IN ('completed','cancelled')
                            AND NOT EXISTS (SELECT 1 FROM sub_jobs s WHERE s.job_id = j.id AND s.inspector_id = ?)
                            ORDER BY j.scheduled_date IS NULL, j.scheduled_date, j.id LIMIT 100", [Auth::id(), Auth::id()]);
-        $this->view('inspector/jobs', compact('jobs', 'filter', 'myJobs', 'meta') + ['title' => 'Assigned Jobs', 'crumbs' => ['Assigned Jobs' => null]]);
+        $this->view('inspector/jobs', compact('jobs', 'filter', 'myJobs', 'meta') + ['title' => $filter === 'done' ? 'Finished Jobs' : 'Ongoing Jobs', 'crumbs' => [($filter === 'done' ? 'Finished Jobs' : 'Ongoing Jobs') => null]]);
     }
 
     public function job(string $id): void

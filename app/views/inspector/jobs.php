@@ -1,6 +1,6 @@
 <div class="page-head">
-  <div class="ph-text"><h1>Assigned jobs</h1><div class="sub">Jobs and sub-jobs assigned to you.</div></div>
-  <div class="seg-tabs"><a class="<?= $filter === 'open' ? 'on' : '' ?>" href="<?= url('inspector/jobs') ?>">Open</a><a class="<?= $filter === 'all' ? 'on' : '' ?>" href="<?= url('inspector/jobs', ['f' => 'all']) ?>">All</a></div>
+  <div class="ph-text"><h1><?= $filter === 'done' ? 'Finished jobs' : ($filter === 'all' ? 'All jobs' : 'Ongoing jobs') ?></h1><div class="sub"><?= $filter === 'done' ? 'Sub-jobs you have submitted to QC or that are approved.' : ($filter === 'all' ? 'Ongoing and finished work assigned to you.' : 'Jobs and sub-jobs assigned to you that are still in progress.') ?></div></div>
+  <div class="seg-tabs"><a class="<?= $filter === 'open' ? 'on' : '' ?>" href="<?= url('inspector/jobs') ?>">Ongoing</a><a class="<?= $filter === 'done' ? 'on' : '' ?>" href="<?= url('inspector/finished') ?>">Finished</a><a class="<?= $filter === 'all' ? 'on' : '' ?>" href="<?= url('inspector/jobs', ['f' => 'all']) ?>">All</a></div>
 </div>
 
 <?php if ($myJobs): ?>
@@ -26,7 +26,7 @@
 <?php endif; ?>
 
 <?php if (!$jobs && !$myJobs): ?>
-  <div class="card"><?php View::render('partials/empty', ['icon' => 'briefcase', 'title' => 'No assigned jobs', 'text' => 'When the administrator assigns work to you it appears here.'], null); ?></div>
+  <div class="card"><?php View::render('partials/empty', ['icon' => 'briefcase', 'title' => $filter === 'done' ? 'No finished jobs yet' : 'No assigned jobs', 'text' => $filter === 'done' ? 'Sub-jobs you submit or that get approved appear here.' : 'When the administrator assigns work to you it appears here.'], null); ?></div>
 <?php endif; ?>
 
 <?php foreach ($jobs as $jid => $g): $j = $g['job']; ?>

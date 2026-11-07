@@ -54,7 +54,8 @@ $nav = [
     'inspector' => [
         ['Work', [
             ['inspector', 'grid', 'My Day', ''],
-            ['inspector/jobs', 'briefcase', 'Assigned Jobs', $cnt(($c['open'] ?? 0) + ($c['rework'] ?? 0), (int) ($c['rework'] ?? 0) > 0)],
+            ['inspector/jobs', 'briefcase', 'Ongoing Jobs', $cnt(($c['open'] ?? 0) + ($c['rework'] ?? 0), (int) ($c['rework'] ?? 0) > 0)],
+            ['inspector/finished', 'check', 'Finished Jobs', ''],
             ['inspector/history', 'history', 'Submitted & Approved', ''],
             ['inspector/stickers', 'tag', 'My Stickers', ''],
             ['inspector/kpi', 'chart', 'My KPIs', ''],
