@@ -239,7 +239,14 @@ final class InspectorController extends Controller
         $fields = [];
         foreach ($certTpl ? (json_decode($certTpl['fields'], true) ?: []) : [] as $f) {
             $f['bound'] = !empty($f['source']);
-            $f['value'] = $f['bound'] ? CertificateService::fieldValue($f, $sj, $cert ?? [], $certData) : ($certData[$f['key']] ?? '');
+            $f['value'] = $f['bound'] || ($f['key'] ?? '') === 'checklist_no' ? CertificateService::fieldValue($f, $sj, $cert ?? [], $certData) : ($certData[$f['key']] ?? '');
+            if (($f['key'] ?? '') === 'exam_type' && ($f['type'] ?? '') === 'select') {   // free text, with the old options offered as suggestions
+                $f['suggest'] = $f['options'] ?? [];
+                $f['type'] = 'text';
+            }
+            $f['is_date'] = CertificateService::isDateField($f);
+            $ts = $f['is_date'] ? strtotime((string) $f['value']) : false;
+            $f['iso'] = $ts ? date('Y-m-d', $ts) : '';          // <input type="date"> needs ISO; non-date legacy text shows empty
             $fields[] = $f;
         }
         $attachments = DB::all('SELECT a.*, u.name uploader FROM attachments a LEFT JOIN users u ON u.id = a.uploaded_by WHERE a.sub_job_id = ? ORDER BY a.id DESC', [$sj['id']]);

@@ -101,9 +101,10 @@ final class CertificateService
             'type.procedure_ref'        => $sj['procedure_ref'],
             'type.standard_ref'         => $sj['standard_ref'],
             'cert.certificate_no'       => $cert['certificate_no'] ?? '',
-            'cert.issue_date'           => fmt_date($cert['issue_date'] ?? null),
+            'cert.issue_date'           => fmt_date($cert['issue_date'] ?? date('Y-m-d')),   // draft: today (inspector can change it)
             'cert.inspection_date'      => fmt_date($cert['inspection_date'] ?? null),
             'cert.next_inspection_date' => fmt_date($cert['next_inspection_date'] ?? null),
+            'checklist.no'              => Numbering::checklist($sj),
             'equipment.description'     => $sj['eq_description'],
             'equipment.equipment_no'    => $sj['equipment_no'],
             'equipment.serial_no'       => $sj['eq_serial_no'],
@@ -115,10 +116,21 @@ final class CertificateService
         if ($src !== '') {
             // Development: bound fields can be overridden by the inspector (stored under the field key)
             $ov = trim((string) ($data[$f['key']] ?? ''));
+            if ($ov !== '' && self::isDateField($f) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $ov)) $ov = fmt_date($ov);
             return $ov !== '' ? $ov : (string) ($map[$src] ?? '');
         }
         $v = (string) ($data[$f['key']] ?? '');
-        return ($f['type'] ?? '') === 'date' ? fmt_date($v) : $v;
+        if ($v === '' && ($f['key'] ?? '') === 'checklist_no') return Numbering::checklist($sj);   // default: this sub-job's checklist number
+        if (self::isDateField($f) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) return fmt_date($v);
+        return $v;
+    }
+
+    /** Fields that are dates get a date picker: typed 'date', bound to a certificate date, or labelled "... Date ...". */
+    public static function isDateField(array $f): bool
+    {
+        return ($f['type'] ?? '') === 'date'
+            || in_array($f['source'] ?? '', ['cert.issue_date', 'cert.inspection_date', 'cert.next_inspection_date'], true)
+            || (($f['type'] ?? 'text') === 'text' && preg_match('/\bdate\b/i', (string) ($f['label'] ?? '')) === 1);
     }
 
     public const SOURCES = [
@@ -129,9 +141,10 @@ final class CertificateService
         'type.procedure_ref'        => 'Inspection type · procedure',
         'type.standard_ref'         => 'Inspection type · standard',
         'cert.certificate_no'       => 'Certificate No.',
-        'cert.issue_date'           => 'Certificate date (on QC issue)',
+        'cert.issue_date'           => 'Certificate date (default today, editable)',
         'cert.inspection_date'      => 'Inspection date',
         'cert.next_inspection_date' => 'Next inspection date',
+        'checklist.no'              => 'Checklist No.',
         'equipment.description'     => 'Equipment description',
         'equipment.equipment_no'    => 'Equipment ID / S No.',
         'equipment.serial_no'       => 'Equipment serial no.',

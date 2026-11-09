@@ -255,6 +255,7 @@ final class InspectionService
                 if (!empty($f['source'])) {                          // bound field: editable override of the system value
                     if (array_key_exists($f['key'], $in['fields'] ?? [])) {
                         $v = mb_substr(trim((string) $in['fields'][$f['key']]), 0, 190);
+                        if (CertificateService::isDateField($f) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) $v = fmt_date($v);
                         $rest = $data; unset($rest[$f['key']]);
                         $auto = CertificateService::fieldValue($f, $sj, $cert, $rest);
                         if ($v === '' || $v === $auto) unset($data[$f['key']]); else $data[$f['key']] = $v;
@@ -263,7 +264,7 @@ final class InspectionService
                 }
                 if (array_key_exists($f['key'], $in['fields'] ?? [])) {
                     $v = mb_substr(trim((string) $in['fields'][$f['key']]), 0, ($f['type'] ?? '') === 'textarea' ? 1500 : 190);
-                    if (($f['type'] ?? '') === 'select' && $v !== '' && !in_array($v, $f['options'] ?? [], true)) continue;
+                    if (($f['type'] ?? '') === 'select' && ($f['key'] ?? '') !== 'exam_type' && $v !== '' && !in_array($v, $f['options'] ?? [], true)) continue;
                     $data[$f['key']] = $v;
                 }
             }

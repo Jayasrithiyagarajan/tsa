@@ -57,7 +57,7 @@ $row = function ($i, $r) { ?>
           <div class="field col-6"><label>Title row height</label><input class="input" name="layout[title_h]" value="<?= e($lo('title_h')) ?>"></div>
           <div class="field col-6"><label>Page bottom limit</label><input class="input" name="layout[bottom]" value="<?= e($lo('bottom')) ?>"></div>
           <div class="field col-12"><label>Identification rows</label><select class="select" name="layout[header]">
-            <?php foreach (['cert_serial' => 'Certificate No. | Serial No. (CL 01–05)', 'cert_serial_std' => 'Certificate / Serial + Ref. Standard block (CL 07–09)', 'elevator' => 'S.N. / Job No. · Location / Date · Ref. Standard (CL 06)'] as $k => $lbl): ?>
+            <?php foreach (['cert_serial' => 'Certificate No. | Serial No. (CL 01–05)', 'cert_serial_std' => 'Certificate / Serial + Ref. Standard block (CL 07–09)', 'elevator' => 'S.N. / Job No. · Location / Date · Ref. Standard (CL 06)', 'tank' => 'Tank S/N · Location · Certificate No · Date, Yes/No/N/A, no remarks (Tanker checklist)'] as $k => $lbl): ?>
               <option value="<?= $k ?>"<?= selected($k, $L['header']) ?>><?= e($lbl) ?></option><?php endforeach; ?></select></div>
           <div class="field col-6"><label>Identification row height</label><input class="input" name="layout[hdr_row_h]" value="<?= e($lo('hdr_row_h')) ?>"></div>
           <div class="field col-6"><label>Ref. Standard label</label><input class="input" name="layout[std_label]" value="<?= e($lo('std_label')) ?>"></div>

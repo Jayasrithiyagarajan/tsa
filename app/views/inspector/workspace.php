@@ -207,13 +207,22 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
               <?php endif; ?>
               <div class="field <?= ($f['type'] ?? '') === 'textarea' ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && !$f['bound'] ? ' <span class="req">*</span>' : '' ?></label>
                 <?php if ($f['bound']): ?>
-                  <input class="input" type="text" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['value']) ?>" placeholder="<?= e($f['source'] === 'cert.issue_date' ? 'Set when QC issues' : 'From job record') ?>" title="Pre-filled from the job record — you can edit it"<?= $dis ?>>
+                  <?php if (!empty($f['is_date'])): ?>
+                  <input class="input" type="date" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['iso']) ?>" title="<?= $f['source'] === 'cert.issue_date' ? 'Defaults to today — pick another date if needed' : 'Pre-filled from the job record — you can edit it' ?>"<?= $dis ?>>
+                  <?php else: ?>
+                  <input class="input" type="text" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['value']) ?>" placeholder="From job record" title="Pre-filled from the job record — you can edit it"<?= $dis ?>>
+                  <?php endif; ?>
                 <?php elseif (($f['type'] ?? 'text') === 'select'): ?>
                   <select class="select" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><option value="">Select…</option><?php foreach ($f['options'] ?? [] as $o): ?><option<?= selected($o, $f['value']) ?>><?= e($o) ?></option><?php endforeach; ?></select>
                 <?php elseif (($f['type'] ?? 'text') === 'textarea'): ?>
                   <textarea class="input" rows="6" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><?= e($f['value']) ?></textarea>
                 <?php else: ?>
-                  <input class="input" type="<?= ($f['type'] ?? '') === 'date' ? 'date' : (($f['type'] ?? '') === 'number' ? 'number' : 'text') ?>" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['value']) ?>"<?= $dis ?>>
+                  <?php if (!empty($f['is_date'])): ?>
+                  <input class="input" type="date" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['iso']) ?>"<?= $dis ?>>
+                  <?php else: ?>
+                  <input class="input" type="<?= ($f['type'] ?? '') === 'number' ? 'number' : 'text' ?>" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['value']) ?>"<?= !empty($f['suggest']) ? ' list="dl-' . e($f['key']) . '" autocomplete="off"' : '' ?><?= $dis ?>>
+                  <?php if (!empty($f['suggest'])): ?><datalist id="dl-<?= e($f['key']) ?>"><?php foreach ($f['suggest'] as $o): ?><option value="<?= e($o) ?>"><?php endforeach; ?></datalist><?php endif; ?>
+                  <?php endif; ?>
                 <?php endif; ?>
               </div>
             <?php endforeach; ?>

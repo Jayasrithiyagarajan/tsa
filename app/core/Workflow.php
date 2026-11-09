@@ -134,6 +134,14 @@ final class Numbering
      * Certificate number pattern from settings, e.g. "{YYYY}-{CLIENT}-{JOB}-{SEQ}" → 2026-22108-0012-001
      * Deterministic per sub-job so the number shown on the checklist never changes.
      */
+    /** Checklist number: the certificate number with the CL marker, e.g. 2026-22108-0012-CL-001 (same for the whole sub-job). */
+    public static function checklist(array $subJob): string
+    {
+        if (empty($subJob['job_no'])) return '';
+        preg_match('/(\d+)$/', $subJob['job_no'], $m);
+        return (substr($subJob['job_no'], 4, 4) ?: date('Y')) . '-' . ($subJob['client_code'] ?? '') . '-' . ($m[1] ?? ($subJob['job_id'] ?? '')) . '-CL-' . str_pad((string) ($subJob['seq'] ?? 1), 3, '0', STR_PAD_LEFT);
+    }
+
     public static function certificate(array $subJob): string
     {
         $pattern = setting('certificate_pattern', '{YYYY}-{CLIENT}-{JOB}-{SEQ}');

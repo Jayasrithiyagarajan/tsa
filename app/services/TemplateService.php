@@ -15,7 +15,7 @@ final class TemplateService
         'head_h' => 15.5,   // DESCRIPTION + first-section header rows together
         'title_h' => 10.4,  // title band
         'bottom' => 277.6,  // lowest point a row may reach before breaking to the next page
-        'header' => 'cert_serial',  // cert_serial | cert_serial_std (+ Ref. Standard block) | elevator (S.N./Job No./Location/Date/Ref. Standard)
+        'header' => 'cert_serial',  // cert_serial | cert_serial_std (+ Ref. Standard block) | elevator (S.N./Job No./Location/Date/Ref. Standard) | tank (Tank S/N, Location, Certificate No, Date + Yes/No/N/A, no remarks column)
         'hdr_row_h' => 0,           // height of the identification rows under the title (0 = row_h)
         'std_label' => 'Ref. Standard', 'std_text' => '',
         'rem_label' => 'REMARKS',
@@ -73,7 +73,7 @@ final class TemplateService
             'title_font' => $num('title_font', 9, 18), 'desc_label' => mb_substr(trim((string) ($in['desc_label'] ?? $d['desc_label'])) ?: $d['desc_label'], 0, 40),
             'top' => $num('top', 20, 50), 'top_next' => $num('top_next', 20, 50), 'sig_gap' => $num('sig_gap', 0, 30),
             'head_h' => $num('head_h', 8, 30), 'line' => $num('line', 1, 2), 'title_h' => $num('title_h', 6, 20), 'bottom' => $num('bottom', 240, 278),
-            'header' => in_array($in['header'] ?? '', ['cert_serial', 'cert_serial_std', 'elevator'], true) ? $in['header'] : 'cert_serial',
+            'header' => in_array($in['header'] ?? '', ['cert_serial', 'cert_serial_std', 'elevator', 'tank'], true) ? $in['header'] : 'cert_serial',
             'hdr_row_h' => max(0, min(20, (float) ($in['hdr_row_h'] ?? 0))),
             'std_label' => mb_substr(trim((string) ($in['std_label'] ?? $d['std_label'])) ?: $d['std_label'], 0, 40),
             'std_text' => mb_substr(trim((string) ($in['std_text'] ?? '')), 0, 300),

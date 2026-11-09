@@ -11,9 +11,13 @@ if ($L['kind'] === 'report') {                  // CL 10-11: cover page + Yes/No
     return;
 }
 [$cLabel, $cValue, $cPass, $cFail, $cNa, $cRem] = $L['cols'];
+$tank = $L['header'] === 'tank';             // Tanker checklist: Yes / No / N/A, no remarks column
+$nc = $tank ? 5 : 6;
+if ($tank) { $cRem = 0; $L['width'] = array_sum(array_slice($L['cols'], 0, 5)); }
+$resLabels = $tank ? ['Yes', 'No', 'N/A'] : ['PASS', 'FAIL', 'N/A'];
 $box = fn ($on) => $on ? '&#9746;' : '&#9744;';
 // Dompdf sizes tables from the first row, so every table starts with an invisible sizer row
-$sizer = doc_sizer($L['cols']);
+$sizer = doc_sizer(array_slice($L['cols'], 0, $nc));
 $pt = 0.3528;                                   // mm per point
 $rowCss = 'height:' . round($L['row_h'] - 0.35, 2) . 'mm';
 $cellFont = 'font-size:' . $L['font'] . 'pt;line-height:' . round($L['font'] * 1.08 * $pt, 2) . 'mm';
@@ -52,16 +56,17 @@ foreach ($sections as $name => $items) {
         $text = $style === 'blank' ? '' : e(TemplateService::sectionLabel($name));
         $bandCss = $rowCss . ';' . $cellFont . ($L['band_align'] === 'center' ? ';text-align:center' : '');
         $rows[] = [$style === 'split'
-            ? '<tr class="sec"><td colspan="2" style="' . $bandCss . '">' . $text . '</td><td></td><td></td><td></td><td></td></tr>'
-            : '<tr class="sec"><td colspan="6" style="' . $bandCss . '">' . $text . '</td></tr>', $L['row_h']];
+            ? '<tr class="sec"><td colspan="2" style="' . $bandCss . '">' . $text . '</td><td></td><td></td><td></td>' . ($tank ? '' : '<td></td>') . '</tr>'
+            : '<tr class="sec"><td colspan="' . $nc . '" style="' . $bandCss . '">' . $text . '</td></tr>', $L['row_h']];
     }
     foreach ($items as $it) {
-        $h = max($estimate($it['label'], $cLabel + $cValue, $L['font'], false), $estimate((string) $it['remarks'], $cRem, 9, false));
+        $h = $tank ? $estimate($it['label'], $cLabel + $cValue, $L['font'], false)
+            : max($estimate($it['label'], $cLabel + $cValue, $L['font'], false), $estimate((string) $it['remarks'], $cRem, 9, false));
         $rows[] = ['<tr><td colspan="2" style="' . $rowCss . ';' . $cellFont . ';padding-left:1.9mm;padding-right:2.4mm' . ';font-weight:normal' . '"><div style="line-height:' . $labelLh . '">' . nl2br(e($it['label'])) . '</div></td>'
             . '<td class="box">' . $box($it['result'] === 'pass') . '</td>'
             . '<td class="box">' . $box($it['result'] === 'fail') . '</td>'
             . '<td class="box">' . $box($it['result'] === 'na') . '</td>'
-            . '<td class="rem">' . e($it['remarks']) . '</td></tr>', $h];
+            . ($tank ? '' : '<td class="rem">' . e($it['remarks']) . '</td>') . '</tr>', $h];
     }
 }
 
@@ -84,17 +89,27 @@ switch ($L['header']) {
             . '<tr><td style="' . $hdrCss . '">' . e($L['std_label']) . '</td><td colspan="5" class="c" style="font-weight:normal">' . nl2br(e($L['std_text'])) . '</td></tr>';
         $hdrRows = 3;
         break;
+    case 'tank':                     // TANK S/N · Location · Certificate No · Inspection Date (Tanker checklist)
+        $vc = 'text-align:center;font-weight:normal;' . $hdrCss;
+        $ident = '<tr><td class="c" style="' . $hdrCss . '">TANK S/N</td><td class="c">Location</td><td class="c">Certificate No</td><td colspan="2" class="c">Inspection Date</td></tr>'
+            . '<tr><td style="' . $vc . '">' . e($m['checklist']['serial_no'] ?? '') . '</td><td style="' . $vc . '">' . e($m['sj']['location'] ?? '') . '</td>'
+            . '<td style="' . $vc . ';font-size:8pt">' . e($m['certificate_no']) . '</td><td colspan="2" style="' . $vc . '">' . e(fmt_date($m['checklist']['inspection_date'])) . '</td></tr>';
+        $hdrRows = 2;
+        break;
     default:                         // Certificate No. / Serial No. (CL 01-05)
         $ident = '<tr><td class="c" style="' . $rowCss . ';' . $cellFont . '">Certificate No.</td>' . $val($m['certificate_no'])
             . '<td colspan="3" class="c">Serial No.</td>' . $val($m['checklist']['serial_no']) . '</tr>';
 }
 $headH = $L['title_h'] + ($L['header'] === 'cert_serial' ? $L['row_h'] : $hdrRows * $L['hdr_row_h']) + $L['head_h'];
 $headRow = 'height:' . round($L['head_h'] / 2 - 0.3, 2) . 'mm';
-$head = '<tr class="title shade"><td colspan="6" style="font-size:' . $L['title_font'] . 'pt;height:' . round($L['title_h'] - 0.35, 2) . 'mm">' . e($tpl['title']) . '</td></tr>'
+$head = '<tr class="title shade"><td colspan="' . $nc . '" style="font-size:' . $L['title_font'] . 'pt;height:' . round($L['title_h'] - 0.35, 2) . 'mm">' . e($tpl['title']) . '</td></tr>'
     . $ident
-    . '<tr class="head shade"><td colspan="2" class="c" style="border-bottom:0;' . $headRow . '">' . e($L['desc_label']) . '</td>'
-    . '<td rowspan="2" class="c">PASS</td><td rowspan="2" class="c">FAIL</td><td rowspan="2" class="c">N/A</td><td rowspan="2" class="c">' . e($L['rem_label']) . '</td></tr>'
-    . '<tr class="head shade"><td colspan="2" style="border-top:0;' . $headRow . '">' . e(TemplateService::sectionLabel($firstSection)) . '</td></tr>';
+    . ($tank
+        ? '<tr class="head shade"><td colspan="2" rowspan="2" class="c">CHECKS / REQUIREMENTS</td><td colspan="3" class="c" style="' . $headRow . '">COMPLIANCE</td></tr>'
+          . '<tr class="head shade"><td class="c" style="' . $headRow . '">' . $resLabels[0] . '</td><td class="c">' . $resLabels[1] . '</td><td class="c">' . $resLabels[2] . '</td></tr>'
+        : '<tr class="head shade"><td colspan="2" class="c" style="border-bottom:0;' . $headRow . '">' . e($L['desc_label']) . '</td>'
+          . '<td rowspan="2" class="c">PASS</td><td rowspan="2" class="c">FAIL</td><td rowspan="2" class="c">N/A</td><td rowspan="2" class="c">' . e($L['rem_label']) . '</td></tr>'
+          . '<tr class="head shade"><td colspan="2" style="border-top:0;' . $headRow . '">' . e(TemplateService::sectionLabel($firstSection)) . '</td></tr>');
 
 $insp = $m['inspector'];
 $third = $L['width'] / 3;
