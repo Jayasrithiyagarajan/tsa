@@ -192,6 +192,24 @@ foreach ($rename as $rc => [$oldName, $newName]) {
     if (DB::update('inspection_types', ['name' => $newName], 'code = ? AND name = ?', [$rc, $oldName]) > 0) echo "✓ $rc renamed to $newName\n";
 }
 
+// Retired checklists: removed outright when never used, otherwise hidden (status inactive) so past records stay intact
+foreach (['CRHC'] as $retired) {
+    $rt = DB::one('SELECT id, status FROM inspection_types WHERE code = ?', [$retired]);
+    if (!$rt) continue;
+    $tid = (int) $rt['id'];
+    if ((int) DB::value('SELECT COUNT(*) FROM sub_jobs WHERE inspection_type_id = ?', [$tid]) === 0) {
+        DB::run('DELETE i FROM checklist_template_items i JOIN checklist_templates t ON t.id = i.template_id WHERE t.inspection_type_id = ?', [$tid]);
+        DB::run('DELETE FROM checklist_templates WHERE inspection_type_id = ?', [$tid]);
+        DB::run('DELETE FROM certificate_templates WHERE inspection_type_id = ?', [$tid]);
+        DB::run('DELETE FROM inspection_types WHERE id = ?', [$tid]);
+        echo "✓ $retired removed\n";
+    } elseif ($rt['status'] !== 'inactive') {
+        DB::update('checklist_templates', ['is_active' => 0], 'inspection_type_id = ?', [$tid]);
+        DB::update('inspection_types', ['status' => 'inactive'], 'id = ?', [$tid]);
+        echo "✓ $retired hidden (used by existing sub-jobs)\n";
+    }
+}
+
 foreach (require __DIR__ . '/seed_templates.php' as $def) {
     $code = $def['type']['code'];
     $type = DB::one('SELECT * FROM inspection_types WHERE code = ?', [$code]);
