@@ -11,7 +11,7 @@ final class AdminTemplateController extends Controller
               (SELECT id FROM certificate_templates c WHERE c.inspection_type_id = t.id AND c.is_active = 1 ORDER BY version DESC LIMIT 1) ct_id,
               (SELECT CONCAT(title, ' · v', version) FROM certificate_templates c WHERE c.inspection_type_id = t.id AND c.is_active = 1 ORDER BY version DESC LIMIT 1) ct_label,
               (SELECT COUNT(*) FROM sub_jobs s WHERE s.inspection_type_id = t.id) used
-            FROM inspection_types t ORDER BY t.category, t.name");
+            FROM inspection_types t ORDER BY t.name");
         $this->view('admin/templates/index', ['types' => $types, 'title' => 'Templates', 'crumbs' => ['Templates' => null]]);
     }
 

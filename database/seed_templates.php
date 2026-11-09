@@ -11,7 +11,7 @@ $standardNotes = implode("\n", [
 return [
     [
         'type' => [
-            'code' => 'BOOM', 'name' => 'Boom Truck Inspection', 'category' => 'Lifting Equipment',
+            'code' => 'BOOM', 'name' => 'Boom Truck', 'category' => 'Lifting Equipment',
             'procedure_ref' => 'TUV.LE.701.01', 'standard_ref' => 'ASME B30.5', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 1, 'requires_sticker' => 1,
         ],
@@ -104,7 +104,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'FORK', 'name' => 'Forklift Inspection', 'category' => 'Lifting Equipment',
+            'code' => 'FORK', 'name' => 'Forklift', 'category' => 'Lifting Equipment',
             'procedure_ref' => 'TUV.LE.702.01', 'standard_ref' => 'ASME B56.1', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 1, 'requires_sticker' => 1,
         ],
@@ -189,7 +189,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'GEN', 'name' => 'Generator Inspection', 'category' => 'Electrical Equipment',
+            'code' => 'GEN', 'name' => 'Generator', 'category' => 'Electrical Equipment',
             'procedure_ref' => 'TUV.EE.705.01', 'standard_ref' => 'NFPA 110', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 1, 'requires_sticker' => 1,
         ],
@@ -239,7 +239,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'MCR', 'name' => 'Mobile Crane Inspection', 'category' => 'Lifting Equipment',
+            'code' => 'MCR', 'name' => 'Mobile Crane', 'category' => 'Lifting Equipment',
             'procedure_ref' => 'TUV.LE.703.01', 'standard_ref' => 'ASME B30.5', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 1, 'requires_sticker' => 1,
         ],
@@ -387,7 +387,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'TCR', 'name' => 'Tower Crane Inspection', 'category' => 'Lifting Equipment',
+            'code' => 'TCR', 'name' => 'Tower Crane', 'category' => 'Lifting Equipment',
             'procedure_ref' => 'TUV.LE.704.01', 'standard_ref' => 'ASME B30.3', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 1, 'requires_sticker' => 1,
         ],
@@ -543,7 +543,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'ELEV', 'name' => 'Elevator Examination', 'category' => 'Lifts & Elevators',
+            'code' => 'ELEV', 'name' => 'Elevator', 'category' => 'Lifts & Elevators',
             'procedure_ref' => 'TUV.EL.706.01', 'standard_ref' => 'BS EN 81-20:2020', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 1, 'requires_sticker' => 1,
         ],
@@ -676,7 +676,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'DRIL', 'name' => 'Drilling Rig Machine Inspection', 'category' => 'Heavy Equipment',
+            'code' => 'DRIL', 'name' => 'Drilling Machine Rig', 'category' => 'Heavy Equipment',
             'procedure_ref' => 'TUV.HE.707.01', 'standard_ref' => 'SASO ISO 21467 / BS ISO 20474-1:2017', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 1, 'requires_sticker' => 1,
         ],
@@ -753,7 +753,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'TELE', 'name' => 'Telehandler Inspection', 'category' => 'Lifting Equipment',
+            'code' => 'TELE', 'name' => 'Telehandler', 'category' => 'Lifting Equipment',
             'procedure_ref' => 'TUV.LE.708.01', 'standard_ref' => 'ASME B56.6', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 1, 'requires_sticker' => 1,
         ],
@@ -848,7 +848,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'MOTO', 'name' => 'Motorcycle Inspection', 'category' => 'Vehicles',
+            'code' => 'MOTO', 'name' => 'Motorcycle', 'category' => 'Vehicles',
             'procedure_ref' => 'TUV.VH.709.01', 'standard_ref' => 'SASO GSO 1798 / EN 15997', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 1, 'requires_sticker' => 1,
         ],
@@ -956,7 +956,7 @@ return [
     [
         'type' => [
             'code' => 'TRLR',
-            'name' => 'Trailer & Semi-Trailer Inspection',
+            'name' => 'Trailer & Semi-Trailer',
             'category' => 'Vehicles',
             'procedure_ref' => 'TUV.VH.710.01',
             'standard_ref' => 'SASO 2910:2022',
@@ -972,7 +972,7 @@ return [
     [
         'type' => [
             'code' => 'PTNK',
-            'name' => 'Petroleum Products Transportation Tank Inspection',
+            'name' => 'Petroleum Products Transportation Tanks',
             'category' => 'Vehicles',
             'procedure_ref' => 'TUV.VH.711.01',
             'standard_ref' => 'SASO 1285 / GSO 972',
@@ -1134,7 +1134,7 @@ return [
     [
         'type' => [
             'code' => 'AIRC',
-            'name' => 'Air Compressor Inspection',
+            'name' => 'Air Compressor',
             'category' => 'Pressure Equipment',
             'procedure_ref' => 'TUV.PE.712.01',
             'standard_ref' => 'ASME B19.1',
@@ -1211,7 +1211,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'CRWL', 'name' => 'Crawler Crane Inspection', 'category' => 'Lifting Equipment',
+            'code' => 'CRWL', 'name' => 'Crawler Crane', 'category' => 'Lifting Equipment',
             'procedure_ref' => 'TUV.LE.713.01', 'standard_ref' => 'SASO ISO 20474-2 / ASME B30.5:2021', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 0, 'requires_sticker' => 0,
         ],
@@ -1284,7 +1284,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'SLTR', 'name' => 'Sulphur Trailer Inspection', 'category' => 'Vehicles',
+            'code' => 'SLTR', 'name' => 'Sulphur Trailers Equipment', 'category' => 'Vehicles',
             'procedure_ref' => 'TUV.VH.714.01', 'standard_ref' => '', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 0, 'requires_sticker' => 0,
         ],
@@ -1367,7 +1367,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'ROLL', 'name' => 'Roller Compactor Inspection', 'category' => 'Heavy Equipment',
+            'code' => 'ROLL', 'name' => 'Roller Compactor', 'category' => 'Heavy Equipment',
             'procedure_ref' => 'TUV.HE.715.01', 'standard_ref' => 'BS ISO 20474-13-2017 / SASO ISO 20474-13', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 0, 'requires_sticker' => 0,
         ],
@@ -1419,7 +1419,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'WLDR', 'name' => 'Wheel Loader Inspection', 'category' => 'Heavy Equipment',
+            'code' => 'WLDR', 'name' => 'Wheel Loader', 'category' => 'Heavy Equipment',
             'procedure_ref' => 'TUV.HE.716.01', 'standard_ref' => 'BS ISO 20474-3-2017 / SASO ISO 20474-3', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 0, 'requires_sticker' => 0,
         ],
@@ -1471,7 +1471,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'SKID', 'name' => 'Skid Steer Loader Inspection', 'category' => 'Heavy Equipment',
+            'code' => 'SKID', 'name' => 'Skid Steer Loader', 'category' => 'Heavy Equipment',
             'procedure_ref' => 'TUV.HE.717.01', 'standard_ref' => 'BS ISO 20474-3-2017 / SASO ISO 20474-3', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 0, 'requires_sticker' => 0,
         ],
@@ -1524,7 +1524,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'VLD', 'name' => 'Vacuum Lifting Devices Inspection', 'category' => 'Lifting Equipment',
+            'code' => 'VLD', 'name' => 'Vacuum Lifting Devices', 'category' => 'Lifting Equipment',
             'procedure_ref' => 'TUV.LE.718.01', 'standard_ref' => 'SASO - ASME B30.20:2022', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 0, 'requires_sticker' => 0,
         ],
@@ -1564,7 +1564,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'EXCV', 'name' => 'Excavator Inspection', 'category' => 'Heavy Equipment',
+            'code' => 'EXCV', 'name' => 'Excavator', 'category' => 'Heavy Equipment',
             'procedure_ref' => 'TUV.HE.719.01', 'standard_ref' => '', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 0, 'requires_sticker' => 0,
         ],
@@ -1611,7 +1611,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'JIBC', 'name' => 'Jib Crane Inspection', 'category' => 'Lifting Equipment',
+            'code' => 'JIBC', 'name' => 'Jib Crane', 'category' => 'Lifting Equipment',
             'procedure_ref' => 'TUV.LE.720.01', 'standard_ref' => '', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 0, 'requires_sticker' => 0,
         ],
@@ -1665,7 +1665,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'BKHO', 'name' => 'Backhoe Loader Inspection', 'category' => 'Heavy Equipment',
+            'code' => 'BKHO', 'name' => 'Backhoe Loader', 'category' => 'Heavy Equipment',
             'procedure_ref' => 'TUV.HE.721.01', 'standard_ref' => 'BS ISO 20474-4-2017 / SASO ISO 20474-4', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 0, 'requires_sticker' => 0,
         ],
@@ -1707,7 +1707,7 @@ return [
     ],
     [
         'type' => [
-            'code' => 'BLDZ', 'name' => 'Bulldozer Inspection', 'category' => 'Heavy Equipment',
+            'code' => 'BLDZ', 'name' => 'Bulldozer', 'category' => 'Heavy Equipment',
             'procedure_ref' => 'TUV.HE.722.01', 'standard_ref' => 'BS ISO 20474-2-2017 / SASO ISO 20474-2', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 0, 'requires_sticker' => 0,
         ],
@@ -2500,7 +2500,7 @@ Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States C
     ],
     [
         'type' => [
-            'code' => 'TNKR', 'name' => 'Tanker Inspection', 'category' => 'Vehicles',
+            'code' => 'TNKR', 'name' => 'Petroleum Tanks', 'category' => 'Vehicles',
             'procedure_ref' => 'N/A', 'standard_ref' => 'N/A', 'validity_months' => 12,
             'requires_checklist' => 1, 'requires_certificate' => 0, 'requires_sticker' => 0,
         ],

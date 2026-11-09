@@ -162,6 +162,36 @@ if (!DB::one("SHOW COLUMNS FROM jobs LIKE 'timesheet_path'")) {
 
 $sig = fn (array $sections) => md5(json_encode(array_map(fn ($items) => array_values($items), $sections)));
 
+// Checklist names shown in lists and the Add sub-job dropdown (renamed only while the stored name is still the old default)
+$rename = [
+    'BOOM' => ['Boom Truck Inspection', 'Boom Truck'],
+    'FORK' => ['Forklift Inspection', 'Forklift'],
+    'GEN' => ['Generator Inspection', 'Generator'],
+    'MCR' => ['Mobile Crane Inspection', 'Mobile Crane'],
+    'TCR' => ['Tower Crane Inspection', 'Tower Crane'],
+    'ELEV' => ['Elevator Examination', 'Elevator'],
+    'DRIL' => ['Drilling Rig Machine Inspection', 'Drilling Machine Rig'],
+    'TELE' => ['Telehandler Inspection', 'Telehandler'],
+    'MOTO' => ['Motorcycle Inspection', 'Motorcycle'],
+    'TRLR' => ['Trailer & Semi-Trailer Inspection', 'Trailer & Semi-Trailer'],
+    'PTNK' => ['Petroleum Products Transportation Tank Inspection', 'Petroleum Products Transportation Tanks'],
+    'TNKR' => ['Tanker Inspection', 'Petroleum Tanks'],
+    'AIRC' => ['Air Compressor Inspection', 'Air Compressor'],
+    'CRWL' => ['Crawler Crane Inspection', 'Crawler Crane'],
+    'SLTR' => ['Sulphur Trailer Inspection', 'Sulphur Trailers Equipment'],
+    'ROLL' => ['Roller Compactor Inspection', 'Roller Compactor'],
+    'WLDR' => ['Wheel Loader Inspection', 'Wheel Loader'],
+    'SKID' => ['Skid Steer Loader Inspection', 'Skid Steer Loader'],
+    'VLD' => ['Vacuum Lifting Devices Inspection', 'Vacuum Lifting Devices'],
+    'EXCV' => ['Excavator Inspection', 'Excavator'],
+    'JIBC' => ['Jib Crane Inspection', 'Jib Crane'],
+    'BKHO' => ['Backhoe Loader Inspection', 'Backhoe Loader'],
+    'BLDZ' => ['Bulldozer Inspection', 'Bulldozer'],
+];
+foreach ($rename as $rc => [$oldName, $newName]) {
+    if (DB::update('inspection_types', ['name' => $newName], 'code = ? AND name = ?', [$rc, $oldName]) > 0) echo "✓ $rc renamed to $newName\n";
+}
+
 foreach (require __DIR__ . '/seed_templates.php' as $def) {
     $code = $def['type']['code'];
     $type = DB::one('SELECT * FROM inspection_types WHERE code = ?', [$code]);
