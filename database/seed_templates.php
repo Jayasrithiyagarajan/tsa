@@ -17,7 +17,7 @@ return [
         ],
         // F-7.5.1-CL 01 · Rev. 02 · 09/Feb./23 — items exactly as printed on the form
         'checklist' => [
-            'code' => 'F-7.5.1-CL 01', 'title' => 'BOOM TRUCK INSPECITON CHECKLIST', 'doc_ref' => 'F-7.5.1-CL 01',
+            'code' => 'F-7.5.1-CL 01', 'title' => 'BOOM TRUCK INSPECTION CHECKLIST', 'doc_ref' => 'F-7.5.1-CL 01',
             'revision' => '02', 'revision_date' => '09/Feb./23',
             'sections' => [
                 'General Requirements' => [
@@ -110,7 +110,7 @@ return [
         ],
         // F-7.5.1-CL 02 · Rev. 02 · 09/Feb./23 — items and section bands exactly as printed on the form
         'checklist' => [
-            'code' => 'F-7.5.1-CL 02', 'title' => 'FORKLIFT INSPECITON CHECKLIST', 'doc_ref' => 'F-7.5.1-CL 02',
+            'code' => 'F-7.5.1-CL 02', 'title' => 'FORKLIFT INSPECTION CHECKLIST', 'doc_ref' => 'F-7.5.1-CL 02',
             'revision' => '02', 'revision_date' => '09/Feb./23',
             'layout' => ['left' => 15, 'cols' => [26.5, 68.5, 12, 12, 12, 50], 'row_h' => 7.9, 'font' => 10, 'title_font' => 13.5,
                          'desc_label' => 'DESCRIPTION', 'top' => 31.9, 'top_next' => 28.2, 'sig_gap' => 7.6],
@@ -1685,7 +1685,7 @@ return [
                     "Engine/Engine compartment:\n(a) Belts/Hoses\n(b) Cables/Wires\n(c) Debris",
                     "Battery/Batteries:\n(a) Terminals tight\n(b) Clean/Dry/Secure",
                     "Hydraulics:\n(a) Cylinders/Rods\n(b) Hoses/Lines/Fittings\n(c) Pins/Locks",
-                    "Fluids:)\n)a) Engine oil\n(b) Engine coolant\n(c) Hydraulic oil\n(d) Fuel/Battery Level Leaks",
+                    "Fluids:\n(a) Engine oil\n(b) Engine coolant\n(c) Hydraulic oil\n(d) Fuel/Battery Level Leaks",
                     "Chassis:\n(a) Cab/Glass/Doors\n(b) Emergency Exit\n(c) Entry/Exit steps\n(d) ROPS/FOPS\n(e) Fire Extinguisher/Suppression System",
                     "Digging Assembly:\n(a) Boom/Dipper/Bucket/Attachment\n(b) Articulated joints\n(c) Front bucket & cutting edge\n(d) Bucket/attachment link pins & arms",
                     'Unit starts and runs properly',
