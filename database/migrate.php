@@ -106,6 +106,17 @@ if (!DB::one("SHOW COLUMNS FROM sub_jobs LIKE 'kind'")) {
     DB::pdo()->exec("ALTER TABLE sub_jobs ADD kind ENUM('inspection','operator') NOT NULL DEFAULT 'inspection' AFTER seq");
     echo "✓ added sub_jobs.kind\n";
 }
+if (!DB::one("SHOW COLUMNS FROM sub_jobs LIKE 'cert_template_id'")) {
+    DB::pdo()->exec("ALTER TABLE sub_jobs ADD cert_template_id INT UNSIGNED NULL AFTER inspection_type_id");
+    echo "✓ added sub_jobs.cert_template_id\n";
+}
+if (!DB::one("SHOW COLUMNS FROM sub_jobs LIKE 'with_checklist'")) {
+    DB::pdo()->exec("ALTER TABLE sub_jobs ADD with_checklist TINYINT(1) NOT NULL DEFAULT 1 AFTER inspection_type_id, ADD with_sticker TINYINT(1) NOT NULL DEFAULT 1 AFTER with_checklist");
+    // keep existing sub-jobs behaving exactly as before: NDT = certificate only, no sticker; others follow the type's flags
+    DB::pdo()->exec("UPDATE sub_jobs sj JOIN inspection_types t ON t.id = sj.inspection_type_id
+        SET sj.with_checklist = IF(t.category = 'NDT', 0, 1), sj.with_sticker = IF(t.category = 'NDT', 0, t.requires_sticker)");
+    echo "✓ added sub_jobs.with_checklist / with_sticker (existing rows back-filled)\n";
+}
 if (!DB::one("SHOW COLUMNS FROM sub_jobs LIKE 'operator_data'")) {
     DB::pdo()->exec("ALTER TABLE sub_jobs ADD operator_data TEXT NULL AFTER kind");
     echo "✓ added sub_jobs.operator_data\n";
@@ -187,13 +198,16 @@ $rename = [
     'JIBC' => ['Jib Crane Inspection', 'Jib Crane'],
     'BKHO' => ['Backhoe Loader Inspection', 'Backhoe Loader'],
     'BLDZ' => ['Bulldozer Inspection', 'Bulldozer'],
+    'LVHT' => ['Lever Hoist', 'Lever Block Hoist'],
+    'SLNG' => ['Slings', 'Wire Rope'],
+    'ESCL' => ['Escalator Inspection', 'Escalator'],
 ];
 foreach ($rename as $rc => [$oldName, $newName]) {
     if (DB::update('inspection_types', ['name' => $newName], 'code = ? AND name = ?', [$rc, $oldName]) > 0) echo "✓ $rc renamed to $newName\n";
 }
 
 // Retired checklists: removed outright when never used, otherwise hidden (status inactive) so past records stay intact
-foreach (['CRHC'] as $retired) {
+foreach ([] as $retired) {
     $rt = DB::one('SELECT id, status FROM inspection_types WHERE code = ?', [$retired]);
     if (!$rt) continue;
     $tid = (int) $rt['id'];
@@ -210,6 +224,14 @@ foreach (['CRHC'] as $retired) {
     }
 }
 
+// category labels as on the checklist / certificate sheet
+foreach (['ESCL' => ['Lifts & Elevators', 'Escalator'], 'PTNK' => ['Vehicles', 'Tankers']] as $cc => [$oldCat, $newCat]) {
+    if (DB::update('inspection_types', ['category' => $newCat], 'code = ? AND category = ?', [$cc, $oldCat]) > 0) echo "✓ $cc category set to $newCat\n";
+}
+
+// Petroleum Tanks used the placeholder ref "CL 23", which is the Wire Rope Sling form - move it to CL 27
+if (DB::run("UPDATE checklist_templates c JOIN inspection_types t ON t.id = c.inspection_type_id SET c.code = 'F-7.5.1-CL 27', c.doc_ref = 'F-7.5.1-CL 27' WHERE t.code = 'TNKR' AND c.doc_ref = 'F-7.5.1-CL 23'")->rowCount() > 0) echo "✓ TNKR document ref moved to F-7.5.1-CL 27\n";
+
 foreach (require __DIR__ . '/seed_templates.php' as $def) {
     $code = $def['type']['code'];
     $type = DB::one('SELECT * FROM inspection_types WHERE code = ?', [$code]);
@@ -221,8 +243,8 @@ foreach (require __DIR__ . '/seed_templates.php' as $def) {
     }
 
     // Motorcycle (F-7.5.1-14) and Trailer (F-7.5.1-12) moved from the Checklists folder to the Certificates folder: the whole report is now a certificate template
-    if (in_array($code, ['MOTS', 'TRLR'], true) && !$def['checklist'] && $type && ((int) $type['requires_checklist'] === 1 || (int) $type['requires_certificate'] === 0)) {
-        DB::update('inspection_types', ['requires_checklist' => 0, 'requires_certificate' => 1], 'id = ?', [$typeId]);
+    if (in_array($code, ['MOTS', 'TRLR', 'CRHC'], true) && !$def['checklist'] && $type && ((int) $type['requires_checklist'] === 1 || (int) $type['requires_certificate'] === 0 || $type['status'] !== 'active')) {
+        DB::update('inspection_types', ['requires_checklist' => 0, 'requires_certificate' => 1, 'status' => 'active'], 'id = ?', [$typeId]);
         DB::update('checklist_templates', ['is_active' => 0], 'inspection_type_id = ?', [$typeId]);
         echo "✓ $code moved to certificate templates (checklist template deactivated)\n";
     }

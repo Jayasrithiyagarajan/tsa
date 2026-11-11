@@ -79,11 +79,11 @@ final class DocumentService
         $tpl = DB::one('SELECT * FROM certificate_templates WHERE id = ?', [$cert['template_id']]);
         $data = json_decode($cert['data'] ?? '{}', true) ?: [];
         $fields = [];
-        foreach (json_decode($tpl['fields'], true) ?: [] as $f) {
+        foreach (json_decode($tpl['fields'], true) ?: [] as $f) {  // (the extra Capacity / SWL entry feeds the sticker only, so printed layouts are untouched)
             $f['value'] = CertificateService::fieldValue($f, $sj, $cert, $data);
             $fields[] = $f;
         }
-        $photoLimit = ['ec' => 12, 'sc' => 30, 'ss' => 96, 'mo' => 7, 'tr' => 6][$tpl['layout'] ?? ''] ?? 4;
+        $photoLimit = ['ec' => 12, 'sc' => 30, 'ss' => 96, 'mo' => 7, 'tr' => 6, 'ch' => 6][$tpl['layout'] ?? ''] ?? 4;
         // photos tagged for this page, plus untagged ones (cert_seq NULL = every page); page-specific photos print first
         $photos = DB::all("SELECT * FROM attachments WHERE sub_job_id = ? AND on_certificate = 1 AND mime LIKE 'image/%' AND (cert_seq IS NULL OR cert_seq = ?) ORDER BY cert_seq IS NULL, id LIMIT $photoLimit", [$subJobId, $seq]);
         foreach ($photos as &$p) {
@@ -107,7 +107,7 @@ final class DocumentService
     public static function stickerModel(int $stickerId): ?array
     {
         $st = DB::one(
-            "SELECT s.*, c.certificate_no, c.result, c.inspection_date, c.next_inspection_date,
+            "SELECT s.*, c.certificate_no, c.result, c.inspection_date, c.next_inspection_date, c.data cert_data,
                     e.description eq_description, e.equipment_no, e.serial_no, e.capacity, t.name type_name,
                     cl.name client_name, u.name inspector_name, sj.sub_job_no
              FROM stickers s LEFT JOIN sub_jobs sj ON sj.id = s.sub_job_id LEFT JOIN certificates c ON c.sub_job_id = s.sub_job_id LEFT JOIN equipment e ON e.id = s.equipment_id
@@ -119,6 +119,16 @@ final class DocumentService
         // Blue = Accepted. Red = Failed: a red (rejected) sticker, or a certificate that did not pass outright.
         $st['passed'] = $st['color'] !== 'red' && !in_array($st['result'], ['rejected', 'repair'], true);
         $st['next_date'] = $st['next_inspection_date'] ?: $st['expiry_date'];
+        // capacity: what the inspector entered on the certificate / checklist wins; otherwise the equipment register
+        $cd = json_decode((string) ($st['cert_data'] ?? ''), true) ?: [];
+        $cap = '';
+        foreach (['swl', 'capacity', 'rated_capacity', 'rated_load'] as $k) { if (trim((string) ($cd[$k] ?? '')) !== '') { $cap = trim((string) $cd[$k]); break; } }
+        if ($cap === '' && trim((string) ($st['capacity'] ?? '')) === '' && !empty($st['sub_job_id'])) {
+            $cl = DB::one('SELECT data FROM checklists WHERE sub_job_id = ?', [$st['sub_job_id']]);
+            $ld = json_decode((string) ($cl['data'] ?? ''), true) ?: [];
+            foreach (['swl', 'capacity', 'rated_capacity', 'rated_load'] as $k) { if (trim((string) ($ld[$k] ?? '')) !== '') { $cap = trim((string) $ld[$k]); break; } }
+        }
+        if ($cap !== '') $st['capacity'] = $cap;
         return $st;
     }
 

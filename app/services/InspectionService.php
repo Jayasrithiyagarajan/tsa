@@ -251,7 +251,7 @@ final class InspectionService
             $tpl = $cert['template_id'] ? DB::one('SELECT * FROM certificate_templates WHERE id = ?', [$cert['template_id']]) : null;
 
             $data = json_decode($cert['data'] ?? '{}', true) ?: [];
-            foreach ($tpl ? (json_decode($tpl['fields'], true) ?: []) : [] as $f) {
+            foreach (CertificateService::templateFields($tpl ?: null) as $f) {
                 if (!empty($f['source'])) {                          // bound field: editable override of the system value
                     if (array_key_exists($f['key'], $in['fields'] ?? [])) {
                         $v = mb_substr(trim((string) $in['fields'][$f['key']]), 0, 190);
@@ -436,6 +436,7 @@ final class InspectionService
                 throw new DomainException("Sticker {$st['sticker_no']} is not allocated to you" . ($st['status'] === 'allocated' ? '' : ' (' . Workflow::label($st['status']) . ')') . '.');
             }
             Workflow::assert('sticker', $st['status'], 'closed');
+            if (in_array($sj['type_code'], ['DEFR', 'LDEF'], true) && $st['color'] !== 'red') throw new DomainException('A defect report uses a RED sticker.');
             $result = DB::value('SELECT result FROM certificates WHERE sub_job_id = ?', [$subJobId]);
             if ($msg = StickerService::colourMismatch($st['color'], $result)) throw new DomainException(ucfirst($msg));
             DB::update('stickers', [
@@ -473,8 +474,10 @@ final class InspectionService
                     $label = count($certs) > 1 ? 'Certificate page ' . ($idx + 1) . ': ' : 'Certificate: ';
                     $data  = json_decode($c['data'] ?? '{}', true) ?: [];
                     $missing = [];
-                    foreach (json_decode($tpl['fields'], true) ?: [] as $f) {
-                        if (empty($f['source']) && !empty($f['required']) && trim((string) ($data[$f['key']] ?? '')) === '') {
+                    foreach (CertificateService::templateFields($tpl) as $f) {
+                        if (CertificateService::isCapacityField($f)) {          // Capacity / SWL is always required (own entry, or the register value it is bound to)
+                            if (trim(CertificateService::fieldValue($f, $sj, $c, $data)) === '') $missing[] = $f['label'];
+                        } elseif (empty($f['source']) && !empty($f['required']) && trim((string) ($data[$f['key']] ?? '')) === '') {
                             $missing[] = $f['label'];
                         }
                     }

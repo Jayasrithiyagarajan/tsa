@@ -12,7 +12,7 @@ $src = [
     'site' => $sj['location'] ?? '', 'model' => $sj['eq_model'] ?? '', 'serial' => $m['checklist']['serial_no'] ?? '',
 ];
 $bound = array_diff_key($src, TemplateService::REPORT_DEFAULTS);
-$value = fn ($key) => (string) (array_key_exists($key, $bound) ? $bound[$key] : (($data[$key] ?? '') !== '' ? $data[$key] : ($src[$key] ?? '')));
+$value = fn ($key) => (string) (!empty($m['cert_mode']) && ($data[$key] ?? '') !== '' ? $data[$key] : (array_key_exists($key, $bound) ? $bound[$key] : (($data[$key] ?? '') !== '' ? $data[$key] : ($src[$key] ?? ''))));
 $hh = fn ($mm) => 'height:' . round($mm - 0.18, 2) . 'mm';
 $box = fn ($on) => $on ? '&#9746;' : '&#9744;';
 $W = [50.7, 54.0, 31.7, 15.9, 10.0, 28.8];            // union of the details grid (50.7 | 54 | 47.6 | 38.8) and the check grid (104.7 | 31.7 | 25.9 | 28.8)

@@ -125,6 +125,24 @@ final class CertificateService
         return $v;
     }
 
+    /** Template fields plus a "Capacity / SWL" entry on every certificate that does not already have one (feeds the sticker). */
+    public static function templateFields(?array $tpl): array
+    {
+        $fields = $tpl ? (json_decode((string) $tpl['fields'], true) ?: []) : [];
+        if (!$tpl) return $fields;
+        foreach ($fields as $f) {
+            if (in_array($f['key'] ?? '', ['swl', 'capacity'], true) || ($f['source'] ?? '') === 'equipment.capacity') return $fields;
+        }
+        $fields[] = ['key' => 'swl', 'label' => 'Capacity / SWL', 'type' => 'text', 'required' => true];
+        return $fields;
+    }
+
+    /** The Capacity / SWL entry (own field, or the template's capacity field bound to the equipment register). */
+    public static function isCapacityField(array $f): bool
+    {
+        return in_array($f['key'] ?? '', ['swl', 'capacity'], true) || ($f['source'] ?? '') === 'equipment.capacity';
+    }
+
     /** Fields that are dates get a date picker: typed 'date', bound to a certificate date, or labelled "... Date ...". */
     public static function isDateField(array $f): bool
     {

@@ -252,6 +252,9 @@ CREATE TABLE sub_jobs (
   sub_job_no         VARCHAR(40) NOT NULL UNIQUE,           -- JOB-2026-0001-01
   operator_data      TEXT NULL,                             -- operator assessment: training / certificate details (JSON)
   inspection_type_id INT UNSIGNED NOT NULL,
+  cert_template_id   INT UNSIGNED NULL,                     -- certificate type chosen for this sub-job
+  with_checklist     TINYINT(1) NOT NULL DEFAULT 1,         -- 1 = checklist + certificate, 0 = certificate only
+  with_sticker       TINYINT(1) NOT NULL DEFAULT 1,         -- 0 = no sticker for this sub-job
   equipment_id       INT UNSIGNED NULL,
   inspector_id       INT UNSIGNED NULL,
   scheduled_date     DATE NULL,

@@ -205,7 +205,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
               <?php if (!empty($f['section']) && $f['section'] !== $lastSec): $lastSec = $f['section']; $sp = explode('|', $f['section']); ?>
                 <div class="form-section mt-1"><?= icon('check', 'sm') ?> <?= e(($sp[1] ?? '') !== '' ? $sp[0] . '. ' . $sp[1] : 'Section ' . $sp[0]) ?></div>
               <?php endif; ?>
-              <div class="field <?= ($f['type'] ?? '') === 'textarea' ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && !$f['bound'] ? ' <span class="req">*</span>' : '' ?></label>
+              <div class="field <?= ($f['type'] ?? '') === 'textarea' ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && (!$f['bound'] || !empty($f['is_cap'])) ? ' <span class="req">*</span>' : '' ?></label>
                 <?php if ($f['bound']): ?>
                   <?php if (!empty($f['is_date'])): ?>
                   <input class="input" type="date" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['iso']) ?>" title="<?= $f['source'] === 'cert.issue_date' ? 'Defaults to today — pick another date if needed' : 'Pre-filled from the job record — you can edit it' ?>"<?= $dis ?>>

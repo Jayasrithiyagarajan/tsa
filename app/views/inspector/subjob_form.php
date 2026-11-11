@@ -4,6 +4,8 @@
  * @var array $types
  * @var array $equipment
  * @var array $certTemplates   all active certificate templates (flat list)
+ * @var array $stickerDefaults code => 0 no sticker / 2 red sticker (certificate-only types)
+ * @var array $certMap         inspection_type_id => certificate_template_id fixed by the checklist sheet
  */
 $old = fn ($k, $d = '') => old($k, $d);
 ?>
@@ -33,10 +35,18 @@ $old = fn ($k, $d = '') => old($k, $d);
         <div class="card-b" style="padding-bottom:0"><div class="field">
           <label>Inspection category <span class="req">*</span></label>
           <div role="radiogroup" style="display:flex;gap:22px;flex-wrap:wrap">
-            <label class="check"><input type="radio" name="ndt_mode" value="non_ndt" required<?= checked($old('ndt_mode') === 'non_ndt') ?>> Non-NDT</label>
-            <label class="check"><input type="radio" name="ndt_mode" value="ndt"<?= checked($old('ndt_mode') === 'ndt') ?>> NDT</label>
+            <label class="check"><input type="radio" name="ndt_mode" value="with_checklist" required<?= checked($old('ndt_mode') === 'with_checklist') ?>> With checklist, certificate</label>
+            <label class="check"><input type="radio" name="ndt_mode" value="cert_only"<?= checked($old('ndt_mode') === 'cert_only') ?>> Without checklist, but having certificate</label>
           </div>
-          <div class="help" id="ndt-help">Choose first. Non-NDT: checklist, certificate, sticker and QC review. NDT: certificate only - no checklist and no sticker.</div>
+          <div class="help" id="ndt-help">Choose first. With checklist: checklist, certificate and QC review. Without checklist: certificate only.</div>
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label>Sticker <span class="req">*</span></label>
+          <div role="radiogroup" style="display:flex;gap:22px;flex-wrap:wrap">
+            <label class="check"><input type="radio" name="with_sticker" value="1" required<?= checked($old('with_sticker') === '1') ?>> Yes</label>
+            <label class="check"><input type="radio" name="with_sticker" value="0"<?= checked($old('with_sticker') === '0') ?>> No</label>
+          </div>
+          <div class="help">Yes: a sticker must be linked before submitting. No: this sub-job has no sticker. <b id="sticker-help"></b></div>
         </div></div>
         <div class="card-b"><div class="form-grid">
           <div class="field col-6">
@@ -44,7 +54,7 @@ $old = fn ($k, $d = '') => old($k, $d);
             <select class="select" name="inspection_type_id" id="type-select" required>
               <option value="">Select…</option>
               <?php foreach ($types as $t): ?>
-                <option value="<?= $t['id'] ?>" data-group="<?= ($t['category'] ?? '') === 'NDT' ? 'ndt' : 'non_ndt' ?>"<?= selected($t['id'], $old('inspection_type_id')) ?>><?= e($t['name']) ?></option>
+                <option value="<?= $t['id'] ?>" data-group="<?= !empty($t['cert_only']) ? 'cert_only' : 'with_checklist' ?>" data-sticker="<?= (int) (($stickerDefaults ?? [])[$t['code']] ?? -1) ?>"<?= selected($t['id'], $old('inspection_type_id')) ?>><?= e($t['name']) ?></option>
               <?php endforeach; ?>
             </select>
           </div>
@@ -53,10 +63,10 @@ $old = fn ($k, $d = '') => old($k, $d);
             <select class="select" name="cert_template_id" id="cert-select" required>
               <option value="">Select…</option>
               <?php foreach ($certTemplates as $ct): ?>
-                <option value="<?= $ct['id'] ?>" data-type="<?= (int) $ct['inspection_type_id'] ?>" data-group="<?= ($ct['category'] ?? '') === 'NDT' ? 'ndt' : 'non_ndt' ?>"<?= selected($ct['id'], $old('cert_template_id')) ?>><?= e($ct['title']) ?><?= $ct['doc_ref'] ? ' · ' . e($ct['doc_ref']) : '' ?></option>
+                <option value="<?= $ct['id'] ?>" data-type="<?= (int) $ct['inspection_type_id'] ?>" data-group="<?= !empty($ct['cert_only']) ? 'cert_only' : 'with_checklist' ?>"<?= selected($ct['id'], $old('cert_template_id')) ?>><?= e($ct['title']) ?><?= $ct['doc_ref'] ? ' · ' . e($ct['doc_ref']) : '' ?></option>
               <?php endforeach; ?>
             </select>
-            <div class="help">Pre-selected from the checklist / inspection type; change it if a different certificate is needed.</div>
+            <div class="help">Set automatically from the checklist type (Special / Lifting / Elevator / Escalator certificate).</div>
           </div>
           <div class="field col-6">
             <label>Registered equipment</label>
@@ -147,10 +157,10 @@ $old = fn ($k, $d = '') => old($k, $d);
     const r = form.querySelector('input[name=ndt_mode]:checked'), g = r ? r.value : '';
     fill(t, T, g); fill(c, C, g);
     t.disabled = c.disabled = !g;
-    document.getElementById('type-label').firstChild.textContent = g === 'ndt' ? 'NDT method ' : 'Checklist / Inspection type ';
-    document.getElementById('ndt-help').textContent = g === 'ndt'
-      ? 'NDT: certificate only - there is no checklist and no sticker for this sub-job.'
-      : (g === 'non_ndt' ? 'Non-NDT: checklist, certificate, sticker and QC review as usual.' : 'Choose first. Non-NDT: checklist, certificate, sticker and QC review. NDT: certificate only - no checklist and no sticker.');
+    document.getElementById('type-label').firstChild.textContent = g === 'cert_only' ? 'Inspection type (certificate only) ' : 'Checklist / Inspection type ';
+    document.getElementById('ndt-help').textContent = g === 'cert_only'
+      ? 'Without checklist: certificate only - no checklist is filled for this sub-job.'
+      : (g === 'with_checklist' ? 'With checklist: checklist, certificate and QC review.' : 'Choose first. With checklist: checklist, certificate and QC review. Without checklist: certificate only.');
   };
   form.addEventListener('change', e => { if (e.target.name === 'ndt_mode') sync(); });
   sync();
@@ -159,7 +169,22 @@ $old = fn ($k, $d = '') => old($k, $d);
 (function () {
   const t = document.getElementById('type-select'), c = document.getElementById('cert-select');
   if (!t || !c) return;
+  const MAP = <?= json_encode((object) ($certMap ?? [])) ?>;
+  const form = document.getElementById('sj-form');
   t.addEventListener('change', function () {
+    const so = t.options[t.selectedIndex], sd = so ? so.dataset.sticker : '-1';
+    if (sd === '0' || sd === '1' || sd === '2') {   // sticker suggested by the sheet (still the inspector's choice)
+      const r = form.querySelector('input[name=with_sticker][value="' + (sd === '0' ? '0' : '1') + '"]'); if (r) r.checked = true;
+      const h = document.getElementById('sticker-help');
+      if (h) h.textContent = sd === '2' ? 'This certificate uses a RED sticker.' : (sd === '0' ? 'This certificate normally has no sticker.' : '');
+    }
+    const fixed = form.querySelector('input[name=ndt_mode]:checked')?.value === 'with_checklist' ? MAP[t.value] : null;
+    if (fixed) {   // certificate is fixed by the checklist type
+      c.value = String(fixed);
+      Array.from(c.options).forEach(o => { o.hidden = o.value !== '' && o.value !== String(fixed); });
+      return;
+    }
+    Array.from(c.options).forEach(o => { o.hidden = false; });
     const m = Array.from(c.options).find(o => o.dataset.type === t.value);
     if (m) c.value = m.value;
   });

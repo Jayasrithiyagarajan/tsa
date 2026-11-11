@@ -66,6 +66,44 @@ final class InspectorController extends Controller
         $this->view('inspector/job', compact('job', 'subs') + ['title' => $job['job_no'], 'crumbs' => ['Assigned Jobs' => 'inspector/jobs', $job['job_no'] => null]]);
     }
 
+    /** Checklist type code => type code whose certificate template is issued (per the checklist / certificate sheet). */
+    private const CERT_FOR_CHECKLIST = [
+        'AIRC' => 'SPEC', 'BKHO' => 'SPEC', 'BOOM' => 'SPEC', 'BLDZ' => 'SPEC', 'DRIL' => 'SPEC', 'EXCV' => 'SPEC', 'GEN' => 'SPEC',
+        'ROLL' => 'SPEC', 'SKID' => 'SPEC', 'WLDR' => 'SPEC', 'PTNK' => 'SPEC',
+        'CRWL' => 'LFTC', 'FORK' => 'LFTC', 'JIBC' => 'LFTC', 'MCR' => 'LFTC', 'TELE' => 'LFTC', 'TCR' => 'LFTC', 'VLD' => 'LFTC',
+        'ELEV' => 'ELEV', 'ESCL' => 'ESCL',
+        'SLNG' => 'LFTC', 'RGHW' => 'LFTC', 'OVHC' => 'LFTC', 'CHBK' => 'LFTC', 'GRDR' => 'SPEC',
+        'LVHT' => 'LFTC', 'TRNC' => 'SPEC', 'DUMP' => 'SPEC', 'WLDM' => 'SPEC', 'MCPM' => 'SPEC', 'CMXR' => 'SPEC',
+    ];
+
+    /** Certificate-only types (no checklist) => sticker default (0 = no sticker, 1 = sticker, 2 = RED sticker), per the sheet. */
+    public const CERT_ONLY = ['MPI' => 0, 'PT' => 0, 'UTT' => 0, 'ET' => 0, 'LEAK' => 0, 'PRES' => 0, 'SCAF' => 0, 'STSR' => 0, 'DEFR' => 2, 'LDEF' => 2, 'ANEM' => 1, 'DEST' => 0, 'CRHC' => 1, 'ESCL' => 1, 'TRLR' => 1, 'MOTS' => 1];
+
+    /** Sticker default (1 = yes, 0 = no) for the checklist types on the checklist / certificate sheet. */
+    private const CHECKLIST_STICKER = [
+        'AIRC' => 1, 'BKHO' => 1, 'BOOM' => 1, 'BLDZ' => 1, 'CRWL' => 1, 'DRIL' => 1, 'ELEV' => 1, 'EXCV' => 1, 'FORK' => 1, 'GEN' => 1,
+        'JIBC' => 1, 'MCR' => 1, 'ROLL' => 1, 'SKID' => 1, 'TELE' => 1, 'TCR' => 1, 'VLD' => 1, 'WLDR' => 1, 'ESCL' => 1, 'PTNK' => 1,
+        'MOTO' => 1, 'TRNC' => 1, 'WLDM' => 1, 'CMXR' => 1, 'MCPM' => 1, 'DUMP' => 1, 'CHBK' => 0, 'LVHT' => 0, 'SLNG' => 0, 'RGHW' => 0, 'OVHC' => 1, 'GRDR' => 1,
+    ];
+
+    private static function certOnlySql(string $col = 't.code'): string
+    {
+        return $col . " IN ('" . implode("','", array_keys(self::CERT_ONLY)) . "')";
+    }
+
+    /** inspection_type_id => certificate_template_id (latest active) for the checklist types in the sheet. */
+    private static function certMap(): array
+    {
+        $out = [];
+        foreach (self::CERT_FOR_CHECKLIST as $code => $certCode) {
+            $tid = (int) DB::value('SELECT id FROM inspection_types WHERE code = ?', [$code]);
+            $cid = (int) DB::value("SELECT c.id FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
+                    WHERE t.code = ? AND c.is_active = 1 ORDER BY c.version DESC, c.id DESC LIMIT 1", [$certCode]);
+            if ($tid && $cid) $out[$tid] = $cid;
+        }
+        return $out;
+    }
+
     /** Show form to add a new sub-job to an assigned job. */
     public function createSubJob(string $id): void
     {
@@ -78,12 +116,14 @@ final class InspectorController extends Controller
         }
         $this->view('inspector/subjob_form', [
             'job'           => $job,
-            'types'         => DB::all("SELECT t.id, t.code, t.name, t.category FROM inspection_types t WHERE t.status = 'active'
-                    AND ((t.category <> 'NDT' AND EXISTS (SELECT 1 FROM checklist_templates c WHERE c.inspection_type_id = t.id AND c.is_active = 1))
-                      OR (t.category = 'NDT' AND EXISTS (SELECT 1 FROM certificate_templates x WHERE x.inspection_type_id = t.id AND x.is_active = 1)))
+            'certMap'       => self::certMap(),
+            'stickerDefaults' => self::CERT_ONLY + self::CHECKLIST_STICKER,
+            'types'         => DB::all("SELECT t.id, t.code, t.name, t.category, (" . self::certOnlySql() . ") AS cert_only FROM inspection_types t WHERE t.status = 'active'
+                    AND ((NOT " . self::certOnlySql() . " AND EXISTS (SELECT 1 FROM checklist_templates c WHERE c.inspection_type_id = t.id AND c.is_active = 1))
+                      OR (" . self::certOnlySql() . " AND EXISTS (SELECT 1 FROM certificate_templates x WHERE x.inspection_type_id = t.id AND x.is_active = 1)))
                     ORDER BY t.name"),
             'equipment'     => DB::all('SELECT id, description, equipment_no FROM equipment WHERE client_id = ? ORDER BY description', [$job['client_id']]),
-            'certTemplates' => DB::all("SELECT c.id, c.title, c.doc_ref, c.inspection_type_id, t.category FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
+            'certTemplates' => DB::all("SELECT c.id, c.title, c.doc_ref, c.inspection_type_id, t.category, (" . self::certOnlySql() . ") AS cert_only FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
                     WHERE c.is_active = 1
                       AND c.version = (SELECT MAX(v.version) FROM certificate_templates v WHERE v.inspection_type_id = c.inspection_type_id AND v.is_active = 1)
                     ORDER BY t.category, t.name"),
@@ -106,14 +146,19 @@ final class InspectorController extends Controller
                 return $this->storeOperatorAssessment($job);
             }
             if (!(int) input('cert_template_id', 0)) throw new DomainException('Select the certificate type.');
-            // NDT / Non-NDT is chosen first; the inspection type and certificate must belong to that group
+            // Category is chosen first: 1 = with checklist + certificate, 2 = certificate only (no checklist)
             $mode = (string) input('ndt_mode', '');
-            if (!in_array($mode, ['ndt', 'non_ndt'], true)) throw new DomainException('Choose whether this is an NDT or a Non-NDT inspection.');
-            $typeCat = (string) DB::value('SELECT category FROM inspection_types WHERE id = ?', [(int) input('inspection_type_id', 0)]);
-            $certCat = (string) DB::value('SELECT t.category FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id WHERE c.id = ?', [(int) input('cert_template_id', 0)]);
-            if (($mode === 'ndt') !== ($typeCat === 'NDT') || ($mode === 'ndt') !== ($certCat === 'NDT')) {
-                throw new DomainException($mode === 'ndt' ? 'For an NDT job choose an NDT inspection type and an NDT certificate.' : 'This is a Non-NDT job - NDT types and certificates are chosen under NDT.');
+            if (!in_array($mode, ['with_checklist', 'cert_only'], true)) throw new DomainException('Choose the inspection category: with checklist, or without checklist.');
+            $sticker = (string) input('with_sticker', '');
+            if (!in_array($sticker, ['1', '0'], true)) throw new DomainException('Choose whether a sticker applies (Yes / No).');
+            $typeCode = (string) DB::value('SELECT code FROM inspection_types WHERE id = ?', [(int) input('inspection_type_id', 0)]);
+            if (($mode === 'cert_only') !== isset(self::CERT_ONLY[$typeCode])) {
+                throw new DomainException($mode === 'cert_only' ? 'Choose a type that has a certificate only (no checklist).' : 'Choose a type that has a checklist.');
             }
+            // the sheet decides the certificate for a checklist type
+            if ($mode === 'with_checklist' && ($forced = self::certMap()[(int) input('inspection_type_id', 0)] ?? 0)) $_POST['cert_template_id'] = $forced;
+            $_POST['with_checklist'] = $mode === 'with_checklist' ? 1 : 0;
+            $_POST['with_sticker']   = (int) $sticker;
             $qty = max(1, min(50, (int) input('quantity', 1)));
             for ($i = 0; $i < $qty; $i++) {
                 $sjId = JobService::addSubJob((int) $id, $_POST);
@@ -237,13 +282,15 @@ final class InspectorController extends Controller
         $certTpl = $cert && $cert['template_id'] ? DB::one('SELECT * FROM certificate_templates WHERE id = ?', [$cert['template_id']]) : InspectionService::activeCertificateTemplate((int) $sj['inspection_type_id']);
         $certData = $cert ? (json_decode($cert['data'] ?? '{}', true) ?: []) : [];
         $fields = [];
-        foreach ($certTpl ? (json_decode($certTpl['fields'], true) ?: []) : [] as $f) {
+        foreach (CertificateService::templateFields($certTpl ?: null) as $f) {
             $f['bound'] = !empty($f['source']);
             $f['value'] = $f['bound'] || ($f['key'] ?? '') === 'checklist_no' ? CertificateService::fieldValue($f, $sj, $cert ?? [], $certData) : ($certData[$f['key']] ?? '');
             if (($f['key'] ?? '') === 'exam_type' && ($f['type'] ?? '') === 'select') {   // free text, with the old options offered as suggestions
                 $f['suggest'] = $f['options'] ?? [];
                 $f['type'] = 'text';
             }
+            $f['is_cap'] = CertificateService::isCapacityField($f);
+            if ($f['is_cap']) $f['required'] = true;
             $f['is_date'] = CertificateService::isDateField($f);
             $ts = $f['is_date'] ? strtotime((string) $f['value']) : false;
             $f['iso'] = $ts ? date('Y-m-d', $ts) : '';          // <input type="date"> needs ISO; non-date legacy text shows empty

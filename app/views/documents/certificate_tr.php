@@ -6,6 +6,12 @@
  * @var array $m  @var ?array $toolbar
  */
 $cm = $m;
+// report date: the certificate-date field if the inspector set one, else the issue date, else today (drafts)
+$issueDate = $cm['cert']['issue_date'] ?? null;
+foreach ($cm['fields'] as $f0) {
+    if (($f0['source'] ?? '') === 'cert.issue_date' && ($ts0 = strtotime((string) ($f0['value'] ?? ''))) !== false && ($f0['value'] ?? '') !== '') { $issueDate = date('Y-m-d', $ts0); break; }
+}
+$issueDate = $issueDate ?: date('Y-m-d');
 $cert = $cm['cert'];
 $fv = [];
 $items = [];
@@ -22,7 +28,7 @@ $m = [
     'sj' => $cm['sj'],
     'data' => $fv,
     'certificate_no' => $cert['certificate_no'] ?? '',
-    'issue_date' => $cert['issue_date'] ?? null,
+    'issue_date' => $issueDate,
     'review_date' => !empty($cm['issued']) ? ($cert['issue_date'] ?? null) : null,
     'cert_result' => $cert['result'] ?? null,
     'checklist' => ['inspection_date' => $cert['inspection_date'] ?? null, 'serial_no' => $cm['sj']['eq_serial_no'] ?? '', 'remarks' => $cert['remarks'] ?? '', 'status' => $signed ? 'completed' : 'draft'],
