@@ -4,6 +4,13 @@
  * @var string $title  @var array $pages [['body' => html, 'top' => mm, 'extra' => html]]  @var string $sidetext
  * @var ?string $qr  @var ?array $toolbar  ['back' => url, 'pdf' => url, 'status' => html]  @var ?string $watermark
  */
+if (isset($GLOBALS['__doc_collect']) && is_array($GLOBALS['__doc_collect']) && empty($toolbar)) {   // multi-certificate mode: hand the pages to the caller instead of rendering
+    foreach ($pages as $p) {
+        $p['sidetext'] = $sidetext ?? ''; $p['qr'] = $qr ?? null; $p['qr_pos'] = $qr_pos ?? ''; $p['watermark'] = $watermark ?? null;
+        $GLOBALS['__doc_collect'][] = $p;
+    }
+    return;
+}
 $brand = DocumentService::brand();
 $css = file_get_contents(ROOT_PATH . '/assets/css/doc.css');
 $n = count($pages);
@@ -21,7 +28,7 @@ $n = count($pages);
     <a class="primary" href="<?= e($toolbar['pdf']) ?>">Download PDF</a>
   </div>
 <?php endif; ?>
-<?php foreach ($pages as $i => $p): ?>
+<?php foreach ($pages as $i => $p): $sidetext = $p['sidetext'] ?? $sidetext; $qr = array_key_exists('qr', $p) ? $p['qr'] : $qr; $qr_pos = $p['qr_pos'] ?? ($qr_pos ?? ''); $watermark = array_key_exists('watermark', $p) ? $p['watermark'] : $watermark; ?>
   <div class="sheet">
     <img class="hdr" src="<?= $brand['header'] ?>" alt="">
     <div class="sidetext"><?= e($sidetext) ?></div>

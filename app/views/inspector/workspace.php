@@ -155,9 +155,10 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
         $isMultiPage = $totalPages > 1;
       ?>
 
-      <?php if ($editable): ?>
-      <!-- Clone / page-count panel (always shown so user can set quantity) -->
+      <?php if ($editable || $isMultiPage): ?>
+      <!-- Clone / page-count panel (editable) and the page tabs (always, so a submitted / approved multi-page certificate can still be viewed page by page) -->
       <div class="card-b" style="padding-bottom:0">
+        <?php if ($editable): ?>
         <div class="row wrap" style="gap:12px;align-items:center">
           <div class="strong small"><?= icon('copy', 'sm') ?> Certificate pages</div>
           <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/certificate/clone') ?>" class="row" style="gap:8px;align-items:center">
@@ -174,6 +175,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
           <?php endif; ?>
           <span class="small muted">Fill page 1, set the quantity, then click Apply — all other pages will be cloned from page 1. You can edit each page independently.</span>
         </div>
+        <?php endif; ?>
         <?php if ($isMultiPage): ?>
         <!-- Page tabs -->
         <div class="tab-row mt-2" style="border-bottom:none">

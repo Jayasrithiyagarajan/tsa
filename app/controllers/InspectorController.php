@@ -285,7 +285,7 @@ final class InspectorController extends Controller
         foreach (CertificateService::templateFields($certTpl ?: null) as $f) {
             $f['bound'] = !empty($f['source']);
             $f['value'] = $f['bound'] || ($f['key'] ?? '') === 'checklist_no' ? CertificateService::fieldValue($f, $sj, $cert ?? [], $certData) : ($certData[$f['key']] ?? '');
-            if (($f['key'] ?? '') === 'exam_type' && ($f['type'] ?? '') === 'select') {   // free text, with the old options offered as suggestions
+            if (in_array($f['key'] ?? '', CertificateService::FREE_TEXT_SELECTS, true) && ($f['type'] ?? '') === 'select') {   // free text, with the old options offered as suggestions
                 $f['suggest'] = $f['options'] ?? [];
                 $f['type'] = 'text';
             }
@@ -325,7 +325,7 @@ final class InspectorController extends Controller
     public function saveCertificate(string $id): void
     {
         $seq = max(1, (int) ($_POST['seq'] ?? 1));
-        $this->attempt(fn () => InspectionService::saveCertificate((int) $id, $_POST, $seq), 'Certificate details saved.');
+        $this->attempt(fn () => InspectionService::saveCertificate((int) $id, $_POST, $seq), 'Certificate details saved.', 'inspector/subjobs/' . (int) $id . ($seq > 1 ? '?cert_page=' . $seq : '') . '#tab-certificate');   // stay on the page that was saved
     }
 
     /** Clone page 1 → pages 2..N based on posted qty. */

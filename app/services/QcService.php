@@ -125,6 +125,9 @@ final class CertificateService
         return $v;
     }
 
+    /** Fields defined as a dropdown in the template but entered as free text (the options stay as suggestions). */
+    public const FREE_TEXT_SELECTS = ['exam_type', 'penetrant_type', 'light_type', 'magnetization', 'particle_type', 'particle_colour'];
+
     /** Template fields plus a "Capacity / SWL" entry on every certificate that does not already have one (feeds the sticker). */
     public static function templateFields(?array $tpl): array
     {

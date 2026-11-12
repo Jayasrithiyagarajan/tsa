@@ -264,7 +264,7 @@ final class InspectionService
                 }
                 if (array_key_exists($f['key'], $in['fields'] ?? [])) {
                     $v = mb_substr(trim((string) $in['fields'][$f['key']]), 0, ($f['type'] ?? '') === 'textarea' ? 1500 : 190);
-                    if (($f['type'] ?? '') === 'select' && ($f['key'] ?? '') !== 'exam_type' && $v !== '' && !in_array($v, $f['options'] ?? [], true)) continue;
+                    if (($f['type'] ?? '') === 'select' && !in_array($f['key'] ?? '', CertificateService::FREE_TEXT_SELECTS, true) && $v !== '' && !in_array($v, $f['options'] ?? [], true)) continue;
                     $data[$f['key']] = $v;
                 }
             }
