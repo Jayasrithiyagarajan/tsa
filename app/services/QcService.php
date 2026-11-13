@@ -13,7 +13,7 @@ final class QcService
                 throw new DomainException('Four-eyes rule: you cannot approve an inspection you performed.');
             }
             $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ? ORDER BY seq LIMIT 1', [$subJobId]);
-            DB::update('sub_jobs', ['status' => 'approved', 'approved_at' => now(), 'result' => $cert['result'] ?? $sj['result']], 'id = ?', [$subJobId]);
+            DB::update('sub_jobs', ['status' => 'approved', 'approved_at' => now(), 'result' => $cert['result'] ?? ($sj['kind'] === 'operator' ? 'accepted' : $sj['result'])], 'id = ?', [$subJobId]);
             DB::insert('qc_reviews', ['sub_job_id' => $subJobId, 'reviewer_id' => Auth::id(), 'decision' => 'approved', 'comments' => nullable($comments)]);
 
             if ($cert) {

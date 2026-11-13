@@ -1,6 +1,8 @@
 <?php
 /** Inspector: operator assessment sub-job — issued ID card + document upload. @var array $sj @var ?array $card @var ?array $doc */
-$open = $sj['status'] === 'in_progress';
+$open = in_array($sj['status'], ['in_progress', 'rework'], true);
+$awaitingQc = $sj['status'] === 'submitted';
+$qcNote = $sj['status'] === 'rework' ? DB::one("SELECT comments FROM qc_reviews WHERE sub_job_id = ? AND decision = 'rework' ORDER BY id DESC LIMIT 1", [$sj['id']]) : null;
 $preview = $card ? InspectorCardService::model($card) : null;
 $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
 ?>
@@ -14,8 +16,8 @@ $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
 <div class="page-head">
   <div class="ph-text">
     <div class="eyebrow"><?= e($sj['client_name']) ?> · <?= e($sj['job_no']) ?></div>
-    <h1>Operator assessment <span class="mono"><?= e($sj['sub_job_no']) ?></span></h1>
-    <div class="sub"><?= $open ? 'ID card issued. Upload the assessment document to close this sub-job.' : 'Closed' . ($sj['approved_at'] ? ' on ' . e(fmt_datetime($sj['approved_at'])) : '') . '.' ?></div>
+    <h1 class="row wrap">Operator assessment <span class="mono"><?= e($sj['sub_job_no']) ?></span> <?= badge($sj['status']) ?></h1>
+    <div class="sub"><?= $open ? 'ID card issued. Upload the assessment document to send it to QC for review.' : ($awaitingQc ? 'Sent to QC for review. It closes once QC approve it.' : 'Closed' . ($sj['approved_at'] ? ' on ' . e(fmt_datetime($sj['approved_at'])) : '') . '.') ?></div>
   </div>
   <div class="actions"><a class="btn btn-secondary" href="<?= url('inspector/jobs/' . $sj['job_id']) ?>">&larr; Back to job</a></div>
 </div>
@@ -37,6 +39,7 @@ $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
       <div class="card-h"><h2><?= icon('upload', 'sm') ?> Assessment document</h2></div>
       <div class="card-b">
       <?php if ($open): ?>
+        <?php if ($qcNote): ?><div class="alert alert-warning small"><?= icon('alert') ?><div><b>Returned by QC for rework</b><?= $qcNote['comments'] ? '<br>' . nl2br(e($qcNote['comments'])) : '' ?></div></div><?php endif; ?>
         <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/operator-document') ?>" enctype="multipart/form-data">
           <?= Csrf::field() ?>
           <div class="field"><label>Document (PDF or image) <span class="req">*</span></label><input class="input" type="file" name="document" required accept=".pdf,image/*" style="padding-top:7px"></div>
@@ -47,9 +50,12 @@ $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
           <div class="field mt-1"><label>Completion date <span class="req">*</span></label><input class="input" type="date" name="completion_date" required value="<?= e(old('completion_date', date('Y-m-d'))) ?>"></div>
           <div class="field mt-1"><label>Recommended renewal date</label><input class="input" type="date" name="renewal_date" value="<?= e(old('renewal_date', $card ? $card['expiry_date'] : '')) ?>"></div>
           <div class="field mt-1"><label>Trainer / Instructor</label><input class="input" name="trainer" maxlength="120" value="<?= e(old('trainer', $card['assessor'] ?? (Auth::user()['name'] ?? ''))) ?>"></div>
-          <button class="btn btn-primary btn-block mt-1" onclick="return confirm('Upload the document and close this operator assessment?')"><?= icon('check', 'sm') ?> Upload &amp; close</button>
-          <p class="small muted mt-1">Uploading the document closes <?= e($sj['sub_job_no']) ?>.</p>
+          <button class="btn btn-primary btn-block mt-1" onclick="return confirm('Upload the document and send this operator assessment to QC for review?')"><?= icon('send', 'sm') ?> Upload &amp; send to QC</button>
+          <p class="small muted mt-1">Uploading the document sends <?= e($sj['sub_job_no']) ?> to QC. It is closed once QC approve it.</p>
         </form>
+      <?php elseif ($awaitingQc): ?>
+        <div class="alert alert-info small"><?= icon('clock') ?><div><b>Awaiting QC review</b><br>The document was sent on <?= e(fmt_datetime($sj['submitted_at'])) ?>. You will be notified when QC approve it or return it for rework.</div></div>
+        <?php if ($doc): ?><a class="btn btn-secondary btn-block" href="<?= url('documents/attachment/' . $doc['id']) ?>" target="_blank"><?= icon('file', 'sm') ?> <?= e($doc['original_name']) ?></a><?php endif; ?>
       <?php else: ?>
         <p class="small"><?= icon('check', 'sm') ?> Closed.</p>
         <?php if (empty($od['program'])): ?>

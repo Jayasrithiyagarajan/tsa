@@ -119,12 +119,13 @@ final class DocumentController extends Controller
     public function operatorCertificate(string $id): void
     {
         $sj = $this->load($id);
-        $this->renderOperatorCertificate($sj);
+        $this->renderOperatorCertificate($sj, Auth::is('qc', 'admin'));
     }
 
-    private function renderOperatorCertificate(array $sj): void
+    private function renderOperatorCertificate(array $sj, bool $allowReview = false): void
     {
-        if ($sj['kind'] !== 'operator' || $sj['status'] !== 'approved') $this->notFound();
+        $ok = $sj['status'] === 'approved' || ($allowReview && $sj['status'] === 'submitted');   // QC / admin may preview it while it awaits review
+        if ($sj['kind'] !== 'operator' || !$ok) $this->notFound();
         $card = DB::one('SELECT * FROM inspector_cards WHERE sub_job_id = ? ORDER BY id DESC', [$sj['id']]);
         if (!$card) $this->notFound();
         $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];

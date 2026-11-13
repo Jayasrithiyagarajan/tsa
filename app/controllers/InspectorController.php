@@ -230,23 +230,23 @@ final class InspectorController extends Controller
         });
     }
 
-    /** Operator assessment: the uploaded document closes the sub-job. */
+    /** Operator assessment: the uploaded document is sent to QC, who verify it and close the sub-job. */
     public function operatorDocument(string $id): void
     {
         $this->attempt(function () use ($id) {
             $sj = JobService::subJob((int) $id);
             if (!$sj || $sj['kind'] !== 'operator') throw new DomainException('Operator assessment not found.');
             if ((int) $sj['inspector_id'] !== Auth::id()) throw new DomainException('This sub-job is not assigned to you.');
-            if ($sj['status'] !== 'in_progress') throw new DomainException('This operator assessment is already closed.');
+            if (!in_array($sj['status'], ['in_progress', 'rework'], true)) throw new DomainException($sj['status'] === 'submitted' ? 'This operator assessment is already with QC for review.' : 'This operator assessment is already closed.');
             if (empty($_FILES['document']['name'])) throw new InvalidArgumentException('Choose the assessment document to upload.');
             $training = [];
             foreach (['program', 'completion_date', 'renewal_date', 'trainer'] as $k) $training[$k] = trim((string) input($k, ''));
             if ($training['program'] === '' || $training['completion_date'] === '') throw new InvalidArgumentException('Enter the training program and the completion date for the certificate.');
             DB::tx(function () use ($sj, $training) {
                 InspectionService::addAttachment((int) $sj['id'], $_FILES['document'], 'document', input('caption'), false);
-                JobService::closeOperatorSubJob((int) $sj['id'], $training);
+                JobService::submitOperatorSubJob((int) $sj['id'], $training);
             });
-            flash('success', 'Document uploaded. Operator assessment ' . $sj['sub_job_no'] . ' is closed and the Certificate of Competence is ready.');
+            flash('success', 'Document uploaded. Operator assessment ' . $sj['sub_job_no'] . ' was sent to QC for review; it closes once QC approve it.');
             return 'inspector/jobs/' . (int) $sj['job_id'];
         });
     }

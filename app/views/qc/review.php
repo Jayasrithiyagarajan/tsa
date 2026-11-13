@@ -1,8 +1,22 @@
-<?php $pending = $sj['status'] === 'submitted'; $self = (int) $sj['inspector_id'] === Auth::id(); ?>
+<?php $pending = $sj['status'] === 'submitted'; $self = (int) $sj['inspector_id'] === Auth::id();
+$op = $sj['kind'] === 'operator';
+if ($op) {
+    $opCard = DB::one('SELECT c.*, NULL AS user_status FROM inspector_cards c WHERE c.sub_job_id = ? ORDER BY c.id DESC', [$sj['id']]);
+    $opPrev = $opCard ? InspectorCardService::model($opCard) : null;
+    $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
+}
+?>
+<?php if ($op && $opCard): ?><style><?= file_get_contents(ROOT_PATH . '/assets/css/idcard.css') ?>
+.idc * { box-sizing: content-box; }
+.idc-faces { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 18px; background: #eef1f6; border-radius: 12px; }
+.idc-faces .cap { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.idc-faces .idc { zoom: 1.1; box-shadow: 0 2px 10px rgba(15,23,42,.18); }
+@media (max-width: 760px) { .idc-faces { padding: 10px; } .idc-faces .idc { zoom: .85; } }
+</style><?php endif; ?>
 <div class="page-head">
   <div class="ph-text"><div class="eyebrow">QC review · <?= e($sj['type_name']) ?></div>
     <h1 class="row wrap"><span class="mono" style="font-size:20px"><?= e($sj['sub_job_no']) ?></span> <?= badge($sj['status']) ?> <?= $cert && $cert['result'] ? badge($cert['result']) : '' ?></h1>
-    <div class="sub"><span><?= icon('building', 'sm') ?> <?= e($sj['client_name']) ?></span><span><?= icon('truck', 'sm') ?> <?= e($sj['eq_description']) ?> <?= e($sj['equipment_no']) ?></span><span><?= icon('user', 'sm') ?> <?= e($sj['inspector_name']) ?></span><span><?= icon('clock', 'sm') ?> submitted <?= e(fmt_datetime($sj['submitted_at'])) ?></span></div></div>
+    <div class="sub"><span><?= icon('building', 'sm') ?> <?= e($sj['client_name']) ?></span><?php if (!$op): ?><span><?= icon('truck', 'sm') ?> <?= e($sj['eq_description']) ?> <?= e($sj['equipment_no']) ?></span><?php endif; ?><span><?= icon('user', 'sm') ?> <?= e($sj['inspector_name']) ?></span><span><?= icon('clock', 'sm') ?> submitted <?= e(fmt_datetime($sj['submitted_at'])) ?></span></div></div>
 </div>
 <?php if ($override): ?><div class="alert alert-warning"><?= icon('alert') ?><div><b>Submitted with an authorized override by <?= e($override) ?>:</b> <?= e($sj['override_reason']) ?></div></div><?php endif; ?>
 
@@ -10,13 +24,22 @@
   <div class="stack">
     <div class="card">
       <div class="tabs" data-tabs>
+        <?php if ($op): ?><button data-tab="doc-op-files"><?= icon('file', 'sm') ?> Assessment document <span class="t-count"><?= count($attachments) ?></span></button>
+          <?php if ($opCard): ?><button data-tab="doc-op-card"><?= icon('user', 'sm') ?> ID card</button><?php endif; ?>
+          <?php if (!empty($od['program'])): ?><button data-tab="doc-op-cert"><?= icon('award', 'sm') ?> Certificate of Competence</button><?php endif; ?>
+        <?php endif; ?>
         <?php if ($cert && $cert['template_id']): ?><button data-tab="doc-cert"><?= icon('award', 'sm') ?> Certificate</button><?php endif; ?>
         <?php if ($checklist): ?><button data-tab="doc-cl"><?= icon('clipboard', 'sm') ?> Checklist</button><?php endif; ?>
-        <button data-tab="doc-files"><?= icon('camera', 'sm') ?> Photos & files <span class="t-count"><?= count($attachments) ?></span></button>
+        <?php if (!$op): ?><button data-tab="doc-files"><?= icon('camera', 'sm') ?> Photos & files <span class="t-count"><?= count($attachments) ?></span></button><?php endif; ?>
       </div>
+      <?php if ($op && $opCard): ?><section class="tab-panel" id="doc-op-card"><div class="card-b"><div class="idc-faces">
+        <div><div class="cap">Front</div><?php View::render('partials/id_card', ['m' => $opPrev, 'side' => 'front'], null); ?></div>
+        <div><div class="cap">Back</div><?php View::render('partials/id_card', ['m' => $opPrev, 'side' => 'back'], null); ?></div>
+      </div></div></section><?php endif; ?>
+      <?php if ($op && !empty($od['program'])): ?><section class="tab-panel" id="doc-op-cert"><iframe src="<?= url('documents/operator-certificate/' . $sj['id']) ?>" title="Certificate of Competence" style="width:100%;height:78vh;border:0;display:block;background:#525a6b" loading="lazy"></iframe></section><?php endif; ?>
       <?php if ($cert && $cert['template_id']): ?><section class="tab-panel" id="doc-cert"><iframe src="<?= url('documents/certificate/' . $sj['id']) ?>" title="Certificate" style="width:100%;height:78vh;border:0;display:block;background:#525a6b"></iframe></section><?php endif; ?>
       <?php if ($checklist): ?><section class="tab-panel" id="doc-cl"><iframe src="<?= url('documents/checklist/' . $sj['id']) ?>" title="Checklist" style="width:100%;height:78vh;border:0;display:block;background:#525a6b" loading="lazy"></iframe></section><?php endif; ?>
-      <section class="tab-panel" id="doc-files"><div class="card-b">
+      <section class="tab-panel" id="<?= $op ? 'doc-op-files' : 'doc-files' ?>"><div class="card-b">
         <?php if ($attachments): ?><div class="photos"><?php foreach ($attachments as $a): $img = str_starts_with($a['mime'], 'image/'); ?>
           <a class="photo" href="<?= url('documents/attachment/' . $a['id']) ?>" target="_blank"><?php if ($a['on_certificate']): ?><span class="tagc badge badge-green"><i></i>On certificate</span><?php endif; ?>
             <?php if ($img): ?><img src="<?= url('documents/attachment/' . $a['id']) ?>" alt="" loading="lazy"><?php else: ?><div style="height:120px;display:grid;place-items:center;color:var(--muted)"><?= icon('file', 'lg') ?></div><?php endif; ?>
@@ -33,22 +56,32 @@
       <div class="card-h"><h2><?= icon('shield', 'sm') ?> Decision</h2></div>
       <div class="card-b stack">
         <?php if ($issues): ?><div class="alert alert-warning" style="margin:0"><?= icon('alert') ?><div><b>Completeness warnings</b><ul><?php foreach ($issues as $i): ?><li><?= e($i) ?></li><?php endforeach; ?></ul></div></div>
+        <?php elseif ($op): ?><div class="small muted">Check the uploaded assessment document, the ID card and the Certificate of Competence details. Approving closes this operator assessment.</div>
         <?php else: ?><div class="ok-line"><?= icon('check') ?> All completeness rules pass</div><?php endif; ?>
-        <?php if (!$self): ?><div><a class="btn btn-secondary" href="<?= url('inspector/subjobs/' . $sj['id']) ?>"><?= icon('edit', 'sm') ?> Edit checklist & certificate</a><div class="small muted mt-1">Fix small errors yourself instead of returning the job.</div></div><?php endif; ?>
+        <?php if (!$self && !$op): ?><div><a class="btn btn-secondary" href="<?= url('inspector/subjobs/' . $sj['id']) ?>"><?= icon('edit', 'sm') ?> Edit checklist & certificate</a><div class="small muted mt-1">Fix small errors yourself instead of returning the job.</div></div><?php endif; ?>
         <div class="field"><label>Comments to inspector <span class="muted">(required for rework)</span></label><textarea class="textarea" name="comments" placeholder="What was checked, or what must be corrected…"></textarea></div>
         <?php if ($self): ?><div class="alert alert-error" style="margin:0"><?= icon('lock') ?><div>Four-eyes rule: you performed this inspection and cannot approve it.</div></div><?php endif; ?>
       </div>
       <div class="card-f" style="justify-content:stretch">
         <button class="btn btn-danger" name="decision" value="rework" style="flex:1"><?= icon('rotate', 'sm') ?> Return for rework</button>
-        <button class="btn btn-success" name="decision" value="approve" style="flex:1"<?= $self ? ' disabled' : '' ?> data-confirm><?= icon('check', 'sm') ?> Approve & issue</button>
+        <button class="btn btn-success" name="decision" value="approve" style="flex:1"<?= $self ? ' disabled' : '' ?> data-confirm><?= icon('check', 'sm') ?> <?= $op ? 'Approve & close' : 'Approve & issue' ?></button>
       </div>
     </form>
     <?php endif; ?>
     <div class="card"><div class="card-h"><h2><?= icon('clipboard', 'sm') ?> Summary</h2></div><div class="card-b">
       <dl class="kv small" style="grid-template-columns:120px 1fr">
+<?php if ($op): ?>
+        <dt>Certificate No.</dt><dd class="mono"><?= e($od['cert_no'] ?? '—') ?></dd>
+        <dt>Operator</dt><dd><?= e($opCard['holder_name'] ?? '—') ?></dd>
+        <dt>Training</dt><dd><?= e($od['program'] ?? '—') ?></dd>
+        <dt>Completed</dt><dd><?= e(fmt_date($od['completion_date'] ?? null) ?: '—') ?></dd>
+        <dt>Renewal</dt><dd><?= e(fmt_date($od['renewal_date'] ?? null) ?: '—') ?></dd>
+        <dt>Trainer</dt><dd><?= e($od['trainer'] ?? '—') ?></dd>
+        <?php else: ?>
         <dt>Certificate No.</dt><dd class="mono"><?= e($cert['certificate_no'] ?? '—') ?></dd>
         <dt>Inspection date</dt><dd><?= e(fmt_date($cert['inspection_date'] ?? null) ?: '—') ?></dd>
         <dt>Next due</dt><dd><?= e(fmt_date($cert['next_inspection_date'] ?? null) ?: '—') ?></dd>
+        <?php endif; ?>
         <?php if ($stats): ?><dt>Checklist</dt><dd><?= (int) $stats['pass'] ?> pass · <b style="color:var(--red)"><?= (int) $stats['fail'] ?> fail</b> · <?= (int) $stats['na'] ?> N/A · <?= (int) $stats['missing'] ?> open</dd><?php endif; ?>
         <?php if ($sj['requires_sticker']): ?><dt>Sticker</dt><dd><?= $sticker ? '<a class="mono" href="' . url('documents/sticker/' . $sticker['id']) . '" target="_blank">' . e($sticker['sticker_no']) . '</a> (' . ($sticker['color'] === 'red' ? 'red · Failed' : 'blue · Accepted') . ', linked)' : '<span class="muted">none</span>' ?></dd><?php endif; ?>
       </dl>

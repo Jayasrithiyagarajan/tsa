@@ -106,15 +106,18 @@ final class JobService
         Audit::log('subjob.operator_certificate_saved', 'sub_job', $subJobId, []);
     }
 
-    /** Operator assessment finished (card issued + document uploaded): the sub-job is closed without QC. */
-    public static function closeOperatorSubJob(int $subJobId, array $training = []): void
+    /** Operator assessment document uploaded: the sub-job goes to QC (in_progress|rework → submitted); QC approval closes it. */
+    public static function submitOperatorSubJob(int $subJobId, array $training = []): void
     {
         $sj = DB::one('SELECT * FROM sub_jobs WHERE id = ?', [$subJobId]);
         if (!$sj || $sj['kind'] !== 'operator') throw new DomainException('Not an operator assessment.');
-        $training['cert_no'] = 'TE-CT-' . date('Y') . '-' . sprintf('%04d', Numbering::next('training_cert', date('Y')));
-        DB::update('sub_jobs', ['status' => 'approved', 'result' => 'accepted', 'submitted_at' => now(), 'approved_at' => now(),
-            'operator_data' => json_encode($training, JSON_UNESCAPED_UNICODE)], 'id = ?', [$subJobId]);
-        Audit::log('subjob.operator_closed', 'sub_job', $subJobId, []);
+        Workflow::assert('sub_job', $sj['status'], 'submitted');
+        $old = json_decode((string) $sj['operator_data'], true) ?: [];
+        // the certificate number is allocated once and kept when the assessment is returned for rework and re-submitted
+        $training['cert_no'] = $old['cert_no'] ?? ('TE-CT-' . date('Y') . '-' . sprintf('%04d', Numbering::next('training_cert', date('Y'))));
+        DB::update('sub_jobs', ['status' => 'submitted', 'submitted_at' => now(), 'operator_data' => json_encode($training, JSON_UNESCAPED_UNICODE)], 'id = ?', [$subJobId]);
+        Audit::log('subjob.operator_submitted', 'sub_job', $subJobId, []);
+        Notify::role('qc', "{$sj['sub_job_no']} ready for QC review", 'Operator assessment', 'qc/review/' . $subJobId);
         self::recompute((int) $sj['job_id']);
     }
 

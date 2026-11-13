@@ -7,7 +7,7 @@ $first = [];
 foreach ($series as $sr) $first[$sr['prefix']] = (int) (preg_match('/(\d+)$/', (string) $sr['next_free'], $m) ? $m[1] : 1);
 ?>
 <div class="page-head">
-  <div class="ph-text"><h1>Print Sticker</h1><div class="sub">All stickers still in office stock (<?= (int) $total ?>). Choose a start number and a count to open them as a print sheet, or download them as one PDF.</div></div>
+  <div class="ph-text"><h1>Print Sticker</h1><div class="sub">All stickers still in office stock (<?= (int) $total ?>). Tick rows to print just those stickers, or choose a start number and a count to print a range.</div></div>
   <div class="actions">
     <?php if (Auth::isSuper()): ?>
       <button class="btn btn-primary" data-modal="pstk" <?= $series ? '' : 'disabled' ?>><?= icon('printer', 'sm') ?> Print</button>
@@ -15,7 +15,7 @@ foreach ($series as $sr) $first[$sr['prefix']] = (int) (preg_match('/(\d+)$/', (
   </div>
 </div>
 
-<div class="card">
+<div class="card stk-page">
   <div class="toolbar">
     <span class="small muted"><b><?= (int) $meta['total'] ?></b> in stock<?= $prefix !== '' || $q !== '' ? ' (filtered)' : '' ?></span>
     <span class="grow"></span>
@@ -25,10 +25,19 @@ foreach ($series as $sr) $first[$sr['prefix']] = (int) (preg_match('/(\d+)$/', (
       <div class="search"><?= icon('search', 'sm') ?><input class="input" name="q" value="<?= e($q) ?>" placeholder="Sticker or batch…"></div>
     </form>
   </div>
+  <form method="post" id="pstk-sel" action="<?= url('admin/stickers/print', ['download' => 1]) ?>" data-no-lock="1"><?= Csrf::field() ?>
+    <input type="hidden" name="stock" value="1">
+    <?php if (Auth::isSuper()): ?>
+    <div class="toolbar" style="border-top:1px solid var(--border);gap:8px;flex-wrap:wrap">
+      <span class="small muted"><b data-sel>0</b> selected</span>
+      <button class="btn btn-secondary btn-sm" type="submit"><?= icon('download', 'sm') ?> Download selected PDF</button>
+    </div>
+    <?php endif; ?>
   <div class="table-wrap"><table class="t stack-sm">
-    <thead><tr><th>Sticker</th><th>Result</th><th>Batch</th><th>Generated</th></tr></thead>
+    <thead><tr><?php if (Auth::isSuper()): ?><th style="width:32px"><input type="checkbox" data-all title="Select all on this page"></th><?php endif; ?><th>Sticker</th><th>Result</th><th>Batch</th><th>Generated</th></tr></thead>
     <tbody><?php foreach ($rows as $s): ?>
       <tr>
+        <?php if (Auth::isSuper()): ?><td class="stk-chk"><input type="checkbox" name="ids[]" value="<?= (int) $s['id'] ?>" aria-label="Select <?= e($s['sticker_no']) ?>"></td><?php endif; ?>
         <td data-label="Sticker"><span class="row" style="gap:8px"><?= $swatch($s['color']) ?><span class="mono strong"><?= e($s['sticker_no']) ?></span></span></td>
         <td data-label="Result"><?= $s['color'] === 'red' ? 'Rejected (red)' : 'Accepted (blue)' ?></td>
         <td data-label="Batch" class="sub"><?= e($s['batch_no'] ?: '—') ?></td>
@@ -36,9 +45,31 @@ foreach ($series as $sr) $first[$sr['prefix']] = (int) (preg_match('/(\d+)$/', (
       </tr>
     <?php endforeach; ?></tbody>
   </table></div>
+  </form>
   <?php if (!$rows) View::render('partials/empty', ['icon' => 'tag', 'title' => 'No stickers in stock', 'text' => 'Generate a batch on Sticker Stock to get started.'], null); ?>
   <?php View::render('partials/pager', ['meta' => $meta], null); ?>
 </div>
+
+<?php if (Auth::isSuper() && $rows): ?>
+<script>
+(function () {
+  var f = document.getElementById('pstk-sel'); if (!f) return;
+  var all = f.querySelector('[data-all]'), sel = f.querySelector('[data-sel]');
+  var boxes = function () { return Array.prototype.slice.call(f.querySelectorAll('input[name="ids[]"]')); };
+  var count = function () {
+    var on = boxes().filter(function (b) { return b.checked; }).length;
+    sel.textContent = on;
+    all.checked = on > 0 && on === boxes().length;
+    all.indeterminate = on > 0 && on < boxes().length;
+  };
+  all.addEventListener('change', function () { boxes().forEach(function (b) { b.checked = all.checked; }); count(); });
+  f.addEventListener('change', function (e) { if (e.target !== all) count(); });
+  f.addEventListener('submit', function (e) {
+    if (!boxes().some(function (b) { return b.checked; })) { e.preventDefault(); alert('Select at least one sticker to download.'); }
+  });
+})();
+</script>
+<?php endif; ?>
 
 <?php if (Auth::isSuper() && $series): ?>
 <dialog class="modal" id="pstk"><form method="get" action="<?= url('admin/stickers/print') ?>" target="_blank" data-no-lock="1" data-pstk>
