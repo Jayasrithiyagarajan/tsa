@@ -316,6 +316,15 @@ final class InspectionService
             DB::update('certificates', $upd, 'id = ?', [$cert['id']]);
             if (isset($upd['result'])) DB::update('sub_jobs', ['result' => $upd['result']], 'id = ?', [$subJobId]);
         });
+
+        // The Sticker No. typed on the certificate form is linked to the Sticker tab automatically (same rules as linking there).
+        $fresh = DB::one('SELECT data FROM certificates WHERE sub_job_id = ? AND seq = ?', [$subJobId, $seq]);
+        $typed = trim((string) ((json_decode((string) ($fresh['data'] ?? ''), true) ?: [])['sticker_no'] ?? ''));
+        if ($typed !== '') {
+            $sjNow = JobService::subJob($subJobId);
+            $linked = DB::value("SELECT sticker_no FROM stickers WHERE sub_job_id = ? AND status = 'closed'", [$subJobId]);
+            if ($sjNow && $sjNow['requires_sticker'] && !$linked) self::linkSticker($subJobId, $typed);
+        }
     }
 
     /**

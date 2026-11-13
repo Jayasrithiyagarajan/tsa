@@ -289,6 +289,11 @@ final class InspectorController extends Controller
                 $f['suggest'] = $f['options'] ?? [];
                 $f['type'] = 'text';
             }
+            if (($f['key'] ?? '') === 'sticker_no') {   // only the inspector's own allocated stickers are offered
+                $own = DB::all("SELECT sticker_no FROM stickers WHERE status = 'allocated' AND inspector_id = ?" . (in_array($sj['type_code'], ['DEFR', 'LDEF'], true) ? " AND color = 'red'" : '') . ' ORDER BY sticker_no', [Auth::id()]);
+                $f['suggest'] = array_column($own, 'sticker_no');
+                $f['placeholder'] = $f['suggest'] ? 'Choose or type one of your stickers' : 'No stickers allocated to you';
+            }
             $f['is_cap'] = CertificateService::isCapacityField($f);
             if ($f['is_cap']) $f['required'] = true;
             $f['is_date'] = CertificateService::isDateField($f);
