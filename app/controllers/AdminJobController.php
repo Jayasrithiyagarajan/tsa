@@ -70,7 +70,7 @@ final class AdminJobController extends Controller
         $this->view('admin/jobs/form', [
             'title' => 'New Job', 'crumbs' => ['Jobs & Sub-jobs' => 'admin/jobs', 'New job' => null],
             'request' => null,
-            'clients' => DB::all("SELECT id, code, name FROM clients WHERE status='active' ORDER BY name"),
+            'clients' => DB::all("SELECT id, code, name, city FROM clients WHERE status='active' ORDER BY name"),
             'inspectors' => JobService::inspectorsFor(),
             'action' => url('admin/jobs'),
         ]);

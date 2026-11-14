@@ -93,6 +93,7 @@ final class CertificateService
     /** Resolve a template field's value from bound system data or the stored manual value. */
     public static function fieldValue(array $f, array $sj, array $cert, array $data): string
     {
+        if (($f['key'] ?? '') === 'item_id') $f['source'] = '';   // ID / SN is always typed in by the inspector, never fetched
         $src = $f['source'] ?? '';
         $map = [
             'client.name'               => $sj['client_name'],
@@ -133,6 +134,8 @@ final class CertificateService
     {
         $fields = $tpl ? (json_decode((string) $tpl['fields'], true) ?: []) : [];
         if (!$tpl) return $fields;
+        foreach ($fields as &$ff) if (($ff['key'] ?? '') === 'item_id') { unset($ff['source']); $ff['type'] = 'text'; $ff['required'] = true; }   // typed manually
+        unset($ff);
         foreach ($fields as $f) {
             if (in_array($f['key'] ?? '', ['swl', 'capacity'], true) || ($f['source'] ?? '') === 'equipment.capacity') return $fields;
         }
