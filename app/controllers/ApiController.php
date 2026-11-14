@@ -87,7 +87,7 @@ final class ApiController extends Controller
     {
         try {
             $stats = InspectionService::saveChecklist((int) $id, (array) ($_POST['r'] ?? []), [
-                'serial_no' => (string) ($_POST['serial_no'] ?? ''), 'inspection_date' => $_POST['inspection_date'] ?? null, 'remarks' => $_POST['cl_remarks'] ?? null, 'data' => $_POST['cl_data'] ?? null,
+                'serial_no' => (string) ($_POST['serial_no'] ?? ''), 'eq_description' => $_POST['eq_description'] ?? null, 'equipment_no' => $_POST['equipment_no'] ?? null, 'inspection_date' => $_POST['inspection_date'] ?? null, 'remarks' => $_POST['cl_remarks'] ?? null, 'data' => $_POST['cl_data'] ?? null,
             ]);
             json_out(['data' => ['saved' => true], 'stats' => $stats]);
         } catch (DomainException $e) {

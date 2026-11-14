@@ -319,7 +319,7 @@ final class InspectorController extends Controller
     /** Non-JS fallback; the workspace autosaves through the API. */
     public function saveChecklist(string $id): void
     {
-        $this->attempt(fn () => InspectionService::saveChecklist((int) $id, (array) ($_POST['r'] ?? []), ['serial_no' => input('serial_no'), 'inspection_date' => input('inspection_date'), 'remarks' => $_POST['cl_remarks'] ?? null, 'data' => $_POST['cl_data'] ?? null]), 'Checklist saved.');
+        $this->attempt(fn () => InspectionService::saveChecklist((int) $id, (array) ($_POST['r'] ?? []), ['serial_no' => input('serial_no'), 'eq_description' => $_POST['eq_description'] ?? null, 'equipment_no' => $_POST['equipment_no'] ?? null, 'inspection_date' => input('inspection_date'), 'remarks' => $_POST['cl_remarks'] ?? null, 'data' => $_POST['cl_data'] ?? null]), 'Checklist saved.');
     }
 
     public function saveCertificate(string $id): void

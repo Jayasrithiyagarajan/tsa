@@ -142,6 +142,13 @@ final class InspectionService
                 );
                 $saved++;
             }
+            // Equipment description / ID-S No. are edited here too: they live on the equipment record (shown in the title, certificate and sticker)
+            if ($sj['equipment_id'] && (isset($header['eq_description']) || isset($header['equipment_no']))) {
+                $eq = [];
+                if (isset($header['eq_description']) && trim((string) $header['eq_description']) !== '') $eq['description'] = mb_substr(trim((string) $header['eq_description']), 0, 190);
+                if (isset($header['equipment_no'])) $eq['equipment_no'] = nullable(mb_substr(trim((string) $header['equipment_no']), 0, 80));
+                if ($eq) DB::update('equipment', $eq, 'id = ?', [$sj['equipment_id']]);
+            }
             $upd = [];
             if (array_key_exists('serial_no', $header)) $upd['serial_no'] = nullable(mb_substr($header['serial_no'], 0, 80));
             if (!empty($header['inspection_date']) && strtotime($header['inspection_date'])) $upd['inspection_date'] = $header['inspection_date'];

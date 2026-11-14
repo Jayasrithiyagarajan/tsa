@@ -142,8 +142,8 @@ table.f.ut img.sg { max-height: 11mm; max-width: 35mm; vertical-align: middle; }
 .v07 .result .stmt td { height: 5.1mm; }
 .v07 .remarks { margin-top: 0.35mm; }
 .v07 .signblock { margin-top: 1.6mm; }
-.cert-title.sp-title { top: 22.85mm; text-decoration: none; font-size: 13.15pt; }
-.sp-sub { position: absolute; left: 0; top: 30.2mm; width: 210mm; text-align: center; font-size: 6.7pt; }
+.cert-title.sp-title { top: 25.05mm; text-decoration: none; font-size: 13.15pt; }
+.sp-sub { position: absolute; left: 0; top: 31.5mm; width: 210mm; text-align: center; font-size: 6.7pt; }
 table.f.sp td { border: 0.5pt solid #808080; padding: 0 1.9mm; font-size: 10pt; line-height: 0.909; vertical-align: middle; }
 table.f.sp.gap { margin-top: 4.3mm; }
 table.f.sp td.l { background: #aabee3; }
