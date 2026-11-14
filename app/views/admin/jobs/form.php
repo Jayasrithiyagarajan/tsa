@@ -23,6 +23,8 @@ $clientId = $old('client_id', $r['client_id'] ?? '');
               <option value=""><?= $r ? '— Register new client from request —' : 'Select client…' ?></option>
               <?php foreach ($clients as $c): ?><option value="<?= $c['id'] ?>"<?= selected($c['id'], $clientId) ?>><?= e($c['name']) ?> (<?= e($c['code']) ?>)</option><?php endforeach; ?>
             </select></div>
+          <?php $nextJobNo = sprintf('JOB-%s-%04d', date('Y'), 1 + (int) DB::value("SELECT last_value FROM number_sequences WHERE name = 'job' AND period = ?", [date('Y')])); ?>
+          <div class="field col-6"><label>Job ID</label><div class="bound mono"><?= icon('lock', 'sm') ?><?= e($nextJobNo) ?></div><div class="help">Assigned automatically when the job is created</div></div>
           <?php if ($r && !$r['client_id']): ?>
             <div class="field col-3"><label>New client code</label><input class="input" name="new_client_code" value="<?= e($old('new_client_code')) ?>" placeholder="e.g. 22190"><div class="help">Used in certificate numbers</div></div>
             <div class="field col-3"><label>City</label><input class="input" name="new_client_city" value="<?= e($old('new_client_city')) ?>"></div>

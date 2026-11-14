@@ -1,11 +1,35 @@
 <div class="page-head">
-  <div class="ph-text"><h1>Assignment board</h1><div class="sub">Unassigned sub-jobs by priority and date, with qualified inspectors and their current workload.</div></div>
+  <div class="ph-text"><h1>Assignment board</h1><div class="sub">Unassigned jobs and sub-jobs by priority and date, with qualified inspectors and their current workload.</div></div>
 </div>
 <div class="grid grid-main">
   <div class="stack">
-    <?php if (!$byJob): ?>
+    <?php if (!$byJob && !$noLead): ?>
       <div class="card"><?php View::render('partials/empty', ['icon' => 'check', 'title' => 'Nothing to assign', 'text' => 'Every open sub-job has an inspector.'], null); ?></div>
     <?php endif; ?>
+    <?php foreach ($noLead as $nj): ?>
+      <form class="job-card" method="post" action="<?= url('admin/jobs/' . $nj['id'] . '/assign-job') ?>">
+        <?= Csrf::field() ?>
+        <div class="jc-h">
+          <div class="jc-t">
+            <h3><a href="<?= url('admin/jobs/' . $nj['id']) ?>" class="mono"><?= e($nj['job_no']) ?></a> · <?= e($nj['title']) ?></h3>
+            <div class="jc-meta"><span><?= icon('building', 'sm') ?> <?= e($nj['client_name']) ?></span>
+              <?php if ($nj['location']): ?><span><?= icon('pin', 'sm') ?> <?= e($nj['location']) ?></span><?php endif; ?>
+              <span><?= icon('calendar', 'sm') ?> <?= e(fmt_date($nj['scheduled_date']) ?: 'Not scheduled') ?></span>
+              <span class="muted"><?= (int) $nj['n_sub'] ? (int) $nj['n_sub'] . ' sub-job(s)' : 'No sub-jobs yet — the inspector adds them' ?></span></div>
+          </div>
+          <?= badge($nj['priority']) ?>
+        </div>
+        <div class="card-f" style="justify-content:flex-start">
+          <select class="select" name="inspector_id" required style="width:auto;min-width:260px;flex:1">
+            <option value="">Choose inspector…</option>
+            <?php foreach ($inspectors as $u): ?>
+              <option value="<?= $u['id'] ?>"><?= e($u['name'] . ' · ' . $u['open_load'] . ' open' . ($u['base_location'] ? ' · ' . $u['base_location'] : '')) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <button class="btn btn-primary"><?= icon('users', 'sm') ?> Assign job</button>
+        </div>
+      </form>
+    <?php endforeach; ?>
     <?php foreach ($byJob as $jobId => $list): $j = $list[0]; ?>
       <form class="job-card" method="post" action="<?= url('admin/jobs/' . $jobId . '/assign') ?>" data-qualified-filter>
         <?= Csrf::field() ?>

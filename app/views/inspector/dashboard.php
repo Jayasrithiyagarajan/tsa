@@ -17,10 +17,19 @@
 <div class="grid grid-main">
   <div class="card">
     <div class="card-h"><h2><?= icon('clipboard', 'sm') ?> Up next</h2><span class="hint">rework first, then in-progress, then scheduled</span></div>
+    <?php foreach ($myJobs as $j): ?>
+      <div class="sub-row" style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-left:3px solid var(--warning,#f59e0b);border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <a href="<?= url('inspector/jobs/' . $j['id']) ?>"><b><span class="mono"><?= e($j['job_no']) ?></span> · <?= e($j['title']) ?></b></a>
+          <div class="small muted"><?= e($j['client_name']) ?><?= $j['location'] ? ' · ' . e($j['location']) : '' ?> · <?= e(fmt_date($j['scheduled_date']) ?: 'Not scheduled') ?> · new job — add your sub-jobs to begin</div>
+        </div>
+        <a class="btn btn-primary btn-sm" href="<?= url('inspector/jobs/' . $j['id'] . '/subjobs/new') ?>"><?= icon('plus', 'sm') ?> Add sub-job</a>
+      </div>
+    <?php endforeach; ?>
     <?php if ($queue): foreach ($queue as $s): ?>
       <?php View::render('partials/subjob_row', ['s' => $s, 'href' => url('inspector/subjobs/' . $s['id']), 'hideInspector' => true], null); ?>
       <?php if (!empty($reworkNotes[$s['id']])): ?><div style="padding:0 18px 12px 100px" class="small"><span class="badge badge-red"><i></i>QC</span> <?= e(mb_strimwidth($reworkNotes[$s['id']]['comments'], 0, 160, '…')) ?></div><?php endif; ?>
-    <?php endforeach; else: View::render('partials/empty', ['icon' => 'check', 'title' => 'No open inspections', 'text' => 'New assignments will appear here and in your notifications.'], null); endif; ?>
+    <?php endforeach; elseif (!$myJobs): View::render('partials/empty', ['icon' => 'check', 'title' => 'No open inspections', 'text' => 'New assignments will appear here and in your notifications.'], null); endif; ?>
   </div>
   <div class="stack">
     <div class="card"><div class="card-h"><h2><?= icon('history', 'sm') ?> Recently submitted</h2></div>

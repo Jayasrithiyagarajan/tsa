@@ -17,8 +17,13 @@ final class InspectorController extends Controller
             }
         }
         $recent = DB::all(JobService::SUBJOB_SQL . " WHERE sj.inspector_id = ? AND sj.status IN ('submitted','approved') ORDER BY COALESCE(sj.approved_at, sj.submitted_at) DESC LIMIT 5", [$me]);
+        // jobs assigned to me that have no sub-jobs of mine yet (the inspector adds them) — same rule as Ongoing Jobs
+        $myJobs = DB::all("SELECT j.*, c.name client_name FROM jobs j JOIN clients c ON c.id = j.client_id
+                           WHERE j.lead_inspector_id = ? AND j.status NOT IN ('completed','cancelled')
+                           AND NOT EXISTS (SELECT 1 FROM sub_jobs s WHERE s.job_id = j.id AND s.inspector_id = ?)
+                           ORDER BY j.scheduled_date IS NULL, j.scheduled_date, j.id LIMIT 20", [$me, $me]);
         $profile = DB::one('SELECT * FROM inspector_profiles WHERE user_id = ?', [$me]);
-        $this->view('inspector/dashboard', compact('k', 'queue', 'reworkNotes', 'recent', 'profile') + ['title' => 'My Day', 'crumbs' => ['My Day' => null]]);
+        $this->view('inspector/dashboard', compact('k', 'queue', 'myJobs', 'reworkNotes', 'recent', 'profile') + ['title' => 'My Day', 'crumbs' => ['My Day' => null]]);
     }
 
     /** Finished work: sub-jobs submitted to QC or approved. */
@@ -288,6 +293,10 @@ final class InspectorController extends Controller
             if (in_array($f['key'] ?? '', CertificateService::FREE_TEXT_SELECTS, true) && ($f['type'] ?? '') === 'select') {   // free text, with the old options offered as suggestions
                 $f['suggest'] = $f['options'] ?? [];
                 $f['type'] = 'text';
+            }
+            if (($f['key'] ?? '') === 'sticker_no') {   // only the inspector's own allocated stickers are offered
+                $own = DB::all("SELECT sticker_no FROM stickers WHERE status = 'allocated' AND inspector_id = ?" . (in_array($sj['type_code'], ['DEFR', 'LDEF'], true) ? " AND color = 'red'" : '') . ' ORDER BY sticker_no', [Auth::id()]);
+                $f['suggest'] = array_column($own, 'sticker_no');
             }
             $f['is_cap'] = CertificateService::isCapacityField($f);
             if ($f['is_cap']) $f['required'] = true;

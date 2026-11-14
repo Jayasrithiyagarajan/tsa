@@ -62,6 +62,7 @@ $r->get('/admin/assign',                    [AdminJobController::class, 'board']
 $r->get('/admin/jobs/{id}',                 [AdminJobController::class, 'show'], $A);
 $r->post('/admin/jobs/{id}/update',         [AdminJobController::class, 'update'], $A);
 $r->post('/admin/jobs/{id}/assign',         [AdminJobController::class, 'assign'], $A);
+$r->post('/admin/jobs/{id}/assign-job',     [AdminJobController::class, 'assignWholeJob'], $A);
 $r->post('/admin/jobs/{id}/close',          [AdminJobController::class, 'close'], ['superadmin']);       // final approval after QC - Super Admin only, needs the time sheet
 $r->get('/admin/jobs/{id}/timesheet',       [AdminJobController::class, 'timesheet'], $A);
 $r->post('/admin/jobs/{id}/timesheet',      [AdminJobController::class, 'uploadTimesheet'], ['superadmin']);       // final approval after QC

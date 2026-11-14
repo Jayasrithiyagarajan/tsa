@@ -98,7 +98,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
         ?>
         <div class="card-b" style="border-bottom:1px solid var(--border)"><div class="form-grid">
           <div class="field col-4"><label><?= $isReport ? 'Report No.' : 'Certificate No.' ?></label><div class="bound mono"><?= icon('lock', 'sm') ?><?= e($cert['certificate_no'] ?? Numbering::certificate($sj)) ?></div></div>
-          <div class="field col-6"><label>Equipment description</label><input class="input" type="text" name="eq_description" value="<?= e($sj['eq_description']) ?>" maxlength="190"<?= $dis ?>></div>
+          <div class="field col-6"><label>Equipment Type</label><input class="input" type="text" name="eq_description" value="<?= e($sj['eq_description']) ?>" maxlength="190"<?= $dis ?>></div>
           <div class="field col-6"><label>Equipment ID / S No.</label><input class="input" type="text" name="equipment_no" value="<?= e($sj['equipment_no']) ?>" maxlength="80"<?= $dis ?>></div>
           <div class="field col-4"><label>Serial No.</label><input class="input" type="text" name="serial_no" value="<?= e($checklist['serial_no']) ?>"<?= $dis ?>></div>
           <div class="field col-4"><label>Date of inspection</label><input class="input" type="date" name="inspection_date" value="<?= e($checklist['inspection_date']) ?>"<?= $dis ?>></div>
@@ -219,7 +219,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
                 <?php elseif (($f['type'] ?? 'text') === 'select'): ?>
                   <select class="select" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><option value="">Select…</option><?php foreach ($f['options'] ?? [] as $o): ?><option<?= selected($o, $f['value']) ?>><?= e($o) ?></option><?php endforeach; ?></select>
                 <?php elseif (($f['type'] ?? 'text') === 'textarea'): ?>
-                  <textarea class="input" rows="14" style="min-height:300px;resize:vertical;line-height:1.5" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><?= e($f['value']) ?></textarea>
+                  <textarea class="input" rows="24" style="min-height:520px;resize:vertical;line-height:1.5" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><?= e($f['value']) ?></textarea>
                 <?php else: ?>
                   <?php if (!empty($f['is_date'])): ?>
                   <input class="input" type="date" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['iso']) ?>"<?= $dis ?>>

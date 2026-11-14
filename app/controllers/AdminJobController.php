@@ -140,6 +140,17 @@ final class AdminJobController extends Controller
         });
     }
 
+    /** Assignment board: give a job that has no inspector yet (e.g. created with "Assign later") a lead inspector. */
+    public function assignWholeJob(string $id): void
+    {
+        $this->attempt(function () use ($id) {
+            $inspector = (int) input('inspector_id');
+            if (!$inspector) throw new DomainException('Choose an inspector.');
+            $res = JobService::assignJob((int) $id, $inspector, input('note'));
+            flash('success', 'Job assigned to ' . DB::value('SELECT name FROM users WHERE id = ?', [$inspector]) . '.');
+        });
+    }
+
     public function addSubJob(string $id): void
     {
         $this->attempt(fn () => JobService::addSubJob((int) $id, $_POST), 'Sub-job added.');
@@ -222,12 +233,19 @@ final class AdminJobController extends Controller
                         ORDER BY FIELD(j.priority,\'urgent\',\'high\',\'normal\',\'low\'), j.scheduled_date IS NULL, j.scheduled_date, sj.job_id, sj.seq') : [];
         $byJob = [];
         foreach ($pending as $s) $byJob[$s['job_id']][] = $s;
+        // jobs with no inspector at all (created with "Assign later"), so they can be assigned from the board too
+        $noLead = DB::all("SELECT j.id, j.job_no, j.title, j.location, j.priority, j.scheduled_date, c.name client_name,
+                    (SELECT COUNT(*) FROM sub_jobs s WHERE s.job_id = j.id AND s.status <> 'cancelled') n_sub
+                FROM jobs j JOIN clients c ON c.id = j.client_id
+                WHERE j.lead_inspector_id IS NULL AND j.status NOT IN ('cancelled','completed')
+                ORDER BY FIELD(j.priority,'urgent','high','normal','low'), j.scheduled_date IS NULL, j.scheduled_date, j.id LIMIT 100");
+        $noLead = array_values(array_filter($noLead, fn ($j) => !isset($byJob[$j['id']])));
         $inspectors = JobService::inspectorsFor();
         $skills = [];
         foreach (DB::all('SELECT k.user_id, t.code FROM inspector_skills k JOIN inspection_types t ON t.id = k.inspection_type_id') as $r) {
             $skills[$r['user_id']][] = $r['code'];
         }
-        $this->view('admin/jobs/board', compact('byJob', 'inspectors', 'skills', 'meta') + [
+        $this->view('admin/jobs/board', compact('byJob', 'noLead', 'inspectors', 'skills', 'meta') + [
             'title' => 'Assignment Board', 'crumbs' => ['Assignment Board' => null],
         ]);
     }
