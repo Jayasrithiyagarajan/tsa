@@ -8,7 +8,7 @@ $standardNotes = implode("\n", [
     'The Client has Right during a maximum period of fifteen days from the date of issuance of this Certificate; let us know in writing for any error that may take place in this Certificate, also has right to recover samples that have been tested or remained.',
 ]);
 
-return [
+$seed = [
     [
         'type' => [
             'code' => 'BOOM', 'name' => 'Boom Truck', 'category' => 'Lifting Equipment',
@@ -977,8 +977,8 @@ return [
             'procedure_ref' => 'TUV.VH.711.01',
             'standard_ref' => 'SASO 1285 / GSO 972',
             'validity_months' => 12,
-            'requires_checklist' => 1,
-            'requires_certificate' => 0,
+            'requires_checklist' => 0,
+            'requires_certificate' => 1,
             'requires_sticker' => 0,
         ],
         // F-7.5.1-CL 11 · Rev. 02 · 09/Feb./23 — text verbatim from the form; '## ' = underlined heading line, '>> ' = right-aligned reference
@@ -3097,3 +3097,11 @@ Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States C
         'certificate' => null,
     ],
 ];
+
+// Petroleum Products Transportation Tanks are issued as a certificate (the Special Equipment certificate), not from a checklist
+$specCert = null;
+foreach ($seed as $d) if ($d['type']['code'] === 'SPEC') $specCert = $d['certificate'];
+foreach ($seed as &$d) if ($d['type']['code'] === 'PTNK') { $d['checklist'] = null; $d['certificate'] = $specCert; }
+unset($d);
+
+return $seed;

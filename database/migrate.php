@@ -243,7 +243,7 @@ foreach (require __DIR__ . '/seed_templates.php' as $def) {
     }
 
     // Motorcycle (F-7.5.1-14) and Trailer (F-7.5.1-12) moved from the Checklists folder to the Certificates folder: the whole report is now a certificate template
-    if (in_array($code, ['MOTS', 'TRLR', 'CRHC'], true) && !$def['checklist'] && $type && ((int) $type['requires_checklist'] === 1 || (int) $type['requires_certificate'] === 0 || $type['status'] !== 'active')) {
+    if (in_array($code, ['MOTS', 'TRLR', 'CRHC', 'PTNK'], true) && !$def['checklist'] && $type && ((int) $type['requires_checklist'] === 1 || (int) $type['requires_certificate'] === 0 || $type['status'] !== 'active')) {
         DB::update('inspection_types', ['requires_checklist' => 0, 'requires_certificate' => 1, 'status' => 'active'], 'id = ?', [$typeId]);
         DB::update('checklist_templates', ['is_active' => 0], 'inspection_type_id = ?', [$typeId]);
         echo "✓ $code moved to certificate templates (checklist template deactivated)\n";

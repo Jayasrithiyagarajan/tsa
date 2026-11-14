@@ -69,7 +69,7 @@ final class InspectorController extends Controller
     /** Checklist type code => type code whose certificate template is issued (per the checklist / certificate sheet). */
     private const CERT_FOR_CHECKLIST = [
         'AIRC' => 'SPEC', 'BKHO' => 'SPEC', 'BOOM' => 'SPEC', 'BLDZ' => 'SPEC', 'DRIL' => 'SPEC', 'EXCV' => 'SPEC', 'GEN' => 'SPEC',
-        'ROLL' => 'SPEC', 'SKID' => 'SPEC', 'WLDR' => 'SPEC', 'PTNK' => 'SPEC',
+        'ROLL' => 'SPEC', 'SKID' => 'SPEC', 'WLDR' => 'SPEC',
         'CRWL' => 'LFTC', 'FORK' => 'LFTC', 'JIBC' => 'LFTC', 'MCR' => 'LFTC', 'TELE' => 'LFTC', 'TCR' => 'LFTC', 'VLD' => 'LFTC',
         'ELEV' => 'ELEV', 'ESCL' => 'ESCL',
         'SLNG' => 'LFTC', 'RGHW' => 'LFTC', 'OVHC' => 'LFTC', 'CHBK' => 'LFTC', 'GRDR' => 'SPEC',
@@ -77,12 +77,12 @@ final class InspectorController extends Controller
     ];
 
     /** Certificate-only types (no checklist) => sticker default (0 = no sticker, 1 = sticker, 2 = RED sticker), per the sheet. */
-    public const CERT_ONLY = ['MPI' => 0, 'PT' => 0, 'UTT' => 0, 'ET' => 0, 'LEAK' => 0, 'PRES' => 0, 'SCAF' => 0, 'STSR' => 0, 'DEFR' => 2, 'LDEF' => 2, 'ANEM' => 1, 'DEST' => 0, 'CRHC' => 1, 'ESCL' => 1, 'TRLR' => 1, 'MOTS' => 1];
+    public const CERT_ONLY = ['MPI' => 0, 'PT' => 0, 'UTT' => 0, 'ET' => 0, 'LEAK' => 0, 'PRES' => 0, 'SCAF' => 0, 'STSR' => 0, 'DEFR' => 2, 'LDEF' => 2, 'ANEM' => 1, 'DEST' => 0, 'CRHC' => 1, 'ESCL' => 1, 'TRLR' => 1, 'MOTS' => 1, 'PTNK' => 1];
 
     /** Sticker default (1 = yes, 0 = no) for the checklist types on the checklist / certificate sheet. */
     private const CHECKLIST_STICKER = [
         'AIRC' => 1, 'BKHO' => 1, 'BOOM' => 1, 'BLDZ' => 1, 'CRWL' => 1, 'DRIL' => 1, 'ELEV' => 1, 'EXCV' => 1, 'FORK' => 1, 'GEN' => 1,
-        'JIBC' => 1, 'MCR' => 1, 'ROLL' => 1, 'SKID' => 1, 'TELE' => 1, 'TCR' => 1, 'VLD' => 1, 'WLDR' => 1, 'ESCL' => 1, 'PTNK' => 1,
+        'JIBC' => 1, 'MCR' => 1, 'ROLL' => 1, 'SKID' => 1, 'TELE' => 1, 'TCR' => 1, 'VLD' => 1, 'WLDR' => 1, 'ESCL' => 1,
         'MOTO' => 1, 'TRNC' => 1, 'WLDM' => 1, 'CMXR' => 1, 'MCPM' => 1, 'DUMP' => 1, 'CHBK' => 0, 'LVHT' => 0, 'SLNG' => 0, 'RGHW' => 0, 'OVHC' => 1, 'GRDR' => 1,
     ];
 
@@ -288,11 +288,6 @@ final class InspectorController extends Controller
             if (in_array($f['key'] ?? '', CertificateService::FREE_TEXT_SELECTS, true) && ($f['type'] ?? '') === 'select') {   // free text, with the old options offered as suggestions
                 $f['suggest'] = $f['options'] ?? [];
                 $f['type'] = 'text';
-            }
-            if (($f['key'] ?? '') === 'sticker_no') {   // only the inspector's own allocated stickers are offered
-                $own = DB::all("SELECT sticker_no FROM stickers WHERE status = 'allocated' AND inspector_id = ?" . (in_array($sj['type_code'], ['DEFR', 'LDEF'], true) ? " AND color = 'red'" : '') . ' ORDER BY sticker_no', [Auth::id()]);
-                $f['suggest'] = array_column($own, 'sticker_no');
-                $f['placeholder'] = $f['suggest'] ? 'Choose or type one of your stickers' : 'No stickers allocated to you';
             }
             $f['is_cap'] = CertificateService::isCapacityField($f);
             if ($f['is_cap']) $f['required'] = true;
