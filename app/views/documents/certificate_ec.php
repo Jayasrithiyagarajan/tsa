@@ -45,6 +45,7 @@ if ($m['issued']) $sigs .= '<img class="sp" src="' . $brand['stamp'] . '" alt=""
 $cd0 = json_decode((string) ($c['data'] ?? ''), true) ?: [];
 $remarksTxt = (string) (array_key_exists('cert_remarks', $cd0) ? $cd0['cert_remarks'] : ($c['remarks'] ?? ''));   // own Remarks \ Notes field; the Message to QC is not printed
 $remarksTxt = trim(preg_replace('/[^\P{C}\n]+/u', '', str_replace("\r", '', $remarksTxt)));   // drop stray control / invisible characters (they print as an empty box in the PDF)
+if ($remarksTxt !== '') { $notes = ''; foreach (array_values(array_filter(array_map('trim', preg_split('/\R/u', $remarksTxt)), 'strlen')) as $line) $notes .= '<li>' . e($line) . '</li>'; }   // what is typed in Remarks becomes the bullet list (replaces the standard notes)
 $t2 = '<table class="f ec" style="margin-top:4.3mm">' . doc_sizer([39.7, 19.0, 4.2, 32.3, 27.5, 14.3, 47.1])
     . '<tr class="h78"><td class="l">Inspected Item</td><td colspan="6" class="val">' . $v('eq_item') . '</td></tr>'
     . '<tr class="h78"><td class="l">Identification / SN</td><td colspan="6" class="val">' . $v('eq_id') . '</td></tr>'
@@ -53,8 +54,9 @@ $t2 = '<table class="f ec" style="margin-top:4.3mm">' . doc_sizer([39.7, 19.0, 4
     . '<tr><td colspan="7" class="imgcell">' . $img . '</td></tr>'
     . '<tr class="h102"><td colspan="7" class="l trl">Test Result:</td></tr>'
     . '<tr><td colspan="7" class="stmt">' . e($c['result_statement']) . '</td></tr>'
-    . '<tr class="h102"><td colspan="2" class="l rm">Remarks \ Notes:</td><td colspan="5" class="val" style="text-align:left;vertical-align:top;padding:1.5mm 2mm">' . nl2br(e($remarksTxt)) . '</td></tr>'
-    . ($notes ? '<tr><td colspan="7" class="nt"><ul>' . $notes . '</ul></td></tr>' : '')
+    . '<tr class="h102"><td colspan="2" class="l rm">Remarks \ Notes:</td><td colspan="5" class="val"></td></tr>'
+    . ($notes ? '<tr><td colspan="7" class="nt">'
+                . ($notes ? '<ul>' . $notes . '</ul>' : '') . '</td></tr>' : '')
     . '<tr class="h102"><td colspan="3" class="l ins">' . e(rtrim($tpl['inspector_label'], ': ')) . '</td><td colspan="2" class="val ins">' . $who($insp) . '</td><td colspan="2" rowspan="2" class="sgcell">' . $sigs . '</td></tr>'
     . '<tr class="h102"><td colspan="3" class="l ins">Approved by</td><td colspan="2" class="val ins">' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td></tr>'
     . '</table>';

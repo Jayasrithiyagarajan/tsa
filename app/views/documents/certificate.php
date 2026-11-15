@@ -49,8 +49,10 @@ foreach ($m['notes'] as $line) $notes .= '<div class="nl"><span class="bu">&bull
 $cd0 = json_decode((string) ($c['data'] ?? ''), true) ?: [];
 $remarksTxt = (string) (array_key_exists('cert_remarks', $cd0) ? $cd0['cert_remarks'] : ($c['remarks'] ?? ''));   // own Remarks \ Notes field; the Message to QC is not printed
 $remarksTxt = trim(preg_replace('/[^\P{C}\n]+/u', '', str_replace("\r", '', $remarksTxt)));   // drop stray control / invisible characters (they print as an empty box in the PDF)
-$remarks = '<table class="f remarks">' . doc_sizer([35.5, 153.1]) . '<tr><td class="l">Remarks \ Notes</td><td class="v" style="text-align:left;vertical-align:top;padding:1.5mm 2mm">' . nl2br(e($remarksTxt)) . '</td></tr>'
-    . ($notes ? '<tr class="notes"><td colspan="2">' . $notes . '</td></tr>' : '') . '</table>';
+if ($remarksTxt !== '') { $notes = ''; foreach (array_values(array_filter(array_map('trim', preg_split('/\R/u', $remarksTxt)), 'strlen')) as $line) $notes .= '<div class="nl"><span class="bu">&bull;</span>' . e($line) . '</div>'; }   // what is typed in Remarks becomes the bullet list (replaces the standard notes)
+$remarks = '<table class="f remarks">' . doc_sizer([35.5, 153.1]) . '<tr><td class="l">Remarks \ Notes</td><td class="v"></td></tr>'
+    . ($notes ? '<tr class="notes"><td colspan="2">'
+                . $notes . '</td></tr>' : '') . '</table>';
 
 $insp = $m['inspector'];
 $rev = $m['reviewer'];

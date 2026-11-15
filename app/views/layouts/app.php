@@ -37,7 +37,7 @@ $nav = [
             ['admin/templates', 'layers', 'Templates', ''],
         ]],
         ['ID Card System', [
-            ['admin/cards', 'qr', 'Inspector ID Cards', $cnt($c['cards_pending'] ?? 0)],
+            ['admin/cards', 'qr', 'Operator Card', $cnt($c['cards_pending'] ?? 0)],
             ['admin/cards/new', 'plus', 'Issue Card', ''],
             ['admin/cards/validate', 'shield', 'Validate Card', ''],
         ]],

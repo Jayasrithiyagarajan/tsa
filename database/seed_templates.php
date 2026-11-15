@@ -2042,8 +2042,8 @@ Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States C
             'default_statement' => 'PASSED (NO LEAK / PRESSURE TEST SATISFACTORY)',
             'fields' => [
                 ['key' => 'client', 'label' => 'Client Name', 'source' => 'client.name'],
-                ['key' => 'address', 'label' => 'Address / Location', 'type' => 'text', 'required' => true],
-                ['key' => 'location', 'label' => 'Test Location', 'source' => 'job.location'],
+                ['key' => 'address', 'label' => 'Address / Location', 'source' => 'job.location'],
+                ['key' => 'location', 'label' => 'Test Location', 'type' => 'text', 'required' => true],
                 ['key' => 'cert_no', 'label' => 'Report No.', 'source' => 'cert.certificate_no'],
                 ['key' => 'standard', 'label' => 'Relevant Standard', 'source' => 'type.standard_ref'],
                 ['key' => 'holding_time', 'label' => 'Holding Time', 'type' => 'text', 'required' => true],
@@ -2072,8 +2072,8 @@ Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States C
             'default_statement' => 'PASSED (NO LEAK / PRESSURE TEST SATISFACTORY)',
             'fields' => [
                 ['key' => 'client', 'label' => 'Client Name', 'source' => 'client.name'],
-                ['key' => 'address', 'label' => 'Address / Location', 'type' => 'text', 'required' => true],
-                ['key' => 'location', 'label' => 'Test Location', 'source' => 'job.location'],
+                ['key' => 'address', 'label' => 'Address / Location', 'source' => 'job.location'],
+                ['key' => 'location', 'label' => 'Test Location', 'type' => 'text', 'required' => true],
                 ['key' => 'cert_no', 'label' => 'Report No.', 'source' => 'cert.certificate_no'],
                 ['key' => 'standard', 'label' => 'Relevant Standard', 'source' => 'type.standard_ref'],
                 ['key' => 'holding_time', 'label' => 'Holding Time', 'type' => 'text', 'required' => true],
@@ -2422,8 +2422,8 @@ Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States C
             'default_statement' => 'Test carried out',
             'fields' => [
                 ['key' => 'client', 'label' => 'Client Name', 'source' => 'client.name'],
-                ['key' => 'address', 'label' => 'Address / Location', 'type' => 'text', 'required' => true],
-                ['key' => 'location', 'label' => 'Test Location', 'source' => 'job.location'],
+                ['key' => 'address', 'label' => 'Address / Location', 'source' => 'job.location'],
+                ['key' => 'location', 'label' => 'Test Location', 'type' => 'text', 'required' => true],
                 ['key' => 'cert_no', 'label' => 'Report No.', 'source' => 'cert.certificate_no'],
                 ['key' => 'description', 'label' => 'Description', 'type' => 'text', 'required' => true],
                 ['key' => 'test_date', 'label' => 'Test Date', 'source' => 'cert.inspection_date'],

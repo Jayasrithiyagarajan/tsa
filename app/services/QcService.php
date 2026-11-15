@@ -90,10 +90,20 @@ final class CertificateService
         });
     }
 
+    /** Witness-certificate header: "Address / Location" is fetched from the job location; "Test Location" is typed by the inspector. */
+    public static function normalizeField(array $f): array
+    {
+        if (($f['key'] ?? '') === 'address' && ($f['label'] ?? '') === 'Address / Location') { $f['source'] = 'job.location'; unset($f['required']); }
+        if (($f['key'] ?? '') === 'location' && ($f['label'] ?? '') === 'Test Location') { unset($f['source']); $f['type'] = 'text'; }
+        if (($f['key'] ?? '') === 'test_method' && ($f['type'] ?? '') === 'select') { $f['type'] = 'text'; unset($f['options']); }   // Test Method is typed in, not picked from a list
+        return $f;
+    }
+
     /** Resolve a template field's value from bound system data or the stored manual value. */
     public static function fieldValue(array $f, array $sj, array $cert, array $data): string
     {
         if (($f['key'] ?? '') === 'item_id') $f['source'] = '';   // ID / SN is always typed in by the inspector, never fetched
+        $f = self::normalizeField($f);
         $src = $f['source'] ?? '';
         $map = [
             'client.name'               => $sj['client_name'],
@@ -134,6 +144,7 @@ final class CertificateService
     {
         $fields = $tpl ? (json_decode((string) $tpl['fields'], true) ?: []) : [];
         if (!$tpl) return $fields;
+        foreach ($fields as &$ff) $ff = self::normalizeField($ff);
         foreach ($fields as &$ff) if (($ff['key'] ?? '') === 'item_id') { unset($ff['source']); $ff['type'] = 'text'; $ff['required'] = true; }   // typed manually
         unset($ff);
         if (($tpl['layout'] ?? '') === 'an' && !in_array('an_notes', array_column($fields, 'key'), true)) $fields[] = ['key' => 'an_notes', 'label' => 'Notes', 'type' => 'textarea', 'required' => false];   // editable Notes block of the Anemometer certificate

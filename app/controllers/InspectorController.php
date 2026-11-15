@@ -82,7 +82,7 @@ final class InspectorController extends Controller
     ];
 
     /** Certificate-only types (no checklist) => sticker default (0 = no sticker, 1 = sticker, 2 = RED sticker), per the sheet. */
-    public const CERT_ONLY = ['MPI' => 0, 'PT' => 0, 'UTT' => 0, 'ET' => 0, 'LEAK' => 0, 'PRES' => 0, 'SCAF' => 0, 'STSR' => 0, 'DEFR' => 2, 'LDEF' => 2, 'ANEM' => 1, 'DEST' => 0, 'CRHC' => 1, 'ESCL' => 1, 'TRLR' => 1, 'MOTS' => 1, 'PTNK' => 1];
+    public const CERT_ONLY = ['MPI' => 0, 'PT' => 0, 'UTT' => 0, 'ET' => 0, 'LEAK' => 1, 'PRES' => 0, 'SCAF' => 0, 'STSR' => 0, 'DEFR' => 2, 'LDEF' => 2, 'ANEM' => 1, 'DEST' => 0, 'CRHC' => 1, 'ESCL' => 1, 'TRLR' => 1, 'MOTS' => 1, 'PTNK' => 1];
 
     /** Sticker default (1 = yes, 0 = no) for the checklist types on the checklist / certificate sheet. */
     private const CHECKLIST_STICKER = [

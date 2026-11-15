@@ -63,10 +63,12 @@ if (isset($cd['ut_notes']) && trim((string) $cd['ut_notes']) !== '') $lines = ar
 $cd0 = json_decode((string) ($c['data'] ?? ''), true) ?: [];
 $remarksTxt = (string) (array_key_exists('cert_remarks', $cd0) ? $cd0['cert_remarks'] : ($c['remarks'] ?? ''));   // own Remarks \ Notes field; the Message to QC is not printed
 $remarksTxt = trim(preg_replace('/[^\P{C}\n]+/u', '', str_replace("\r", '', $remarksTxt)));   // drop stray control / invisible characters (they print as an empty box in the PDF)
+if ($remarksTxt !== '') $lines = array_values(array_filter(array_map('trim', preg_split('/\R/u', $remarksTxt)), 'strlen'));   // what is typed in Remarks becomes the bullet list (replaces the standard notes)
 foreach ($lines as $k => $line) $notes .= '<li' . ($k === count($lines) - 1 && count($lines) > 3 ? ' class="nb"' : '') . '>' . e($line) . '</li>';
 $rm = '<table class="f ut" style="margin-top:7.6mm">' . doc_sizer([37, 153])
-    . '<tr class="h76"><td class="l rm">Remarks \ Notes:</td><td style="text-align:left;vertical-align:top;padding:1.5mm 2mm">' . nl2br(e($remarksTxt)) . '</td></tr>'
-    . ($notes ? '<tr><td colspan="2" class="nt"><ul>' . $notes . '</ul></td></tr>' : '') . '</table>';
+    . '<tr class="h76"><td class="l rm">Remarks \ Notes:</td><td></td></tr>'
+    . ($notes ? '<tr><td colspan="2" class="nt">'
+                . ($notes ? '<ul>' . $notes . '</ul>' : '') . '</td></tr>' : '') . '</table>';
 
 // ---- sign-off
 $insp = $m['inspector'];
