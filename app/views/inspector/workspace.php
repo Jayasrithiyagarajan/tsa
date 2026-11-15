@@ -205,7 +205,44 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <?php if ($editable): ?><span class="save-state" id="cf-save-state">Autosave on</span><?php endif; ?>
           </div>
           <div class="form-grid">
-            <?php $lastSec = null; $anTbl = ($certTpl['layout'] ?? '') === 'an'; $utTbl = ($certTpl['layout'] ?? '') === 'ut'; $fk = array_column($fields, null, 'key'); foreach ($fields as $f): ?>
+            <?php $lastSec = null; $anTbl = ($certTpl['layout'] ?? '') === 'an'; $utTbl = ($certTpl['layout'] ?? '') === 'ut'; $chTbl = ($certTpl['layout'] ?? '') === 'ch'; $chSec = null; $chN = 0; $fk = array_column($fields, null, 'key'); foreach ($fields as $f): ?>
+              <?php if ($chTbl && substr($f['key'], -2) === '_r' && isset($fk[substr($f['key'], 0, -2)]['item'])) continue;   // remarks are shown inside their check row ?>
+              <?php if ($chTbl && isset($f['item'], $f['section'])): ?>
+                <?php if ($chSec !== $f['section']): $chSec = $f['section']; ?>
+                  <?php if ($chN === 0 && $editable): ?>
+                    <div class="col-12 row" style="gap:8px;align-items:center;flex-wrap:wrap"><b>All sections:</b>
+                      <button type="button" class="btn btn-secondary btn-sm" data-ch-mark="Yes" data-ch-sec="">Mark all as Yes</button>
+                      <button type="button" class="btn btn-secondary btn-sm" data-ch-mark="No" data-ch-sec="">Mark all as No</button>
+                      <button type="button" class="btn btn-ghost btn-sm" data-ch-mark="N/A" data-ch-sec="">Mark all as N/A</button>
+                    </div>
+                    <script>document.addEventListener('click', function (e) {
+                      var b = e.target.closest('[data-ch-mark]'); if (!b) return;
+                      var sec = b.getAttribute('data-ch-sec'), val = b.getAttribute('data-ch-mark'), form = document.getElementById('certificate-form');
+                      form.querySelectorAll('.cl-item[data-ch-sec]').forEach(function (row) {
+                        if (sec !== '' && row.getAttribute('data-ch-sec') !== sec) return;
+                        var r = row.querySelector('input[type=radio][value="' + val + '"]'); if (r && !r.disabled) r.checked = true;
+                      });
+                      form.dispatchEvent(new Event('change', { bubbles: true }));   // triggers the autosave
+                    });</script>
+                  <?php endif; ?>
+                  <div class="col-12 cl-section" style="border-radius:8px;margin-top:6px"><span><?= e(rtrim($chSec, ': ')) ?></span>
+                    <?php if ($editable): ?><span class="row" style="gap:6px">
+                      <button type="button" class="btn btn-ghost btn-sm" style="height:24px;color:inherit" data-ch-mark="Yes" data-ch-sec="<?= e($chSec) ?>">Mark all as Yes</button>
+                      <button type="button" class="btn btn-ghost btn-sm" style="height:24px;color:inherit" data-ch-mark="No" data-ch-sec="<?= e($chSec) ?>">Mark all as No</button>
+                    </span><?php endif; ?></div>
+                <?php endif; $chN++; $rk = $f['key'] . '_r'; ?>
+                <div class="col-12"><div class="cl-item show-rem" data-ch-sec="<?= e($chSec) ?>" style="padding:10px 4px">
+                  <span class="n"><?= $chN ?></span>
+                  <span class="lbl"><?= nl2br(e((string) $f['item'])) ?></span>
+                  <span class="ctrl row" style="gap:6px"><span class="seg" role="radiogroup" aria-label="<?= e($f['item']) ?>">
+                    <?php foreach (['Yes' => 'p', 'No' => 'f', 'N/A' => 'na'] as $ans => $cls): ?>
+                      <label><input type="radio" name="fields[<?= e($f['key']) ?>]" value="<?= e($ans) ?>"<?= checked((string) $f['value'] === $ans) . $dis ?>><span class="<?= $cls ?>"><?= e($ans) ?></span></label>
+                    <?php endforeach; ?>
+                  </span></span>
+                  <div class="rem"><input class="input" type="text" name="fields[<?= e($rk) ?>]" value="<?= e((string) ($fk[$rk]['value'] ?? '')) ?>" placeholder="Remarks" maxlength="190"<?= $dis ?>></div>
+                </div></div>
+                <?php continue; ?>
+              <?php endif; ?>
               <?php if ($f['key'] === 'cert_remarks'): ?>
                 <div class="field col-12"><label>Remarks \ Notes <span class="muted" style="font-weight:400">— printed on the certificate</span></label>
                   <textarea class="input" rows="4" style="min-height:100px;resize:vertical;line-height:1.5" name="fields[cert_remarks]"<?= $dis ?>><?= e($f['value'] ?? '') ?></textarea></div>
@@ -330,7 +367,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
                 <label class="<?= e($o) ?>"><input type="radio" name="result" value="<?= e($o) ?>"<?= checked($cert['result'] === $o) . $dis ?>> <?= e(Workflow::label($o)) ?></label>
               <?php endforeach; ?>
             </div>
-            <div class="field col-12"><label>Result statement (printed under the result)</label><input class="input" name="result_statement" value="<?= e($cert['result_statement']) ?>"<?= $dis ?>></div>
+            <div class="field col-12"><label>Result statement (printed under the result)</label><textarea class="input" name="result_statement" rows="5" style="min-height:130px;resize:vertical;line-height:1.5"<?= $dis ?>><?= e($cert['result_statement']) ?></textarea></div>
             <div class="field col-12"><label>Message to QC <span class="muted" style="font-weight:400">— type here if you want to send a message to QC, otherwise leave it blank</span></label><textarea class="textarea" name="remarks" placeholder="Optional — leave blank if there is nothing for QC"<?= $dis ?>><?= e($cert['remarks']) ?></textarea></div>
           </div>
         </div>

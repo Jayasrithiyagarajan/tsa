@@ -23,11 +23,15 @@ $imgH = max(40, 60 + (10 - $gridRows) * ($pt ? 10.8 : 11.67)) - 4.4 - $gridRows 
 $img = '<div class="imgarea" style="height:' . round($imgH, 1) . 'mm">';
 $photos = array_slice(array_values($m['photos'] ?? []), 0, 4);   // at most 4 photos fit the box
 $inner = $imgH - 4.5;   // usable height inside the frame (padding + border)
-if (count($photos) >= 4) $pst = ' style="max-width:84mm; max-height:' . round($inner / 2 - 2.5, 1) . 'mm"';   // 2 x 2 grid so the 4th photo never runs out of the box
-elseif (count($photos) === 3) $pst = ' style="max-width:58mm; max-height:' . round($inner - 1, 1) . 'mm"';
-else $pst = '';
-foreach ($photos as $p) {
-    $img .= '<img' . $pst . ' src="' . $p['src'] . '" alt="">';
+$np = max(1, count($photos));
+$pst = ' style="max-width:' . round(185 / $np - 3.5, 1) . 'mm; max-height:' . round($inner - 1.5, 1) . 'mm"';   // photos share one row and use the full height of the box, so they print as large as the frame allows
+// one table row, one centred cell per photo: the photos sit level in the middle of the box and never touch its frame
+if ($photos) {
+    $img .= '<table style="width:100%; border-collapse:collapse"><tr>';
+    foreach ($photos as $p) {
+        $img .= '<td style="width:' . round(100 / $np, 2) . '%; height:' . round($inner - 1.5, 1) . 'mm; text-align:center; vertical-align:middle; padding:0"><img' . $pst . ' src="' . $p['src'] . '" alt=""></td>';
+    }
+    $img .= '</tr></table>';
 }
 $img .= '</div>';
 if (!$tpl['show_image_area']) $img = '';

@@ -278,7 +278,7 @@ final class InspectionService
             $upd = ['data' => json_encode($data, JSON_UNESCAPED_UNICODE)];
             $options = $tpl ? explode(',', $tpl['result_options']) : ['accepted', 'rejected', 'repair'];
             if (isset($in['result'])) $upd['result'] = in_array($in['result'], $options, true) ? $in['result'] : null;
-            if (isset($in['result_statement'])) $upd['result_statement'] = nullable(mb_substr($in['result_statement'], 0, 255));
+            if (isset($in['result_statement'])) $upd['result_statement'] = nullable(mb_substr($in['result_statement'], 0, 1000));
             if (isset($in['remarks'])) $upd['remarks'] = nullable(mb_substr($in['remarks'], 0, 2000));
             if (!empty($in['inspection_date']) && strtotime($in['inspection_date'])) {
                 $upd['inspection_date'] = $in['inspection_date'];

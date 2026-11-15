@@ -121,13 +121,22 @@ final class Numbering
     public static function request(): string
     {
         $y = date('Y');
-        return sprintf('REQ-%s-%04d', $y, self::next('request', $y));
+        // skip numbers that already exist (e.g. after the counters were reset while old records were kept)
+        for ($i = 0; $i < 1000; $i++) {
+            $no = sprintf('REQ-%s-%04d', $y, self::next('request', $y));
+            if (!DB::value('SELECT 1 FROM service_requests WHERE request_no = ?', [$no])) return $no;
+        }
+        return $no;
     }
 
     public static function job(): string
     {
         $y = date('Y');
-        return sprintf('JOB-%s-%04d', $y, self::next('job', $y));
+        for ($i = 0; $i < 1000; $i++) {
+            $no = sprintf('JOB-%s-%04d', $y, self::next('job', $y));
+            if (!DB::value('SELECT 1 FROM jobs WHERE job_no = ?', [$no])) return $no;
+        }
+        return $no;
     }
 
     /**

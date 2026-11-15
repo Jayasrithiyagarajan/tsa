@@ -331,7 +331,7 @@ CREATE TABLE certificates (
   source               ENUM('generated','uploaded') NOT NULL DEFAULT 'generated',
   data                 LONGTEXT NULL,                     -- JSON: template field values
   result               ENUM('accepted','rejected','repair') NULL,
-  result_statement     VARCHAR(255) NULL,
+  result_statement     TEXT NULL,
   remarks              TEXT NULL,
   inspection_date      DATE NULL,
   issue_date           DATE NULL,

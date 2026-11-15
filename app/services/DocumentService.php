@@ -77,6 +77,9 @@ final class DocumentService
         $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ? AND seq = ?', [$subJobId, $seq]);
         if (!$sj || !$cert || !$cert['template_id']) return null;
         $tpl = DB::one('SELECT * FROM certificate_templates WHERE id = ?', [$cert['template_id']]);
+        // a result statement cut off by the old 255-character column is restored from the template's full default text
+        $defSt = (string) ($tpl['default_statement'] ?? ''); $curSt = (string) ($cert['result_statement'] ?? '');
+        if ($defSt !== '' && strlen($curSt) >= 200 && strlen($defSt) > strlen($curSt) && strncmp($defSt, $curSt, strlen($curSt)) === 0) $cert['result_statement'] = $defSt;
         $data = json_decode($cert['data'] ?? '{}', true) ?: [];
         $fields = [];
         foreach (json_decode($tpl['fields'], true) ?: [] as $f) {  // (the extra Capacity / SWL entry feeds the sticker only, so printed layouts are untouched)

@@ -26,6 +26,11 @@ if (DB::value("SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHE
     echo "✓ checklist item labels widened to TEXT\n";
 }
 
+if (DB::value("SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'certificates' AND COLUMN_NAME = 'result_statement'") !== 'text') {
+    DB::pdo()->exec('ALTER TABLE certificates MODIFY result_statement TEXT NULL');
+    echo "✓ certificate result statements widened to TEXT\n";
+}
+
 if (!DB::one("SHOW COLUMNS FROM checklists LIKE 'remarks'")) {
     DB::pdo()->exec("ALTER TABLE checklists ADD remarks TEXT NULL AFTER inspection_date");
     echo "✓ added checklists.remarks\n";

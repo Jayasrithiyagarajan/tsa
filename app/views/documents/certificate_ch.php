@@ -16,11 +16,13 @@ $cert = $cm['cert'];
 $fv = [];
 $items = [];
 $codes = ['Yes' => 'pass', 'No' => 'fail', 'N/A' => 'na'];
+$cdata = json_decode((string) ($cm['cert']['data'] ?? ''), true) ?: [];   // per-row remarks typed in the form (<key>_r)
 foreach ($cm['fields'] as $f) {
     $fv[$f['key']] = (string) ($f['value'] ?? '');
     if (isset($f['item'], $f['section'])) {
         $res = $codes[(string) ($f['value'] ?? '')] ?? null;
-        $items[] = ['section' => $f['section'], 'label' => $f['item'], 'result' => $res, 'remarks' => $res === 'na' ? 'N/A' : ''];
+        $rmk = trim((string) ($cdata[$f['key'] . '_r'] ?? ''));
+        $items[] = ['section' => $f['section'], 'label' => $f['item'], 'result' => $res, 'remarks' => $res === 'na' ? trim('N/A' . ($rmk !== '' ? ' - ' . $rmk : '')) : $rmk];   // N/A prints in the REMARKS column as on the form
     }
 }
 $signed = in_array($cert['status'] ?? '', ['pending_qc', 'issued'], true);
