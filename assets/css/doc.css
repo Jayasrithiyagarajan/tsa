@@ -348,7 +348,7 @@ table.f.df.nt { margin-top: 2.6mm; }
 .cert-title.ec-t { top: 23.2mm; font-size: 12pt; }
 
 /* ---------- F-7.5.1-10 Leak Test / F-7.5.1-11 Pressure Test ---------- */
-.cert-title.lp-title { top: 22.85mm; text-decoration: underline; font-size: 14pt; }
+.cert-title.lp-title { top: 26mm; text-decoration: underline; font-size: 14pt; }
 table.f.lp td { border: 0.5pt solid #808080; padding: 0 1.9mm; font-size: 10pt; line-height: 0.909; vertical-align: middle; }
 table.f.lp.gap { margin-top: 5mm; }
 table.f.lp td.l { background: #aabee3; font-weight: bold; }

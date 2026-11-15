@@ -176,6 +176,7 @@ final class CertificateService
     /** Fields that are dates get a date picker: typed 'date', bound to a certificate date, or labelled "... Date ...". */
     public static function isDateField(array $f): bool
     {
+        if (($f['key'] ?? '') === 'last_exam') return false;   // Last Examination Date is typed in (no date picker)
         return ($f['type'] ?? '') === 'date'
             || in_array($f['source'] ?? '', ['cert.issue_date', 'cert.inspection_date', 'cert.next_inspection_date'], true)
             || (($f['type'] ?? 'text') === 'text' && preg_match('/\bdate\b/i', (string) ($f['label'] ?? '')) === 1);
