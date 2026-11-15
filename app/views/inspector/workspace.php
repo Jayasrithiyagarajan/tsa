@@ -206,6 +206,11 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
           </div>
           <div class="form-grid">
             <?php $lastSec = null; $anTbl = ($certTpl['layout'] ?? '') === 'an'; $utTbl = ($certTpl['layout'] ?? '') === 'ut'; $fk = array_column($fields, null, 'key'); foreach ($fields as $f): ?>
+              <?php if ($f['key'] === 'cert_remarks'): ?>
+                <div class="field col-12"><label>Remarks \ Notes <span class="muted" style="font-weight:400">— printed on the certificate</span></label>
+                  <textarea class="input" rows="4" style="min-height:100px;resize:vertical;line-height:1.5" name="fields[cert_remarks]"<?= $dis ?>><?= e($f['value'] ?? '') ?></textarea></div>
+                <?php continue; ?>
+              <?php endif; ?>
               <?php if ($utTbl && in_array($f['key'], ['ut_remarks', 'ut_notes'], true)): ?>
                 <?php if ($f['key'] === 'ut_notes'): ?>
                 <div class="field col-12">

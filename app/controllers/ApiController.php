@@ -98,7 +98,7 @@ final class ApiController extends Controller
     public function saveCertificate(string $id): void
     {
         try {
-            InspectionService::saveCertificate((int) $id, $_POST);
+            InspectionService::saveCertificate((int) $id, $_POST, max(1, (int) ($_POST['seq'] ?? 1)));   // save the page being edited, not always page 1
             json_out(['data' => ['saved' => true]]);
         } catch (DomainException $e) {
             json_out(['error' => $e->getMessage()], 422);

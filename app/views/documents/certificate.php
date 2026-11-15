@@ -21,8 +21,13 @@ $pt = ($tpl['layout'] ?? '') === 'pt';   // F-7.5.1-07 (PT) differs slightly in 
 $gridRows = (int) ceil(count($m['fields']) / 2);
 $imgH = max(40, 60 + (10 - $gridRows) * ($pt ? 10.8 : 11.67)) - 4.4 - $gridRows * 0.09;   // outer height of the image box follows the number of header rows (10 rows = 60 mm, 7 rows = 95 mm)
 $img = '<div class="imgarea" style="height:' . round($imgH, 1) . 'mm">';
-foreach ($m['photos'] as $p) {
-    $img .= '<img src="' . $p['src'] . '" alt="">';
+$photos = array_slice(array_values($m['photos'] ?? []), 0, 4);   // at most 4 photos fit the box
+$inner = $imgH - 4.5;   // usable height inside the frame (padding + border)
+if (count($photos) >= 4) $pst = ' style="max-width:84mm; max-height:' . round($inner / 2 - 2.5, 1) . 'mm"';   // 2 x 2 grid so the 4th photo never runs out of the box
+elseif (count($photos) === 3) $pst = ' style="max-width:58mm; max-height:' . round($inner - 1, 1) . 'mm"';
+else $pst = '';
+foreach ($photos as $p) {
+    $img .= '<img' . $pst . ' src="' . $p['src'] . '" alt="">';
 }
 $img .= '</div>';
 if (!$tpl['show_image_area']) $img = '';
@@ -41,7 +46,10 @@ $result = '<table class="f result">' . doc_sizer(array_fill(0, $n, 188.6 / $n)) 
 
 $notes = '';
 foreach ($m['notes'] as $line) $notes .= '<div class="nl"><span class="bu">&bull;</span>' . e($line) . '</div>';
-$remarks = '<table class="f remarks">' . doc_sizer([35.5, 153.1]) . '<tr><td class="l">Remarks \ Notes</td><td class="v">' . nl2br(e($c['remarks'])) . '</td></tr>'
+$cd0 = json_decode((string) ($c['data'] ?? ''), true) ?: [];
+$remarksTxt = (string) (array_key_exists('cert_remarks', $cd0) ? $cd0['cert_remarks'] : ($c['remarks'] ?? ''));   // own Remarks \ Notes field; the Message to QC is not printed
+$remarksTxt = trim(preg_replace('/[^\P{C}\n]+/u', '', str_replace("\r", '', $remarksTxt)));   // drop stray control / invisible characters (they print as an empty box in the PDF)
+$remarks = '<table class="f remarks">' . doc_sizer([35.5, 153.1]) . '<tr><td class="l">Remarks \ Notes</td><td class="v" style="text-align:left;vertical-align:top;padding:1.5mm 2mm">' . nl2br(e($remarksTxt)) . '</td></tr>'
     . ($notes ? '<tr class="notes"><td colspan="2">' . $notes . '</td></tr>' : '') . '</table>';
 
 $insp = $m['inspector'];
