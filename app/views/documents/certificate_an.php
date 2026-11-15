@@ -55,7 +55,9 @@ $t5 .= '<tr style="' . $hh(5.6) . '"><td colspan="7" class="l c">Traceability In
 
 // ---- notes
 $notes = '';
-foreach ((array) ($m['notes'] ?? []) as $line) { $line = trim((string) $line); if ($line !== '') $notes .= '<div class="nl">- ' . e($line) . '</div>'; }
+$custom = trim((string) ((json_decode((string) ($m['cert']['data'] ?? ''), true) ?: [])['an_notes'] ?? ''));   // the inspector's own Notes text, else the template's standard notes
+$noteLines = $custom !== '' ? preg_split('/\R/u', $custom) : (array) ($m['notes'] ?? []);
+foreach ($noteLines as $line) { $line = trim((string) $line); if ($line !== '') $notes .= '<div class="nl">- ' . e($line) . '</div>'; }
 $t6 = '<table class="f an" style="margin-top:4.9mm">' . doc_sizer([40, 146.2])
     . '<tr style="' . $hh(21.1) . '"><td class="c b">Notes:</td><td class="nt2">' . $notes . '</td></tr></table>';
 
@@ -63,13 +65,19 @@ $t6 = '<table class="f an" style="margin-top:4.9mm">' . doc_sizer([40, 146.2])
 $insp = $m['inspector'];
 $rev = $m['reviewer'];
 $signed = in_array($c['status'], ['pending_qc', 'issued'], true);
-$sig = ($signed && $insp && !empty($insp['signature'])) ? '<img class="lp-sig" style="left:124mm;top:200.4mm" src="' . $insp['signature'] . '" alt="">' : '';
-$sig2 = ($m['issued'] && $rev && !empty($rev['signature'])) ? '<img class="lp-sig" style="left:148mm;top:209.4mm" src="' . $rev['signature'] . '" alt="">' : '';
-$stamp = $m['issued'] ? '<img class="stamp" style="left:121mm; top:212.5mm; width:28mm; height:28mm" src="' . $brand['stamp'] . '" alt="">' : '';
-$t7 = '<table class="f an" style="margin-top:4.5mm">' . doc_sizer([102.8, 83.4])
-    . '<tr style="' . $hh(8.4) . '"><td class="b">' . e(rtrim($tpl['inspector_label'], ': ')) . ':</td><td rowspan="3"></td></tr>'
-    . '<tr style="' . $hh(8.4) . '"><td class="b">Reviewed / Approved by:</td></tr>'
-    . '<tr style="' . $hh(8.4) . '"><td class="b">Stamp:</td></tr></table>';
+// signatures and stamp sit inside the sign-off table's right cell, so they follow the table (never float over the notes)
+$im = fn ($src, $style) => '<img src="' . $src . '" alt="" style="' . $style . '">';
+$sig1 = ($signed && $insp && !empty($insp['signature'])) ? $im($insp['signature'], 'max-height:9.5mm;max-width:28mm') : '';
+$sig2 = ($m['issued'] && $rev && !empty($rev['signature'])) ? $im($rev['signature'], 'max-height:9.5mm;max-width:28mm') : '';
+$stampImg = $m['issued'] ? $im($brand['stamp'], 'width:17mm;height:17mm') : '';
+$stamp = '';
+// one below another: inspector signature beside "Calibrated by", reviewer signature beside "Reviewed / Approved by", stamp beside "Stamp"
+$rc = 'text-align:center;vertical-align:middle;padding:0.6mm 1.9mm';
+$stampImg = $m['issued'] ? $im($brand['stamp'], 'width:17mm;height:17mm') : '';
+$t7 = '<table class="f an" style="margin-top:3mm">' . doc_sizer([102.8, 83.4])
+    . '<tr style="' . $hh(11) . '"><td class="b">' . e(rtrim($tpl['inspector_label'], ': ')) . ':</td><td style="' . $rc . '">' . $sig1 . '</td></tr>'
+    . '<tr style="' . $hh(11) . '"><td class="b">Reviewed / Approved by:</td><td style="' . $rc . '">' . $sig2 . '</td></tr>'
+    . '<tr style="' . $hh(19) . '"><td class="b">Stamp:</td><td style="' . $rc . '">' . $stampImg . '</td></tr></table>';
 
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;
 
@@ -80,7 +88,7 @@ echo View::partial('documents/frame', [
         'top'   => 39.7,
         'left'  => 11.9,
         'width' => $W,
-        'extra' => '<div class="cert-title an-title">' . e($tpl['title']) . '</div>' . $stamp . $sig . $sig2,
+        'extra' => '<div class="cert-title an-title">' . e($tpl['title']) . '</div>' . $stamp,
     ]],
     'sidetext'  => 'Doc Ref.  ' . $tpl['doc_ref'] . '   l   Rev. ' . $tpl['revision'] . '   l   Date: ' . $tpl['revision_date'],
     'qr'        => $m['qr'] ?? null,

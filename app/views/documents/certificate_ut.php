@@ -57,10 +57,13 @@ $st = '<table class="f ut" style="margin-top:7.6mm">' . doc_sizer([190]) . '<tr>
 
 // ---- remarks + notes
 $notes = '';
+$cd = json_decode((string) ($c['data'] ?? ''), true) ?: [];
 $lines = $m['notes'];
+if (isset($cd['ut_notes']) && trim((string) $cd['ut_notes']) !== '') $lines = array_values(array_filter(array_map('trim', preg_split('/\R/u', (string) $cd['ut_notes'])), 'strlen'));
+$remarksTxt = (string) $c['remarks'];
 foreach ($lines as $k => $line) $notes .= '<li' . ($k === count($lines) - 1 && count($lines) > 3 ? ' class="nb"' : '') . '>' . e($line) . '</li>';
 $rm = '<table class="f ut" style="margin-top:7.6mm">' . doc_sizer([37, 153])
-    . '<tr class="h76"><td class="l rm">Remarks \ Notes:</td><td>' . nl2br(e($c['remarks'])) . '</td></tr>'
+    . '<tr class="h76"><td class="l rm">Remarks \ Notes:</td><td>' . nl2br(e($remarksTxt)) . '</td></tr>'
     . ($notes ? '<tr><td colspan="2" class="nt"><ul>' . $notes . '</ul></td></tr>' : '') . '</table>';
 
 // ---- sign-off

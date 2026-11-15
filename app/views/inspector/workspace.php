@@ -205,7 +205,93 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <?php if ($editable): ?><span class="save-state" id="cf-save-state">Autosave on</span><?php endif; ?>
           </div>
           <div class="form-grid">
-            <?php $lastSec = null; foreach ($fields as $f): ?>
+            <?php $lastSec = null; $anTbl = ($certTpl['layout'] ?? '') === 'an'; $utTbl = ($certTpl['layout'] ?? '') === 'ut'; $fk = array_column($fields, null, 'key'); foreach ($fields as $f): ?>
+              <?php if ($utTbl && in_array($f['key'], ['ut_remarks', 'ut_notes'], true)): ?>
+                <?php if ($f['key'] === 'ut_notes'): ?>
+                <div class="field col-12">
+                  <label>Remarks</label>
+                  <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #9aa3b2;background:#fff">
+                    <tr>
+                      <td style="border:1px solid #9aa3b2;padding:10px"><textarea class="input" rows="6" style="min-height:140px;resize:vertical;line-height:1.5" name="fields[ut_notes]"<?= $dis ?>><?= e(trim((string) ($f['value'] ?? '')) !== '' ? $f['value'] : implode("\n", (array) ($certTpl['notes'] ?? []))) ?></textarea>
+                        <div class="small muted" style="margin-top:4px">Standard notes are pre-filled — edit them if needed (one line per note).</div></td>
+                    </tr>
+                  </table>
+                </div>
+                <?php endif; ?>
+                <?php continue; ?>
+              <?php endif; ?>
+              <?php if ($anTbl && $f['key'] === 'an_notes'): ?>
+                <div class="field col-12">
+                  <table class="an-input" style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #9aa3b2;background:#fff">
+                    <colgroup><col style="width:18%"><col style="width:82%"></colgroup>
+                    <tr>
+                      <td style="border:1px solid #9aa3b2;padding:10px;text-align:center;font-weight:700;vertical-align:middle">Notes:</td>
+                      <td style="border:1px solid #9aa3b2;padding:10px"><textarea class="input" rows="7" style="min-height:170px;resize:vertical;line-height:1.5" name="fields[an_notes]"<?= $dis ?>><?= e(trim((string) $f['value']) !== '' ? $f['value'] : (string) ($certTpl['notes'] ?? '')) ?></textarea>
+                        <div class="small muted" style="margin-top:4px">Standard notes are pre-filled — edit them if needed (one line per note).</div></td>
+                    </tr>
+                  </table>
+                </div>
+                <?php continue; ?>
+              <?php endif; ?>
+              <?php if ($anTbl && (in_array($f['key'], ['qty', 'cal_data'], true) || preg_match('/^(n[123]|r[123]_[123]|m[123]|e[123]|k[123]|tr_(ref|mfr|id|cert|exp))$/', $f['key']))): ?>
+                <?php
+                $cell = function (array $c) use ($dis) {   // one compact centred input for the Anemometer tables
+                    $nm = 'fields[' . e($c['key']) . ']'; $st = 'text-align:center;font-weight:700;padding:6px 4px';
+                    if (($c['type'] ?? '') === 'select') {
+                        $o = '<option value="">—</option>'; foreach ($c['options'] ?? [] as $op) $o .= '<option' . selected($op, $c['value']) . '>' . e($op) . '</option>';
+                        return '<select class="select" style="' . $st . '" name="' . $nm . '"' . $dis . '>' . $o . '</select>';
+                    }
+                    if (!empty($c['is_date'])) return '<input class="input" type="date" style="' . $st . '" name="' . $nm . '" value="' . e($c['iso']) . '"' . $dis . '>';
+                    return '<input class="input" type="text" style="' . $st . '" name="' . $nm . '" value="' . e($c['value']) . '"' . $dis . '>';
+                };
+                $th = 'border:1px solid #9aa3b2;padding:8px;text-align:center;font-weight:700';
+                $td = 'border:1px solid #9aa3b2;padding:6px';
+                $tbl = 'width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #9aa3b2;background:#fff';
+                ?>
+                <?php if ($f['key'] === 'n1' && isset($fk['n1'], $fk['k3'])): ?>
+                <div class="field col-12">
+                  <table class="an-input" style="<?= $tbl ?>">
+                    <colgroup><col style="width:15%"><col style="width:14%"><col style="width:14%"><col style="width:14%"><col style="width:15%"><col style="width:14%"><col style="width:14%"></colgroup>
+                    <tr style="background:#9bb7e4"><td colspan="7" style="<?= $th ?>">Air Velocity</td></tr>
+                    <tr><td style="<?= $th ?>">Normal Value<br><span style="font-weight:600">(m/s)</span></td><td colspan="3" style="<?= $th ?>">Measured Value (m/s)<div style="display:flex;font-weight:600;margin-top:6px"><span style="flex:1">Trail. 1</span><span style="flex:1">Trail. 2</span><span style="flex:1">Trail. 3</span></div></td><td style="<?= $th ?>">Means (m/s)</td><td style="<?= $th ?>">Error</td><td style="<?= $th ?>">Remarks</td></tr>
+                    <?php foreach ([1, 2, 3] as $i): ?>
+                    <tr>
+                      <?php foreach (["n$i", "r{$i}_1", "r{$i}_2", "r{$i}_3", "m$i", "e$i", "k$i"] as $k): if (isset($fk[$k])): ?><td style="<?= $td ?>"><?= $cell($fk[$k]) ?></td><?php else: ?><td style="<?= $td ?>"></td><?php endif; endforeach; ?>
+                    </tr>
+                    <?php endforeach; ?>
+                  </table>
+                </div>
+                <?php elseif ($f['key'] === 'tr_ref' && isset($fk['tr_exp'])): ?>
+                <div class="field col-12">
+                  <table class="an-input" style="<?= $tbl ?>">
+                    <colgroup><col style="width:20%"><col style="width:20%"><col style="width:16%"><col style="width:26%"><col style="width:18%"></colgroup>
+                    <tr style="background:#9bb7e4"><td colspan="5" style="<?= $th ?>">Traceability Information <span class="req">*</span></td></tr>
+                    <tr><td style="<?= $th ?>">Ref. Instrument</td><td style="<?= $th ?>">Manufacturer</td><td style="<?= $th ?>">ID No.</td><td style="<?= $th ?>">Calibration Certificate</td><td style="<?= $th ?>">Expiration</td></tr>
+                    <tr><?php foreach (['tr_ref', 'tr_mfr', 'tr_id', 'tr_cert', 'tr_exp'] as $k): ?><td style="<?= $td ?>"><?= isset($fk[$k]) ? $cell($fk[$k]) : '' ?></td><?php endforeach; ?></tr>
+                  </table>
+                </div>
+                <?php endif; ?>
+                <?php continue; ?>
+              <?php endif; ?>
+              <?php if ($anTbl && $f['key'] === 'eq_id' && isset($fk['qty'], $fk['cal_data'])): $q = $fk['qty']; $cd = $fk['cal_data']; ?>
+                <div class="field col-12">
+                  <table class="an-input" style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #9aa3b2;background:#fff">
+                    <colgroup><col style="width:28%"><col style="width:12%"><col style="width:60%"></colgroup>
+                    <tr style="background:#9bb7e4;color:#111;font-weight:700;text-align:center">
+                      <td style="border:1px solid #9aa3b2;padding:9px">ID / SN <span class="req">*</span></td>
+                      <td style="border:1px solid #9aa3b2;padding:9px">Qty <span class="req">*</span></td>
+                      <td style="border:1px solid #9aa3b2;padding:9px">Calibration Data <span class="req">*</span></td>
+                    </tr>
+                    <tr>
+                      <td style="border:1px solid #9aa3b2;padding:10px;vertical-align:middle"><input class="input" type="text" style="text-align:center;font-weight:700" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['value']) ?>" placeholder="e.g. RT-325 / 243445"<?= $dis ?>></td>
+                      <td style="border:1px solid #9aa3b2;padding:10px;vertical-align:middle"><input class="input" type="text" style="text-align:center;font-weight:700" name="fields[<?= e($q['key']) ?>]" value="<?= e($q['value']) ?>" placeholder="01"<?= $dis ?>></td>
+                      <td style="border:1px solid #9aa3b2;padding:10px"><textarea class="input" rows="6" style="min-height:150px;resize:vertical;line-height:1.6" name="fields[<?= e($cd['key']) ?>]" placeholder="ANEMOMETER&#10;Model: GS320"<?= $dis ?>><?= e($cd['value']) ?></textarea>
+                        <div class="small muted" style="margin-top:4px">First line prints in bold (instrument name); following lines are normal text.</div></td>
+                    </tr>
+                  </table>
+                </div>
+                <?php continue; ?>
+              <?php endif; ?>
               <?php if (!empty($f['section']) && $f['section'] !== $lastSec): $lastSec = $f['section']; $sp = explode('|', $f['section']); ?>
                 <div class="form-section mt-1"><?= icon('check', 'sm') ?> <?= e(($sp[1] ?? '') !== '' ? $sp[0] . '. ' . $sp[1] : 'Section ' . $sp[0]) ?></div>
               <?php endif; ?>
@@ -240,7 +326,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
               <?php endforeach; ?>
             </div>
             <div class="field col-12"><label>Result statement (printed under the result)</label><input class="input" name="result_statement" value="<?= e($cert['result_statement']) ?>"<?= $dis ?>></div>
-            <div class="field col-12"><label>Remarks \ Notes</label><textarea class="textarea" name="remarks"<?= $dis ?>><?= e($cert['remarks']) ?></textarea></div>
+            <div class="field col-12"><label>Message to QC <span class="muted" style="font-weight:400">— type here if you want to send a message to QC, otherwise leave it blank</span></label><textarea class="textarea" name="remarks" placeholder="Optional — leave blank if there is nothing for QC"<?= $dis ?>><?= e($cert['remarks']) ?></textarea></div>
           </div>
         </div>
         <?php if ($editable): ?>

@@ -136,6 +136,11 @@ final class CertificateService
         if (!$tpl) return $fields;
         foreach ($fields as &$ff) if (($ff['key'] ?? '') === 'item_id') { unset($ff['source']); $ff['type'] = 'text'; $ff['required'] = true; }   // typed manually
         unset($ff);
+        if (($tpl['layout'] ?? '') === 'an' && !in_array('an_notes', array_column($fields, 'key'), true)) $fields[] = ['key' => 'an_notes', 'label' => 'Notes', 'type' => 'textarea', 'required' => false];   // editable Notes block of the Anemometer certificate
+        if (($tpl['layout'] ?? '') === 'ut') {   // editable Remarks / Notes block of the Ultrasonic Thickness certificate
+            $have = array_column($fields, 'key');
+            if (!in_array('ut_notes', $have, true)) $fields[] = ['key' => 'ut_notes', 'label' => 'Notes', 'type' => 'textarea', 'required' => false];
+        }
         foreach ($fields as $f) {
             if (in_array($f['key'] ?? '', ['swl', 'capacity'], true) || ($f['source'] ?? '') === 'equipment.capacity') return $fields;
         }
