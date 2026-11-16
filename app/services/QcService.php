@@ -96,6 +96,7 @@ final class CertificateService
         if (($f['key'] ?? '') === 'address' && ($f['label'] ?? '') === 'Address / Location') { $f['source'] = 'job.location'; unset($f['required']); }
         if (($f['key'] ?? '') === 'location' && ($f['label'] ?? '') === 'Test Location') { unset($f['source']); $f['type'] = 'text'; }
         if (($f['key'] ?? '') === 'test_method' && ($f['type'] ?? '') === 'select') { $f['type'] = 'text'; unset($f['options']); }   // Test Method is typed in, not picked from a list
+        if (preg_match('/^Identification\s*\/\s*SN/i', (string) ($f['label'] ?? ''))) { $f['source'] = 'equipment.equipment_no'; unset($f['required']); }   // Identification / SN comes from the sub-job's Equipment ID / No.
         return $f;
     }
 
