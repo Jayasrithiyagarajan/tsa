@@ -96,9 +96,10 @@ for ($r = 0; $r < $pr; $r++) {
 // inspector / reviewer block
 $insp = $m['inspector']; $rev = $m['reviewer'] ?? null;
 $img = fn ($p, $ok) => ($ok && !empty($p['signature'])) ? '<img src="' . $p['signature'] . '" style="max-height:11mm;max-width:46mm" alt="">' : '';
+$stp = !empty($m['issued']) ? '<img src="' . DocumentService::brand()['stamp'] . '" style="width:12.5mm;height:12.5mm;vertical-align:middle;margin-left:2mm" alt="">' : '';
 $sg = '<table class="f ch" style="margin-top:-0.35mm">' . doc_sizer([47.8, 47.8, 45.6, 49.9])
     . '<tr style="' . $hh(14.11) . '"><td class="fl c b t10">INSPECTOR NAME</td><td class="c b t10">' . e($insp['name'] ?? '') . '</td><td rowspan="2" class="fl c b t10">SIGNATURE</td><td class="c">' . $img($insp, $m['checklist']['status'] === 'completed') . '</td></tr>'
-    . '<tr style="' . $hh(13.95) . '"><td class="fl c b t10">REVIEWED BY</td><td class="c b t10">' . e($rev['name'] ?? '') . '</td><td class="c">' . $img($rev, true) . '</td></tr></table>';
+    . '<tr style="' . $hh(13.95) . '"><td class="fl c b t10">REVIEWED BY</td><td class="c b t10">' . e($rev['name'] ?? '') . '</td><td class="c">' . str_replace('max-width:46mm', 'max-width:28mm', $img($rev, true)) . $stp . '</td></tr></table>';
 $flow[] = ['html' => $sg, 'h' => 28.06, 'raw' => true];
 
 // Dompdf ignores a height on <tr>: copy it onto every cell of the row

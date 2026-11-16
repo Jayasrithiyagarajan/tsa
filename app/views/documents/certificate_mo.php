@@ -36,6 +36,7 @@ $m = [
     'photos' => array_map(fn ($p) => $p['src'], $cm['photos'] ?? []),
     'inspector' => $cm['inspector'] ?? null,
     'reviewer' => $cm['reviewer'] ?? null,
+    'issued' => !empty($cm['issued']),
 ];
 $L = ['report' => ['ar' => ['style' => 'mo', 'pt' => 8, 'line' => 1.1, 'font' => 10, 'en_line' => 1.23, 'top' => 29.7, 'top_next' => 25.4, 'bottom' => 268.5, 'hdr_gap' => 8, 'sign_gap' => 14]]];
 require __DIR__ . '/report_mo.php';

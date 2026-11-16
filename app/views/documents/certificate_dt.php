@@ -37,12 +37,13 @@ $t2 = '<table class="f dt" style="margin-top:3.1mm">' . doc_sizer([43.8, 95.3, 4
 $insp = $m['inspector'];
 $rev = $m['reviewer'];
 $signed = in_array($c['status'], ['pending_qc', 'issued'], true);
-$sig = ($m['issued'] && $rev && !empty($rev['signature'])) ? '<img class="lp-sig" style="left:134mm;top:230.5mm" src="' . $rev['signature'] . '" alt="">'
-    : (($signed && $insp && !empty($insp['signature'])) ? '<img class="lp-sig" style="left:134mm;top:230.5mm" src="' . $insp['signature'] . '" alt="">' : '');
-$stamp = $m['issued'] ? '<img class="stamp" style="left:153mm; top:233mm; width:28mm; height:28mm" src="' . $brand['stamp'] . '" alt="">' : '';
+$im = fn ($p, $ok) => ($ok && $p && !empty($p['signature'])) ? '<img src="' . $p['signature'] . '" style="max-height:13mm;max-width:22mm;vertical-align:middle;margin:0 1mm" alt="">' : '';
+$sigs = $im($insp, $signed) . $im($rev, $m['issued']) . ($m['issued'] ? '<img src="' . $brand['stamp'] . '" style="width:19mm;height:19mm;vertical-align:middle;margin:0 1mm" alt="">' : '');   // inside the table cell, so they follow it
+$sig = '';
+$stamp = '';
 $t3 = '<table class="f dt" style="margin-top:4.2mm">' . doc_sizer([43.8, 72.7, 70.9])
     . '<tr style="' . $hh(9.4) . '"><td class="l b h11">' . e($tpl['inspector_label']) . '</td><td class="c b h11">' . e($insp['name'] ?? '') . '</td><td class="l c b h11">Signature / Stamp</td></tr>'
-    . '<tr style="' . $hh(9.4) . '"><td class="l b">Reviewed by</td><td class="c b">' . ($m['issued'] ? e($rev['name'] ?? '') : '<span class="muted">Pending QC review</span>') . '</td><td></td></tr></table>';
+    . '<tr style="' . $hh(21) . '"><td class="l b">Reviewed by</td><td class="c b">' . ($m['issued'] ? e($rev['name'] ?? '') : '<span class="muted">Pending QC review</span>') . '</td><td class="c">' . $sigs . '</td></tr></table>';
 
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;
 

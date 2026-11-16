@@ -130,8 +130,8 @@ table.f.ut td.rm { font-size: 10.5pt; }
 table.f.ut td.nt { height: 15.7mm; vertical-align: top; padding: 0.6mm 1.5mm; }
 table.f.ut td.nt ul { margin: 0; padding-left: 2.6mm; font-size: 7.5pt; line-height: 1.02; }
 table.f.ut td.nt li.nb { list-style-type: none; margin-left: 0; }
-table.f.ut td.sgc { padding: 0; }
-table.f.ut img.sg { max-height: 11mm; max-width: 35mm; vertical-align: middle; }
+table.f.ut td.sgc { padding: 0 0 0 2mm; text-align: left; }   /* signature kept left, clear of the stamp on the right */
+table.f.ut img.sg { max-height: 11mm; max-width: 26mm; vertical-align: middle; }
 
 
 /* ---------- Certificate of thorough examination / load test (F-7.5.1-04 / -05) ---------- */

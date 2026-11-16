@@ -39,6 +39,7 @@ $m = [
     'photos' => array_map(fn ($p) => $p['src'], $cm['photos'] ?? []),
     'inspector' => $cm['inspector'] ?? null,
     'reviewer' => !empty($cm['issued']) ? ($cm['reviewer'] ?? null) : null,
+    'issued' => !empty($cm['issued']),
 ];
 $L = ['kind' => 'report', 'left' => 10.8, 'row_h' => 7.76, 'font' => 11, 'line' => 1.22, 'item_bold' => false, 'title_font' => 12,
     'top' => 33.0, 'top_next' => 30.85, 'bottom' => 254.5, 'sig_gap' => 0, 'sig_review' => true];

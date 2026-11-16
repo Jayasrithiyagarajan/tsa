@@ -75,12 +75,13 @@ $insp = $m['inspector'];
 $rev = $m['reviewer'];
 $who = fn ($p) => $p ? e($p['name'] . ($p['qualification'] ? ' - ' . $p['qualification'] : '')) : '';
 $signed = in_array($c['status'], ['pending_qc', 'issued'], true);
-$sg = fn ($p, $show) => ($show && $p && !empty($p['signature'])) ? '<img class="sg" src="' . $p['signature'] . '" alt="">' : '';
+$sg = fn ($p, $show, $w = 36) => ($show && $p && !empty($p['signature'])) ? '<img class="sg" style="max-width:' . $w . 'mm" src="' . $p['signature'] . '" alt="">' : '';
+$seal = $m['issued'] ? '<img src="' . $brand['stamp'] . '" style="width:15mm;height:15mm;vertical-align:middle;margin-left:1.5mm" alt="">' : '';   // seal sits inside the reviewer's signature cell, so it follows the table
 $sign = '<table class="f ut" style="margin-top:7.6mm">' . doc_sizer([38, 62, 37, 53])
     . '<tr class="h128"><td class="l c">' . e($tpl['inspector_label']) . '</td><td class="c">' . $who($insp) . '</td><td class="l c" rowspan="2">Signature</td><td class="c sgc">' . $sg($insp, $signed) . '</td></tr>'
-    . '<tr class="h128"><td class="l c">Reviewed By:</td><td class="c">' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td><td class="c sgc">' . $sg($rev, $m['issued']) . '</td></tr></table>';
+    . '<tr class="h128"><td class="l c">Reviewed By:</td><td class="c">' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td><td class="c sgc" style="height:17mm">' . $sg($rev, $m['issued'], 24) . $seal . '</td></tr></table>';
 
-$stamp = $m['issued'] ? '<img class="stamp" style="left:177mm; top:236mm" src="' . $brand['stamp'] . '" alt="">' : '';
+$stamp = '';
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;
 
 echo View::partial('documents/frame', [

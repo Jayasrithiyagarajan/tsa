@@ -265,6 +265,8 @@ if (!empty($R['notes_box'])) {
     $sigH += ($N['gap'] ?? 5) + ($N['label_h'] ?? 7.8) + ($N['h'] ?? 19);
 }
 $rev = $m['reviewer'] ?? null;
+$stpSz = !empty($m['issued']) ? 11 : 0;   // seal printed beside the reviewer's signature on issued certificates
+$stpImg = fn ($mm) => !empty($m['issued']) ? '<img src="' . DocumentService::brand()['stamp'] . '" style="width:' . $mm . 'mm;height:' . $mm . 'mm;vertical-align:middle;margin-left:1.5mm" alt="">' : '';
 if ($AR) {
     $N = $R['notes_box'] ?? [];
     $sg = $R['sign'] ?? [28.0, 16.8, 35.3, 19.8, 47.3, 34.0];

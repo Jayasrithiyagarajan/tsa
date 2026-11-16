@@ -64,14 +64,15 @@ $who = fn ($p) => $p ? e($p['name'] . ($p['qualification'] ? ' - ' . $p['qualifi
 $sigImg = fn ($p, $show) => ($show && $p && $p['signature']) ? '<img class="sigimg" src="' . $p['signature'] . '" alt="">' : '';
 $signed = in_array($c['status'], ['pending_qc', 'issued'], true);
 $merged = ($tpl['layout'] ?? '') === 'mp';   // F-7.5.1-06 has one signature cell for both people, F-7.5.1-07 has one each
+$seal = fn ($mm) => $m['issued'] ? '<img src="' . $brand['stamp'] . '" style="width:' . $mm . 'mm;height:' . $mm . 'mm;vertical-align:middle;margin-left:1.5mm" alt="">' : '';   // seal travels with the signature cell
 $revName = $m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>';
 $sign = '<table class="f signblock">' . doc_sizer([35.5, 59, 36, 58.1])
     . '<tr><td class="l">' . e($tpl['inspector_label']) . '</td><td>' . $who($insp) . '</td><td class="l" rowspan="2">Signature</td>'
     . ($merged
-        ? '<td class="sigcell" rowspan="2">' . str_replace('class="sigimg"', 'class="sigimg two"', $sigImg($insp, $signed) . $sigImg($rev, $m['issued'])) . '</td></tr><tr><td class="l">Reviewed By:</td><td>' . $revName . '</td></tr></table>'
-        : '<td class="sigcell">' . $sigImg($insp, $signed) . '</td></tr><tr><td class="l">Reviewed By:</td><td>' . $revName . '</td><td class="sigcell">' . $sigImg($rev, $m['issued']) . '</td></tr></table>');
+        ? '<td class="sigcell" rowspan="2">' . ($m['issued'] ? '<div style="float:right;width:22mm;padding:2mm 2mm 0 0">' . $seal(20) . '</div>' : '') . str_replace('class="sigimg"', 'class="sigimg two"', $sigImg($insp, $signed) . $sigImg($rev, $m['issued'])) . '</td></tr><tr><td class="l">Reviewed By:</td><td>' . $revName . '</td></tr></table>'
+        : '<td class="sigcell">' . $sigImg($insp, $signed) . '</td></tr><tr><td class="l">Reviewed By:</td><td>' . $revName . '</td><td class="sigcell" style="height:15mm">' . str_replace('class="sigimg"', 'class="sigimg" style="max-width:24mm"', $sigImg($rev, $m['issued'])) . $seal(13) . '</td></tr></table>');
 
-$stamp = $m['issued'] ? '<img class="stamp" style="left:178mm; top:' . ($merged ? 236 : 249) . 'mm" src="' . $brand['stamp'] . '" alt="">' : '';
+$stamp = '';
 
 $body = '<div class="' . ($pt ? 'v07' : 'v06') . '"><div class="gridwrap">' . $grid . '</div>' . $img . $result . $remarks . $sign . '</div>';
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;

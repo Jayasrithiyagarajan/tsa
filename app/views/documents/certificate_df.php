@@ -54,7 +54,7 @@ $sgImg = ($signed && $insp && !empty($insp['signature'])) ? '<img class="sg" src
 $rej = (($c['result'] ?? '') === 'rejected') ? '<span class="rej">REJECTED</span>' : '';
 $t4 = '<table class="f df" style="margin-top:6.4mm">' . doc_sizer([41.1, 47.8, 48.3, 52.9])
     . '<tr class="h76"><td class="band c">Title</td><td class="band c">Name</td><td class="band c">Signature</td><td class="band c">Company Stamp</td></tr>'
-    . '<tr class="sgn"><td class="c b">Inspector /<br>Technician</td><td class="c">' . e($insp['name'] ?? '') . '</td><td class="c">' . $sgImg . '</td><td class="c">' . $rej . '</td></tr></table>';
+    . '<tr class="sgn"><td class="c b">Inspector /<br>Technician</td><td class="c">' . e($insp['name'] ?? '') . '</td><td class="c">' . $sgImg . '</td><td class="c">' . $rej . (!empty($m['issued']) ? '<img src="' . DocumentService::brand()['stamp'] . '" style="width:18mm;height:18mm;vertical-align:middle" alt="">' : '') . '</td></tr></table>';
 
 // ---- page 2: four photo boxes (2 x 2), captions are not printed
 $pics = array_slice($m['photos'] ?? [], 0, 4);

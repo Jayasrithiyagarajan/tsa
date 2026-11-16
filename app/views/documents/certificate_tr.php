@@ -36,5 +36,6 @@ $m = [
     'photos' => array_map(fn ($p) => $p['src'], $cm['photos'] ?? []),
     'inspector' => $cm['inspector'] ?? null,
     'reviewer' => $cm['reviewer'] ?? null,
+    'issued' => !empty($cm['issued']),
 ];
 require __DIR__ . '/report_tr.php';
