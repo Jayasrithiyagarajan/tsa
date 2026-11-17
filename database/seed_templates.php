@@ -3098,10 +3098,9 @@ Stairways and Ladders - Safety Requirements | 29 CFR 1926 OSHA | United States C
     ],
 ];
 
-// Petroleum Products Transportation Tanks are issued as a certificate (the Special Equipment certificate), not from a checklist
-$specCert = null;
-foreach ($seed as $d) if ($d['type']['code'] === 'SPEC') $specCert = $d['certificate'];
-foreach ($seed as &$d) if ($d['type']['code'] === 'PTNK') { $d['checklist'] = null; $d['certificate'] = $specCert; }
+// Petroleum Products Transportation Tanks are issued as a certificate (F-7.5.1-CL 11, layout 'pp'): every form row becomes a Yes / No / N/A check, not a checklist
+$ppBuild = require __DIR__ . '/seed_pp_certificate.php';
+foreach ($seed as &$d) if ($d['type']['code'] === 'PTNK') { $d['certificate'] = $ppBuild($d['checklist']); $d['checklist'] = null; }
 unset($d);
 
 return $seed;

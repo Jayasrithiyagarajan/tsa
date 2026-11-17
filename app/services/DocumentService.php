@@ -86,7 +86,7 @@ final class DocumentService
             $f['value'] = CertificateService::fieldValue($f, $sj, $cert, $data);
             $fields[] = $f;
         }
-        $photoLimit = ['ec' => 12, 'sc' => 30, 'ss' => 96, 'mo' => 7, 'tr' => 6, 'ch' => 6][$tpl['layout'] ?? ''] ?? 4;
+        $photoLimit = ['ec' => 12, 'sc' => 30, 'ss' => 96, 'mo' => 7, 'tr' => 6, 'ch' => 6, 'pp' => 8][$tpl['layout'] ?? ''] ?? 4;
         // photos tagged for this page, plus untagged ones (cert_seq NULL = every page); page-specific photos print first
         $photos = DB::all("SELECT * FROM attachments WHERE sub_job_id = ? AND on_certificate = 1 AND mime LIKE 'image/%' AND (cert_seq IS NULL OR cert_seq = ?) ORDER BY cert_seq IS NULL, id LIMIT $photoLimit", [$subJobId, $seq]);
         foreach ($photos as &$p) {
