@@ -13,13 +13,14 @@ foreach ($cm['fields'] as $f0) {
 }
 $issueDate = $issueDate ?: date('Y-m-d');
 $cert = $cm['cert'];
+$cdata = json_decode((string) ($cert['data'] ?? '{}'), true) ?: [];
 $fv = [];
 $items = [];
 $codes = ['Yes' => 'pass', 'No' => 'fail', 'N/A' => 'na'];
 foreach ($cm['fields'] as $f) {
     $fv[$f['key']] = (string) ($f['value'] ?? '');
     if (isset($f['item'], $f['section'])) {
-        $items[] = ['section' => $f['section'], 'label' => $f['item'], 'result' => $codes[(string) ($f['value'] ?? '')] ?? null];
+        $items[] = ['section' => $f['section'], 'label' => $f['item'], 'result' => $codes[(string) ($f['value'] ?? '')] ?? null, 'remarks' => trim((string) ($cdata[$f['key'] . '_r'] ?? ''))];
     }
 }
 $signed = in_array($cert['status'] ?? '', ['pending_qc', 'issued'], true);

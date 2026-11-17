@@ -205,7 +205,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <?php if ($editable): ?><span class="save-state" id="cf-save-state">Autosave on</span><?php endif; ?>
           </div>
           <div class="form-grid">
-            <?php $lastSec = null; $anTbl = ($certTpl['layout'] ?? '') === 'an'; $utTbl = ($certTpl['layout'] ?? '') === 'ut'; $chTbl = in_array($certTpl['layout'] ?? '', ['ch', 'pp'], true); $chSec = null; $chN = 0; $fk = array_column($fields, null, 'key'); foreach ($fields as $f): ?>
+            <?php $lastSec = null; $anTbl = ($certTpl['layout'] ?? '') === 'an'; $utTbl = ($certTpl['layout'] ?? '') === 'ut'; $chTbl = in_array($certTpl['layout'] ?? '', ['ch', 'pp', 'tr'], true); $chSec = null; $chN = 0; $fk = array_column($fields, null, 'key'); foreach ($fields as $f): ?>
               <?php if ($chTbl && substr($f['key'], -2) === '_r' && isset($fk[substr($f['key'], 0, -2)]['item'])) continue;   // remarks are shown inside their check row ?>
               <?php if ($chTbl && isset($f['item'], $f['section'])): ?>
                 <?php if ($chSec !== $f['section']): $chSec = $f['section']; ?>
@@ -233,7 +233,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
                 <?php endif; $chN++; $rk = $f['key'] . '_r'; ?>
                 <div class="col-12"><div class="cl-item show-rem" data-ch-sec="<?= e($chSec) ?>" style="padding:10px 4px">
                   <span class="n"><?= $chN ?></span>
-                  <span class="lbl"><?= nl2br(e((string) $f['item'])) ?></span>
+                  <span class="lbl"><?php $chTxt = (string) $f['item']; if (($certTpl['layout'] ?? '') === 'tr') { $en = trim(preg_replace('/^.*\p{Arabic}.*\R?/mu', '', $chTxt)); if ($en !== '') $chTxt = $en; }   // bilingual form: the inspector form shows the English text ?><?= nl2br(e($chTxt)) ?></span>
                   <span class="ctrl row" style="gap:6px"><span class="seg" role="radiogroup" aria-label="<?= e($f['item']) ?>">
                     <?php foreach (['Yes' => 'p', 'No' => 'f', 'N/A' => 'na'] as $ans => $cls): ?>
                       <label><input type="radio" name="fields[<?= e($f['key']) ?>]" value="<?= e($ans) ?>"<?= checked((string) $f['value'] === $ans) . $dis ?>><span class="<?= $cls ?>"><?= e($ans) ?></span></label>

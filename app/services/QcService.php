@@ -149,7 +149,7 @@ final class CertificateService
         foreach ($fields as &$ff) if (($ff['key'] ?? '') === 'item_id') { unset($ff['source']); $ff['type'] = 'text'; $ff['required'] = true; }   // typed manually
         unset($ff);
         if (($tpl['layout'] ?? '') === 'an' && !in_array('an_notes', array_column($fields, 'key'), true)) $fields[] = ['key' => 'an_notes', 'label' => 'Notes', 'type' => 'textarea', 'required' => false];   // editable Notes block of the Anemometer certificate
-        if (in_array($tpl['layout'] ?? '', ['ch', 'pp'], true)) {   // Crane Health Check / Petroleum Tanks: each check row also has its own REMARKS value
+        if (in_array($tpl['layout'] ?? '', ['ch', 'pp', 'tr'], true)) {   // Crane Health Check / Petroleum Tanks / Trailer: each check row also has its own REMARKS value
             $have = array_column($fields, 'key');
             foreach ($fields as $ff2) {
                 if (isset($ff2['item'], $ff2['section']) && !in_array($ff2['key'] . '_r', $have, true)) $fields[] = ['key' => $ff2['key'] . '_r', 'label' => 'Remarks', 'type' => 'text', 'required' => false];
