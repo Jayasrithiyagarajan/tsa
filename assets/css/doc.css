@@ -44,6 +44,9 @@ table.f td, table.f th { border: 0.75pt solid #bfbfbf; padding: 0 2mm; vertical-
 .sig .h td { height: 10.6mm; font-weight: bold; font-size: 11pt; }
 .sig .v td { height: 20.3mm; font-size: 10.5pt; }
 .sig img { max-height: 15mm; max-width: 45mm; }
+.sig.s10 .h td { height: 10.2mm; }
+.sig.s10 .v td { height: 12.9mm; }
+.sig.s10 img { max-height: 11mm; }
 .muted { color: #7f7f7f; }
 
 /* ---------- report / certificate (F-7.5.1-06) ---------- */

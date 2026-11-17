@@ -265,7 +265,6 @@ if (!empty($R['notes_box'])) {
     $sigH += ($N['gap'] ?? 5) + ($N['label_h'] ?? 7.8) + ($N['h'] ?? 19);
 }
 $rev = $m['reviewer'] ?? null;
-$stpSz = !empty($m['issued']) ? 11 : 0;   // seal printed beside the reviewer's signature on issued certificates
 $stpImg = fn ($mm) => !empty($m['issued']) ? '<img src="' . DocumentService::brand()['stamp'] . '" style="width:' . $mm . 'mm;height:' . $mm . 'mm;vertical-align:middle;margin-left:1.5mm" alt="">' : '';
 if ($AR) {
     $N = $R['notes_box'] ?? [];
@@ -279,20 +278,20 @@ if ($AR) {
     $row = fn ($dt, $img, $name, $lab) => '<tr><td class="c" style="' . $h($rowH) . '">' . $dt . '</td><td class="shade b c">' . $bil('Date', $sg[1] - 2) . '</td><td class="c">' . $img . '</td><td class="shade b c">' . $bil('Sign', $sg[3] - 2) . '</td><td class="c">' . e($name) . '</td><td class="shade b c">' . $bil($lab, $sg[5] - 2) . '</td></tr>';
     $sigHtml .= '<table class="f" style="font-size:10.5pt">' . doc_sizer($sg)
         . $row($m['checklist']['inspection_date'] ? e(fmt_date($m['checklist']['inspection_date'])) : '', !empty($insp['signature']) && $m['checklist']['status'] === 'completed' ? '<img src="' . $insp['signature'] . '" style="max-height:' . ($rowH - 2) . 'mm" alt="">' : '', $insp['name'] ?? '', 'Inspector Name')
-        . $row(!empty($m['review_date']) ? e(fmt_date($m['review_date'])) : '', !empty($rev['signature']) ? '<img src="' . $rev['signature'] . '" style="max-height:' . ($rowH - 2) . 'mm" alt="">' : '', $rev['name'] ?? '', 'Reviewed By')
+        . $row(!empty($m['review_date']) ? e(fmt_date($m['review_date'])) : '', (!empty($rev['signature']) ? '<img src="' . $rev['signature'] . '" style="max-height:' . ($rowH - 2) . 'mm' . (!empty($m['issued']) ? ';max-width:19mm' : '') . '" alt="">' : '') . $stpImg($rowH - 2), $rev['name'] ?? '', 'Reviewed By')
         . '</table>';
     $tail[] = [$sigHtml, ($N['gap'] ?? 5) + ($N['label_h'] ?? 12.7) + ($N['h'] ?? 19) + 2 * $rowH, 0];
 } else {
-$sigHtml .= '<table class="f sig" style="margin-top:' . (empty($R['notes_box']) ? $L['sig_gap'] : 0) . 'mm">' . doc_sizer([$third, $third, $third])
+$sigHtml .= '<table class="f sig ' . ($R['sign_class'] ?? '') . '" style="margin-top:' . (empty($R['notes_box']) ? $L['sig_gap'] : 0) . 'mm">' . doc_sizer([$third, $third, $third])
     . '<tr class="h shade"><td>Inspector Name</td><td>Inspector Signature</td><td>Date of Inspection</td></tr>'
     . '<tr class="v"><td>' . e($insp['name'] ?? '') . '</td><td>' . (!empty($insp['signature']) && $m['checklist']['status'] === 'completed' ? '<img src="' . $insp['signature'] . '" alt="">' : '')
     . '</td><td>' . ($m['checklist']['inspection_date'] ? e(fmt_date($m['checklist']['inspection_date'])) : '<span class="muted">—</span>') . '</td></tr>';
-$sigH += (empty($R['notes_box']) ? $L['sig_gap'] : 0) + 10.6 + 20.3;
+$sigH += (empty($R['notes_box']) ? $L['sig_gap'] : 0) + (float) ($R['sign_hh'] ?? 10.6) + (float) ($R['sign_vh'] ?? 20.3);
 if ($L['sig_review']) {
     $sigHtml .= '<tr class="h shade"><td>Reviewed By</td><td>Signature</td><td>Date</td></tr>'
-        . '<tr class="v"><td>' . e($rev['name'] ?? '') . '</td><td>' . (!empty($rev['signature']) ? '<img src="' . $rev['signature'] . '" alt="">' : '')
+        . '<tr class="v"><td>' . e($rev['name'] ?? '') . '</td><td>' . (!empty($rev['signature']) ? '<img src="' . $rev['signature'] . '" alt="">' : '') . $stpImg(14)
         . '</td><td>' . (!empty($m['review_date']) ? e(fmt_date($m['review_date'])) : '<span class="muted">—</span>') . '</td></tr>';
-    $sigH += 10.6 + 20.3;
+    $sigH += (float) ($R['sign_hh'] ?? 10.6) + (float) ($R['sign_vh'] ?? 20.3);
 }
 $sigHtml .= '</table>';
 $tail[] = [$sigHtml, $sigH, 0];
