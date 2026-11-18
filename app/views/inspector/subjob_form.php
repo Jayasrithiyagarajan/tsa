@@ -58,7 +58,7 @@ $old = fn ($k, $d = '') => old($k, $d);
               <?php endforeach; ?>
             </select>
           </div>
-          <div class="field col-6">
+          <div class="field col-12">
             <label>Certificate type <span class="req">*</span></label>
             <select class="select" name="cert_template_id" id="cert-select" required>
               <option value="">Select…</option>
@@ -66,6 +66,7 @@ $old = fn ($k, $d = '') => old($k, $d);
                 <option value="<?= $ct['id'] ?>" data-type="<?= (int) $ct['inspection_type_id'] ?>" data-group="<?= !empty($ct['cert_only']) ? 'cert_only' : 'with_checklist' ?>"<?= selected($ct['id'], $old('cert_template_id')) ?>><?= e($ct['title']) ?><?= $ct['doc_ref'] ? ' · ' . e($ct['doc_ref']) : '' ?></option>
               <?php endforeach; ?>
             </select>
+            <div id="cert-full" class="small" style="margin-top:6px;font-weight:600;white-space:normal;overflow-wrap:anywhere"></div>
             <div class="help">Set automatically from the checklist type (Special / Lifting / Elevator / Escalator certificate).</div>
           </div>
           <div class="field col-6">
@@ -104,7 +105,7 @@ $old = fn ($k, $d = '') => old($k, $d);
           <div class="field col-6"><label>Name on card <span class="req">*</span></label><input class="input" name="holder_name" value="<?= e($old('holder_name')) ?>" required maxlength="120"></div>
           <div class="field col-6"><label>Iqama / ID No. <span class="req">*</span></label><input class="input mono" name="id_number" value="<?= e($old('id_number')) ?>" required maxlength="30"></div>
           <div class="field col-6"><label>Company <span class="req">*</span></label><input class="input" name="company" value="<?= e($old('company', mb_strtoupper($job['client_name']))) ?>" required maxlength="120"></div>
-          <div class="field col-6"><label>ID code</label><input class="input mono" name="card_no" value="<?= e($old('card_no')) ?>" maxlength="40" placeholder="Auto, e.g. TE-IC-<?= date('Y') ?>-0001"></div>
+          <div class="field col-6"><label>ID code</label><input class="input mono" value="" readonly tabindex="-1" placeholder="Auto-generated (TE-IC-<?= date('Y') ?>-xxxx) when the card is issued" style="background:var(--surface-2,#f3f4f6);cursor:not-allowed"></div>
           <div class="field col-6"><label>Title (blue band) <span class="req">*</span></label><input class="input" name="title" value="<?= e($old('title')) ?>" required maxlength="80" placeholder="e.g. CRANE OPERATOR LEVEL - III"></div>
           <div class="field col-6"><label>Issue date <span class="req">*</span></label><input class="input" type="date" name="issue_date" value="<?= e($old('issue_date', date('Y-m-d'))) ?>" required></div>
           <div class="field col-6"><label>Expiry date <span class="req">*</span></label><input class="input" type="date" name="expiry_date" value="<?= e($old('expiry_date', date('Y-m-d', strtotime('+1 year -1 day')))) ?>" required></div>
@@ -164,6 +165,15 @@ $old = fn ($k, $d = '') => old($k, $d);
   };
   form.addEventListener('change', e => { if (e.target.name === 'ndt_mode') sync(); });
   sync();
+})();
+// Show the full certificate title (a closed dropdown cuts long names)
+(function () {
+  const c = document.getElementById('cert-select'), out = document.getElementById('cert-full'), form = document.getElementById('sj-form');
+  if (!c || !out) return;
+  const show = () => { const o = c.options[c.selectedIndex]; out.textContent = o && o.value ? o.text : ''; c.title = out.textContent; };
+  c.addEventListener('change', show);
+  if (form) form.addEventListener('change', () => setTimeout(show, 0));
+  show();
 })();
 // Pre-select the matching certificate when the checklist / inspection type changes
 (function () {

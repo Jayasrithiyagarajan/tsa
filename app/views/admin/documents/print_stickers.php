@@ -30,11 +30,13 @@ foreach ($series as $sr) $first[$sr['prefix']] = (int) (preg_match('/(\d+)$/', (
     <?php if (Auth::isSuper()): ?>
     <div class="toolbar" style="border-top:1px solid var(--border);gap:8px;flex-wrap:wrap">
       <span class="small muted"><b data-sel>0</b> selected</span>
+      <span class="small" data-allbar hidden></span>
+      <input type="hidden" name="select_all" value="" data-selall><input type="hidden" name="series" value="<?= e($prefix) ?>"><input type="hidden" name="q" value="<?= e($q) ?>">
       <button class="btn btn-secondary btn-sm" type="submit"><?= icon('download', 'sm') ?> Download selected PDF</button>
     </div>
     <?php endif; ?>
   <div class="table-wrap"><table class="t stack-sm">
-    <thead><tr><?php if (Auth::isSuper()): ?><th style="width:32px"><input type="checkbox" data-all title="Select all on this page"></th><?php endif; ?><th>Sticker</th><th>Result</th><th>Batch</th><th>Generated</th></tr></thead>
+    <thead><tr><?php if (Auth::isSuper()): ?><th style="width:32px"><input type="checkbox" data-all title="Select all"></th><?php endif; ?><th>Sticker</th><th>Result</th><th>Batch</th><th>Generated</th></tr></thead>
     <tbody><?php foreach ($rows as $s): ?>
       <tr>
         <?php if (Auth::isSuper()): ?><td class="stk-chk"><input type="checkbox" name="ids[]" value="<?= (int) $s['id'] ?>" aria-label="Select <?= e($s['sticker_no']) ?>"></td><?php endif; ?>
@@ -54,18 +56,27 @@ foreach ($series as $sr) $first[$sr['prefix']] = (int) (preg_match('/(\d+)$/', (
 <script>
 (function () {
   var f = document.getElementById('pstk-sel'); if (!f) return;
-  var all = f.querySelector('[data-all]'), sel = f.querySelector('[data-sel]');
+  var all = f.querySelector('[data-all]'), sel = f.querySelector('[data-sel]'), bar = f.querySelector('[data-allbar]'), flag = f.querySelector('[data-selall]');
+  var TOTAL = <?= (int) $meta['total'] ?>, CAP = 2000;
   var boxes = function () { return Array.prototype.slice.call(f.querySelectorAll('input[name="ids[]"]')); };
-  var count = function () {
-    var on = boxes().filter(function (b) { return b.checked; }).length;
-    sel.textContent = on;
-    all.checked = on > 0 && on === boxes().length;
-    all.indeterminate = on > 0 && on < boxes().length;
+  var every = false;                                   // true = all TOTAL stickers (every page) are selected
+  var render = function () {
+    var on = boxes().filter(function (b) { return b.checked; }).length, pageAll = on > 0 && on === boxes().length;
+    all.checked = pageAll; all.indeterminate = on > 0 && !pageAll;
+    flag.value = every ? '1' : '';
+    sel.textContent = every ? Math.min(TOTAL, CAP) : on;
+    if (every) { bar.hidden = false; bar.innerHTML = 'All ' + Math.min(TOTAL, CAP) + ' stickers' + (TOTAL > CAP ? ' (first ' + CAP + ')' : '') + ' selected. <a href="#" data-clear>Clear selection</a>'; }
+    else if (pageAll && TOTAL > boxes().length) { bar.hidden = false; bar.innerHTML = 'All ' + on + ' on this page selected. <a href="#" data-pickall><b>Select all ' + TOTAL + ' stickers</b></a>'; }
+    else { bar.hidden = true; bar.innerHTML = ''; }
   };
-  all.addEventListener('change', function () { boxes().forEach(function (b) { b.checked = all.checked; }); count(); });
-  f.addEventListener('change', function (e) { if (e.target !== all) count(); });
+  all.addEventListener('change', function () { every = false; boxes().forEach(function (b) { b.checked = all.checked; }); render(); });
+  f.addEventListener('change', function (e) { if (e.target !== all) { every = false; render(); } });
+  f.addEventListener('click', function (e) {
+    if (e.target.closest('[data-pickall]')) { e.preventDefault(); every = true; boxes().forEach(function (b) { b.checked = true; }); render(); }
+    else if (e.target.closest('[data-clear]')) { e.preventDefault(); every = false; boxes().forEach(function (b) { b.checked = false; }); render(); }
+  });
   f.addEventListener('submit', function (e) {
-    if (!boxes().some(function (b) { return b.checked; })) { e.preventDefault(); alert('Select at least one sticker to download.'); }
+    if (!every && !boxes().some(function (b) { return b.checked; })) { e.preventDefault(); alert('Select at least one sticker to download.'); }
   });
 })();
 </script>

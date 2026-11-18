@@ -204,7 +204,13 @@ final class DocumentController extends Controller
     /** Blank pre-printed stickers (number, colour and result only), 6 per A4 sheet, for the print shop. */
     public function stickerSheet(): void
     {
-        if (!empty($_POST['ids'])) {
+        if ((string) input('stock', '') === '1' && (string) input('select_all', '') === '1') {
+            // "select all N" on the Print Sticker page: every in-stock sticker matching the page's filters, not just the ticked page
+            $w = ["status = 'in_stock'"]; $p = [];
+            if (($pf = (string) input('series', '')) !== '') { $w[] = 'sticker_no LIKE ?'; $p[] = $pf . '%'; }
+            if (($qf = trim((string) input('q', ''))) !== '') { $w[] = '(sticker_no LIKE ? OR batch_no LIKE ?)'; array_push($p, "%$qf%", "%$qf%"); }
+            $ids = array_map('intval', array_column(DB::all('SELECT id FROM stickers WHERE ' . implode(' AND ', $w) . ' ORDER BY sticker_no LIMIT 2000', $p), 'id'));
+        } elseif (!empty($_POST['ids'])) {
             $ids = array_slice(array_map('intval', (array) $_POST['ids']), 0, 2000);
         } elseif (trim((string) input('from', '')) !== '') {
             try { $ids = StickerService::range((string) input('from'), (string) input('to', '')); }

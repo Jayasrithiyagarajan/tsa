@@ -21,7 +21,7 @@ $clientId = $old('client_id', $r['client_id'] ?? '');
           <div class="field col-6"><label>Client <span class="req">*</span></label>
             <select class="select" name="client_id" data-searchable data-client-equipment <?= $r ? '' : 'required' ?>>
               <option value=""><?= $r ? '— Register new client from request —' : 'Select client…' ?></option>
-              <?php foreach ($clients as $c): ?><option value="<?= $c['id'] ?>" data-city="<?= e((string) ($c['city'] ?? '')) ?>"<?= selected($c['id'], $clientId) ?>><?= e($c['name']) ?> (<?= e($c['code']) ?>)</option><?php endforeach; ?>
+              <?php foreach ($clients as $c): ?><option value="<?= $c['id'] ?>"<?= selected($c['id'], $clientId) ?>><?= e($c['name']) ?> (<?= e($c['code']) ?>)</option><?php endforeach; ?>
             </select></div>
           <?php $nextJobNo = sprintf('JOB-%s-%04d', date('Y'), 1 + (int) DB::value("SELECT last_value FROM number_sequences WHERE name = 'job' AND period = ?", [date('Y')])); ?>
           <div class="field col-6"><label>Job ID</label><div class="bound mono"><?= icon('lock', 'sm') ?><?= e($nextJobNo) ?></div><div class="help">Assigned automatically when the job is created</div></div>
@@ -30,7 +30,7 @@ $clientId = $old('client_id', $r['client_id'] ?? '');
             <div class="field col-3"><label>City</label><input class="input" name="new_client_city" value="<?= e($old('new_client_city')) ?>"></div>
           <?php endif; ?>
           <div class="field col-12"><label>Job title <span class="req">*</span></label><input class="input" name="title" required value="<?= e($old('title', $r ? 'Inspection — ' . $r['company_name'] : '')) ?>"></div>
-          <div class="field col-6"><label>Inspection location</label><input class="input" name="location" id="job-location" placeholder="Filled from the client's city — you can change it" value="<?= e($old('location', $r['location'] ?? '')) ?>"></div>
+          <div class="field col-6"><label>Inspection location</label><input class="input" name="location" id="job-location" placeholder="Enter the inspection location" value="<?= e($old('location', $r['location'] ?? '')) ?>"></div>
           <div class="field col-6"><label>Request / P.O. No.</label><input class="input" name="po_no" value="<?= e($old('po_no', $r['po_no'] ?? '')) ?>"></div>
           <div class="field col-4"><label>Scheduled date</label><input class="input" type="date" name="scheduled_date" value="<?= e($old('scheduled_date', ($r['preferred_date'] ?? '') ?: date('Y-m-d'))) ?>"></div>
           <div class="field col-4"><label>Due date</label><input class="input" type="date" name="due_date" value="<?= e($old('due_date')) ?>"></div>
@@ -60,19 +60,4 @@ $clientId = $old('client_id', $r['client_id'] ?? '');
       <?php endif; ?>
     </div>
   </div>
-<script>
-// Inspection location defaults to the selected client's city (until the user types their own)
-(function () {
-  var sel = document.querySelector('select[name="client_id"]'), loc = document.getElementById('job-location');
-  if (!sel || !loc) return;
-  var auto = loc.value === '';
-  function fill() {
-    var opt = sel.options[sel.selectedIndex], city = opt ? (opt.getAttribute('data-city') || '') : '';
-    if (city && (auto || loc.value === '')) { loc.value = city; auto = true; }
-  }
-  loc.addEventListener('input', function () { auto = false; });
-  sel.addEventListener('change', fill);
-  fill();
-})();
-</script>
 </form>

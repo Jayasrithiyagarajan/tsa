@@ -181,6 +181,7 @@ final class InspectorController extends Controller
         $in = $_POST;
         $in['holder_type'] = 'worker';
         $in['client_id'] = $job['client_id'];
+        unset($in['card_no']);   // ID code is always auto-generated
         foreach (['holder_name', 'id_number', 'company', 'title', 'issue_date', 'expiry_date', 'job_ref', 'certification', 'assessor', 'competence'] as $k) {
             if (trim((string) ($in[$k] ?? '')) === '') throw new DomainException('Fill in all required card details (front and back side).');
         }

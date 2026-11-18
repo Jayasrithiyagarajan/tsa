@@ -256,52 +256,119 @@ final class DocumentService
         exit;
     }
 
-    /** CSS for the Dompdf sticker layout (tables instead of flexbox), on top of doc.css. */
-    public static function stickerPdfCss(): string
-    {
-        return "\n@page { size: 100mm 100mm; margin: 0; }\n.stk.pdf .no b { position: absolute; left: 0; top: 0; width: 7.9mm; height: 6mm; }\n.stk.pdf .no span { position: absolute; left: 7.9mm; top: 0; width: 17.1mm; height: 6mm; }\n.stk.pdf .rt { width: 92.7mm; border-collapse: separate; border-spacing: 0; }\n.stk.pdf .rt td { padding: 0; vertical-align: top; }\n.stk.pdf .rt td.k { width: 29.75mm; height: 7.7mm; padding-right: .8mm; white-space: nowrap; font-weight: bold; font-size: 9.45pt; line-height: 5.1mm; }\n.stk.pdf .rt td.v { padding-bottom: 1.05mm; }\n.stk.pdf .pv { height: 6.65mm; background: #e6e7e8; border-radius: 1.5mm; font-weight: bold; font-size: 9pt; line-height: 5.1mm; padding: 0 2mm; white-space: nowrap; overflow: hidden; color: #111; }\n.stk.pdf.fail .rt td.k { height: 9.6mm; color: #fff; }\n";
-    }
-
     /**
-     * Blank numbered stickers, one 100 x 100 mm page each, as a single PDF. Dompdf slows down sharply as one
-     * document grows (about 2 minutes and 500 MB for 500 pages), so the stickers are laid out in chunks of 25
-     * that are drawn onto one shared canvas: 500 pages take under 30 seconds and about 120 MB.
+     * Blank numbered stickers, one 100 x 100 mm page each, as one PDF.
+     * Laying every sticker out through Dompdf's HTML engine costs about 70 ms a page (500 pages: over 30 s, 500 MB), so
+     * the fixed sticker layout is drawn straight onto the PDF canvas instead: 500 pages take about 4 seconds.
+     * The geometry mirrors .stk in doc.css / documents/sticker_card (Dompdf treats every box as content-box).
      * @param array $rows stickers: sticker_no, color, verify_token
      */
     public static function stickerSheetPdf(array $rows, string $filename, bool $download = true): void
     {
         @set_time_limit(0);
-        if ((int) ini_get('memory_limit') !== -1 && self::bytes((string) ini_get('memory_limit')) < 512 * 1048576) @ini_set('memory_limit', '512M');
-        $art = self::stickerArt();
-        $blank = array_fill_keys(['Equipment Type', 'Identification No', 'Equip S/N', 'Capacity / SWL', 'Inspection Date', 'Next Inspection Date', 'Inspected By'], '');
-        $css = file_get_contents(ROOT_PATH . '/assets/css/doc.css') . self::stickerPdfCss();
-        $pt = 72 / 25.4;
-        $canvas = null;
-        $pdf = null;
-        foreach (array_chunk($rows, 25) as $chunk) {
-            $body = '';
-            foreach ($chunk as $s) {
-                $body .= '<div class="stk-page">' . View::partial('documents/sticker_card', ['no' => $s['sticker_no'], 'passed' => $s['color'] !== 'red', 'values' => $blank, 'art' => $art, 'qr' => self::stickerQr($s['verify_token']), 'pdf' => true]) . '</div>';
+        $m = 72 / 25.4;                                           // mm -> pt
+        $opt = new Options();
+        $opt->set('isRemoteEnabled', false);
+        $opt->set('isFontSubsettingEnabled', true);
+        $opt->set('chroot', [ROOT_PATH]);
+        $opt->set('dpi', 96);
+        $pdf = new Dompdf($opt);
+        $pdf->setPaper([0, 0, 100 * $m, 100 * $m]);
+        $c = $pdf->getCanvas();
+        $fm = $pdf->getFontMetrics();
+        $fb = $fm->getFont('helvetica', 'bold') ?: 'Helvetica-Bold';
+        $fr = $fm->getFont('helvetica', 'normal') ?: 'Helvetica';
+        $img = fn (string $f) => ROOT_PATH . '/assets/img/' . $f;
+        $hex = fn (string $h) => [hexdec(substr($h, 1, 2)) / 255, hexdec(substr($h, 3, 2)) / 255, hexdec(substr($h, 5, 2)) / 255];
+        $white = [1, 1, 1]; $black = [0, 0, 0]; $grey = $hex('#e6e7e8'); $txt = $hex('#221f1f'); $red = $hex('#ed2127');
+        $blueInk = $hex('#2d3690'); $redInk = $hex('#d32027');
+        $labels = ['Equipment Type', 'Identification No', 'Equip S/N', 'Capacity / SWL', 'Inspection Date', 'Next Inspection Date', 'Inspected By'];
+        $addr = ['Kingdom of Saudi Arabia - Main Office - Eastern Province', 'Al Khobar, 3205 Prince Muteb St., Al sharq Tower, 5th Floor', 'Phone : 0138185501 - Mob.: +966566485177', 'E-mail : info@tuv-east.com - operations@tuv-east.com'];
+
+        $box = fn (float $x, float $y, float $w, float $h, array $col) => $c->filled_rectangle($x * $m, $y * $m, $w * $m, $h * $m, $col);
+        $frame = function (float $x, float $y, float $w, float $h, float $b, array $edge, array $fill) use ($box) { $box($x, $y, $w, $h, $edge); $box($x + $b, $y + $b, $w - 2 * $b, $h - 2 * $b, $fill); };
+        $rounded = function (float $x, float $y, float $w, float $h, float $r, array $col) use ($c, $m, $box) {
+            $c->clipping_roundrectangle($x * $m, $y * $m, $w * $m, $h * $m, $r * $m, $r * $m, $r * $m, $r * $m);
+            $box($x, $y, $w, $h, $col);
+            $c->clipping_end();
+        };
+        // text centred in a line box, as the HTML renderer does ($x, $top, $lineH in pt)
+        $text = function (float $x, float $top, float $lineH, string $s, string $font, float $size, array $col, float $cs = 0.0, float $adj = 0.0) use ($c) {
+            $c->text($x, $top + ($lineH - $c->get_font_height($font, $size)) / 2 + $adj, $s, $font, $size, $col, 0.0, $cs);
+        };
+
+        $base = rtrim((string) config('public_url', ''), '/');
+        $qo = new QROptions(['eccLevel' => QRCode::ECC_M, 'addQuietzone' => true, 'quietzoneSize' => 1]);
+        $first = true;
+        foreach ($rows as $s) {
+            if (!$first) $c->new_page();
+            $first = false;
+            $blue = ($s['color'] ?? '') !== 'red';
+            $ink = $blue ? $blueInk : $redInk;
+            $edge = $blue ? $ink : $white;                        // frames / borders
+            $fg = $blue ? $txt : $white;                          // labels
+            if (!$blue) $box(0, 0, 100, 100, $ink);              // rejected stickers are red all over
+
+            // logo (on a white rounded panel when the sticker is red)
+            if ($blue) $c->image($img('sticker-tuv.png'), 3.8 * $m, 4 * $m, 31.4 * $m, 16.2 * $m);
+            else { $rounded(3.8, 4, 33, 17.8, 1.2, $white); $c->image($img('sticker-tuv.png'), 4.6 * $m, 4.8 * $m, 31.4 * $m, 16.2 * $m); }
+
+            // QR: framed, modules drawn as runs
+            $frame(46.2, 3.6, 15, 15, .3, $edge, $white);
+            $qr = new QRCode($qo);
+            $qr->addByteSegment(($base !== '' ? $base . '/s/' . $s['verify_token'] : abs_url('s/' . $s['verify_token'])));
+            $g = $qr->getMatrix()->getMatrix(true);
+            $n = count($g);
+            $cell = 13.6 / $n;
+            for ($r = 0; $r < $n; $r++) {
+                $run = -1;
+                for ($k = 0; $k <= $n; $k++) {
+                    $on = $k < $n && $g[$r][$k];
+                    if ($on && $run < 0) $run = $k;
+                    if (!$on && $run >= 0) { $box(46.9 + $run * $cell, 4.3 + $r * $cell, ($k - $run) * $cell + .03, $cell + .03, $black); $run = -1; }
+                }
             }
-            $pdf = self::newDompdf();
-            $pdf->setPaper([0, 0, 100 * $pt, 100 * $pt]);
-            if ($canvas) { $canvas->new_page(); $pdf->setCanvas($canvas); }
-            $pdf->loadHtml('<!doctype html><html><head><meta charset="utf-8"><style>' . $css . '</style></head><body class="doc">' . $body . '</body></html>', 'UTF-8');
-            $pdf->render();
-            $canvas = $pdf->getCanvas();
-            unset($body, $chunk);
-            gc_collect_cycles();
+
+            // result box
+            $word = $blue ? 'ACCEPTED' : 'REJECTED';
+            $box(38.5, 18.2, 29.7, 5.9, $edge);
+            $box(38.85, 18.55, 29, 5.2, $blue ? $white : $ink);
+            $w = $c->get_text_width($word, $fb, 10, 0, .35 * $m);
+            $text(38.85 * $m + (29 * $m - $w) / 2, 18.55 * $m, 4.5 * $m, $word, $fb, 10, $blue ? $ink : $white, .35 * $m);
+
+            // accreditation mark
+            $frame(69.93, 4.3, 25.8, 12.5, .1, $edge, $white);
+            $c->image($img('sticker-uaf.png'), 70.23 * $m, 4.55 * $m, 24.6 * $m, 11.5 * $m);
+
+            // No: box
+            $box(69.95, 17.33, 25.35, 6.3, $edge);
+            $box(70.05, 17.43, 25.15, 6.1, $blue ? $white : $ink);
+            $box(70.05, 17.43, 7.9, 6, $blue ? $ink : $white);
+            $text(70.05 * $m + (7.9 * $m - $c->get_text_width('No:', $fb, 12)) / 2, 17.43 * $m, 6 * $m, 'No:', $fb, 12, $blue ? $white : $ink);
+            $no = (string) $s['sticker_no'];
+            $size = min(11.3, round(16.5 / (max(1, strlen($no)) * 0.215), 1));
+            $text(77.95 * $m + (17.1 * $m - $c->get_text_width($no, $fb, $size)) / 2, 17.43 * $m, 6 * $m, $no, $fb, $size, $blue ? $red : $white);
+
+            // rows to fill in by hand (rejected stickers drop Capacity / SWL and Next Inspection Date)
+            $y = 27.38;
+            foreach ($labels as $l) {
+                if (!$blue && in_array($l, ['Capacity / SWL', 'Next Inspection Date'], true)) continue;
+                $lab = $l . ' :';
+                $text(3.6 * $m, $y * $m, 5.1 * $m, $lab, $fb, 9.45, $fg, 0.0, 0.75);
+                $x = 3.6 + max(29.75, $c->get_text_width($lab, $fb, 9.45) / $m) + .8;
+                $rounded($x, $y, 3.6 + 92.7 - $x, 6.65, 1.5, $grey);
+                $y += $blue ? 7.7 : 9.6;
+            }
+
+            // office address and LEEA mark
+            foreach ($addr as $i => $ln) $text(3.7 * $m, (82.6 + $i * 3.22) * $m, 3.22 * $m, $ln, $fr, 7.45, $blue ? $ink : $white);
+            if ($blue) $c->image($img('sticker-leea.png'), 84.2 * $m, 81.8 * $m, 12.2 * $m, 14.4 * $m);
+            else { $rounded(84.2, 81.8, 13.8, 16, 1.2, $white); $c->image($img('sticker-leea.png'), 85 * $m, 82.6 * $m, 12.2 * $m, 14.4 * $m); }
         }
+
         $owner = getenv('PDF_OWNER_PASSWORD') ?: hash('sha256', 'tsa-pdf-lock|' . ROOT_PATH);
-        $pdf->getCanvas()->get_cpdf()->setEncryption('', $owner, ['print']);
+        $c->get_cpdf()->setEncryption('', $owner, ['print']);
         $pdf->stream($filename, ['Attachment' => $download]);
         exit;
-    }
-
-    private static function bytes(string $v): int
-    {
-        $n = (int) $v;
-        switch (strtolower(substr(trim($v), -1))) { case 'g': $n *= 1024; case 'm': $n *= 1024; case 'k': $n *= 1024; }
-        return $n;
     }
 }
