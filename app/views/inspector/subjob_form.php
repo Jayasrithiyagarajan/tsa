@@ -63,7 +63,7 @@ $old = fn ($k, $d = '') => old($k, $d);
             <select class="select" name="cert_template_id" id="cert-select" required>
               <option value="">Select…</option>
               <?php foreach ($certTemplates as $ct): ?>
-                <option value="<?= $ct['id'] ?>" data-type="<?= (int) $ct['inspection_type_id'] ?>" data-group="<?= !empty($ct['cert_only']) ? 'cert_only' : 'with_checklist' ?>"<?= selected($ct['id'], $old('cert_template_id')) ?>><?= e($ct['title']) ?><?= $ct['doc_ref'] ? ' · ' . e($ct['doc_ref']) : '' ?></option>
+                <option value="<?= $ct['id'] ?>" data-type="<?= (int) $ct['inspection_type_id'] ?>" data-group="<?= (!empty($ct['cert_only']) && empty($ct['elev_choice'])) ? 'cert_only' : 'with_checklist' ?>" data-choice="<?= !empty($ct['elev_choice']) ? 1 : 0 ?>"<?= selected($ct['id'], $old('cert_template_id')) ?>><?= e($ct['title']) ?><?= $ct['doc_ref'] ? ' · ' . e($ct['doc_ref']) : '' ?></option>
               <?php endforeach; ?>
             </select>
             <div id="cert-full" class="small" style="margin-top:6px;font-weight:600;white-space:normal;overflow-wrap:anywhere"></div>
@@ -166,6 +166,26 @@ $old = fn ($k, $d = '') => old($k, $d);
   form.addEventListener('change', e => { if (e.target.name === 'ndt_mode') sync(); });
   sync();
 })();
+// Elevator checklist: offer the two Elevator certificates (without / with permit) and let the inspector pick
+(function () {
+  const ELEV = <?= (int) ($elevTypeId ?? 0) ?>;
+  const t = document.getElementById('type-select'), c = document.getElementById('cert-select'), form = document.getElementById('sj-form');
+  if (!ELEV || !t || !c || !form) return;
+  const refine = () => {
+    const r = form.querySelector('input[name=ndt_mode]:checked'), isElev = !!r && r.value === 'with_checklist' && t.value === String(ELEV);
+    let first = null, ok = false;
+    Array.from(c.options).forEach(o => {
+      if (!o.value) return;
+      const ch = o.dataset.choice === '1';
+      o.hidden = isElev ? !ch : ch;
+      if (isElev && ch) { if (!first || (/F-7\.5\.1-01/.test(o.text) && !/F-7\.5\.1-01/.test(first.text))) first = o; if (o.value === c.value) ok = true; }
+    });
+    if (isElev && !ok && first) c.value = first.value;
+    if (!isElev && c.selectedOptions[0] && c.selectedOptions[0].dataset.choice === '1') c.value = '';
+  };
+  form.addEventListener('change', () => setTimeout(refine, 0));
+  refine();
+})();
 // Show the full certificate title (a closed dropdown cuts long names)
 (function () {
   const c = document.getElementById('cert-select'), out = document.getElementById('cert-full'), form = document.getElementById('sj-form');
@@ -195,7 +215,7 @@ $old = fn ($k, $d = '') => old($k, $d);
       return;
     }
     Array.from(c.options).forEach(o => { o.hidden = false; });
-    const m = Array.from(c.options).find(o => o.dataset.type === t.value);
+    const m = Array.from(c.options).find(o => o.dataset.type === t.value && o.dataset.choice !== '1');
     if (m) c.value = m.value;
   });
 })();

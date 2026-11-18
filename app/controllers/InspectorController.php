@@ -96,11 +96,22 @@ final class InspectorController extends Controller
         return $col . " IN ('" . implode("','", array_keys(self::CERT_ONLY)) . "')";
     }
 
+    /** The two Elevator certificates (F-7.5.1-01 without permit / F-7.5.1-02 with permit): the inspector picks one. */
+    private const ELEV_CHOICE_SQL = "(c.doc_ref LIKE 'F-7.5.1-01%' OR c.doc_ref LIKE 'F-7.5.1-02%')";
+
+    /** @return int[] active certificate template ids offered for the Elevator checklist */
+    private static function elevChoiceIds(): array
+    {
+        return array_map('intval', array_column(DB::all('SELECT c.id FROM certificate_templates c WHERE c.is_active = 1 AND ' . self::ELEV_CHOICE_SQL . ' ORDER BY c.doc_ref, c.id'), 'id'));
+    }
+
     /** inspection_type_id => certificate_template_id (latest active) for the checklist types in the sheet. */
     private static function certMap(): array
     {
         $out = [];
+        $elevChoice = self::elevChoiceIds() !== [];
         foreach (self::CERT_FOR_CHECKLIST as $code => $certCode) {
+            if ($code === 'ELEV' && $elevChoice) continue;   // Elevator: the inspector chooses between the two certificates
             $tid = (int) DB::value('SELECT id FROM inspection_types WHERE code = ?', [$code]);
             $cid = (int) DB::value("SELECT c.id FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
                     WHERE t.code = ? AND c.is_active = 1 ORDER BY c.version DESC, c.id DESC LIMIT 1", [$certCode]);
@@ -122,16 +133,17 @@ final class InspectorController extends Controller
         $this->view('inspector/subjob_form', [
             'job'           => $job,
             'certMap'       => self::certMap(),
+            'elevTypeId'    => self::elevChoiceIds() ? (int) DB::value("SELECT id FROM inspection_types WHERE code = 'ELEV'") : 0,
             'stickerDefaults' => self::CERT_ONLY + self::CHECKLIST_STICKER,
             'types'         => DB::all("SELECT t.id, t.code, t.name, t.category, (" . self::certOnlySql() . ") AS cert_only FROM inspection_types t WHERE t.status = 'active'
                     AND ((NOT " . self::certOnlySql() . " AND EXISTS (SELECT 1 FROM checklist_templates c WHERE c.inspection_type_id = t.id AND c.is_active = 1))
                       OR (" . self::certOnlySql() . " AND EXISTS (SELECT 1 FROM certificate_templates x WHERE x.inspection_type_id = t.id AND x.is_active = 1)))
                     ORDER BY t.name"),
             'equipment'     => DB::all('SELECT id, description, equipment_no FROM equipment WHERE client_id = ? ORDER BY description', [$job['client_id']]),
-            'certTemplates' => DB::all("SELECT c.id, c.title, c.doc_ref, c.inspection_type_id, t.category, (" . self::certOnlySql() . ") AS cert_only FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
+            'certTemplates' => DB::all("SELECT c.id, c.title, c.doc_ref, c.inspection_type_id, t.category, (" . self::certOnlySql() . ") AS cert_only, " . self::ELEV_CHOICE_SQL . " AS elev_choice FROM certificate_templates c JOIN inspection_types t ON t.id = c.inspection_type_id
                     WHERE c.is_active = 1
-                      AND c.version = (SELECT MAX(v.version) FROM certificate_templates v WHERE v.inspection_type_id = c.inspection_type_id AND v.is_active = 1)
-                    ORDER BY t.category, t.name"),
+                      AND (c.version = (SELECT MAX(v.version) FROM certificate_templates v WHERE v.inspection_type_id = c.inspection_type_id AND v.is_active = 1) OR " . self::ELEV_CHOICE_SQL . ")
+                    ORDER BY t.category, t.name, c.doc_ref"),
             'title'         => 'Add Sub-job',
             'crumbs'        => ['Assigned Jobs' => 'inspector/jobs', $job['job_no'] => 'inspector/jobs/' . $id, 'Add sub-job' => null],
         ]);
@@ -162,6 +174,9 @@ final class InspectorController extends Controller
             }
             // the sheet decides the certificate for a checklist type
             if ($mode === 'with_checklist' && ($forced = self::certMap()[(int) input('inspection_type_id', 0)] ?? 0)) $_POST['cert_template_id'] = $forced;
+            if ($mode === 'with_checklist' && $typeCode === 'ELEV' && ($choice = self::elevChoiceIds()) && !in_array((int) input('cert_template_id', 0), $choice, true)) {
+                throw new DomainException('Select one of the Elevator certificates (without permit / with permit).');
+            }
             $_POST['with_checklist'] = $mode === 'with_checklist' ? 1 : 0;
             $_POST['with_sticker']   = (int) $sticker;
             $qty = max(1, min(50, (int) input('quantity', 1)));
