@@ -132,10 +132,11 @@ $r->post('/inspector/subjobs/{id}/sticker',           [InspectorController::clas
 $r->post('/inspector/subjobs/{id}/operator-document', [InspectorController::class, 'operatorDocument'], ['inspector']);
 $r->post('/inspector/subjobs/{id}/operator-card', [InspectorController::class, 'updateOperatorCard'], ['inspector']);
 $r->post('/inspector/subjobs/{id}/operator-certificate', [InspectorController::class, 'operatorCertificateDetails'], ['inspector']);
-$r->post('/inspector/subjobs/{id}/upload',     [InspectorController::class, 'upload'], ['inspector', 'admin']);
+$r->post('/inspector/subjobs/{id}/upload',     [InspectorController::class, 'upload'], ['inspector', 'admin', 'qc']);   // QC corrects photos while the job is under review
 $r->post('/inspector/subjobs/{id}/delete',     [InspectorController::class, 'deleteSubJob'], ['inspector', 'admin']);
-$r->post('/inspector/attachments/{id}/delete', [InspectorController::class, 'deleteAttachment'], ['inspector', 'admin']);
-$r->post('/inspector/attachments/{id}/page',   [InspectorController::class, 'attachmentPage'], ['inspector', 'admin']);
+$r->post('/inspector/attachments/{id}/delete', [InspectorController::class, 'deleteAttachment'], ['inspector', 'admin', 'qc']);
+$r->post('/inspector/attachments/{id}/page',   [InspectorController::class, 'attachmentPage'], ['inspector', 'admin', 'qc']);
+$r->post('/inspector/attachments/{id}/update', [InspectorController::class, 'updateAttachment'], ['inspector', 'admin', 'qc']);
 $r->post('/inspector/subjobs/{id}/submit',     [InspectorController::class, 'submit'], ['inspector', 'admin']);
 $r->get('/inspector/history',                  [InspectorController::class, 'history'], $I);
 $r->get('/inspector/stickers',                 [InspectorController::class, 'stickers'], $I);

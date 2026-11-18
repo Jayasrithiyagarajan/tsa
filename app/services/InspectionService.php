@@ -550,7 +550,7 @@ final class InspectionService
         $sj = JobService::subJob($subJobId);
         if (!$sj) throw new DomainException('Sub-job not found.');
         self::authorizeWork($sj);
-        if (in_array($sj['status'], ['submitted', 'approved', 'cancelled'], true)) {
+        if (self::attachmentsLocked($sj)) {
             throw new DomainException('Attachments are locked once the inspection is submitted.');
         }
         $kind = in_array($kind, ['photo', 'certificate_upload', 'document'], true) ? $kind : 'photo';
@@ -566,6 +566,29 @@ final class InspectionService
         return $id;
     }
 
+    /** Photos / files are locked after approval; once submitted only QC / admin (correcting the documents under review) may still change them. */
+    public static function attachmentsLocked(array $sj): bool
+    {
+        if (in_array($sj['status'], ['approved', 'cancelled'], true)) return true;
+        return $sj['status'] === 'submitted' && !(Auth::is('qc') || Auth::is('admin'));
+    }
+
+    /** Edit a photo's caption and whether it prints on the certificate. */
+    public static function updateAttachment(int $attachmentId, ?string $caption, bool $onCertificate): int
+    {
+        $a = DB::one('SELECT * FROM attachments WHERE id = ?', [$attachmentId]);
+        if (!$a) throw new DomainException('Attachment not found.');
+        $sj = JobService::subJob((int) $a['sub_job_id']);
+        self::authorizeWork($sj);
+        if (self::attachmentsLocked($sj)) throw new DomainException('Attachments are locked.');
+        DB::update('attachments', [
+            'caption' => nullable(mb_substr(trim((string) $caption), 0, 190)),
+            'on_certificate' => $onCertificate && str_starts_with((string) $a['mime'], 'image/') ? 1 : 0,
+        ], 'id = ?', [$attachmentId]);
+        Audit::log('attachment.updated', 'sub_job', (int) $a['sub_job_id'], ['attachment_id' => $attachmentId]);
+        return (int) $a['sub_job_id'];
+    }
+
     /** Which certificate page a photo prints on (null = every page). */
     public static function setAttachmentPage(int $attachmentId, ?int $certSeq): int
     {
@@ -573,7 +596,7 @@ final class InspectionService
         if (!$a) throw new DomainException('Attachment not found.');
         $sj = JobService::subJob((int) $a['sub_job_id']);
         self::authorizeWork($sj);
-        if (in_array($sj['status'], ['submitted', 'approved', 'cancelled'], true)) throw new DomainException('Attachments are locked.');
+        if (self::attachmentsLocked($sj)) throw new DomainException('Attachments are locked.');
         DB::update('attachments', ['cert_seq' => $certSeq && $certSeq > 0 ? $certSeq : null], 'id = ?', [$attachmentId]);
         Audit::log('attachment.page_set', 'sub_job', (int) $a['sub_job_id'], ['attachment_id' => $attachmentId, 'cert_seq' => $certSeq]);
         return (int) $a['sub_job_id'];
@@ -585,7 +608,7 @@ final class InspectionService
         if (!$a) throw new DomainException('Attachment not found.');
         $sj = JobService::subJob((int) $a['sub_job_id']);
         self::authorizeWork($sj);
-        if (in_array($sj['status'], ['submitted', 'approved'], true)) throw new DomainException('Attachments are locked.');
+        if (self::attachmentsLocked($sj)) throw new DomainException('Attachments are locked.');
         DB::run('DELETE FROM attachments WHERE id = ?', [$attachmentId]);
         @unlink(upload_abs($a['file_path']));
         Audit::log('attachment.deleted', 'sub_job', (int) $a['sub_job_id'], ['name' => $a['original_name']]);

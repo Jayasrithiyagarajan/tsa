@@ -413,6 +413,14 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
               <a href="<?= url('documents/attachment/' . $a['id']) ?>" target="_blank"><?php if ($img): ?><img src="<?= url('documents/attachment/' . $a['id']) ?>" alt="<?= e($a['caption'] ?: $a['original_name']) ?>" loading="lazy"><?php else: ?><div style="height:120px;display:grid;place-items:center;color:var(--muted)"><?= icon('file', 'lg') ?></div><?php endif; ?></a>
               <div class="ph-b"><span title="<?= e($a['original_name']) ?>"><?= e($a['caption'] ?: $a['original_name']) ?><br><span class="muted"><?= e(Workflow::label($a['kind'])) ?></span></span>
                 <?php if ($editable): ?><form method="post" action="<?= url('inspector/attachments/' . $a['id'] . '/delete') ?>" data-confirm="Delete this file?"><?= Csrf::field() ?><button class="btn btn-ghost btn-sm" title="Delete"><?= icon('trash', 'sm') ?></button></form><?php endif; ?></div>
+              <?php if ($editable): ?>
+                <form method="post" action="<?= url('inspector/attachments/' . $a['id'] . '/update') ?>" style="padding:0 10px 10px;display:grid;gap:6px">
+                  <?= Csrf::field() ?>
+                  <input class="input" name="caption" value="<?= e((string) $a['caption']) ?>" placeholder="Caption" maxlength="190" style="height:30px;font-size:12.5px">
+                  <?php if ($img): ?><label class="check small"><input type="checkbox" name="on_certificate" value="1"<?= $a['on_certificate'] ? ' checked' : '' ?>> Show on certificate</label><?php endif; ?>
+                  <button class="btn btn-secondary btn-sm">Save</button>
+                </form>
+              <?php endif; ?>
               <?php if ($pageCount > 1 && $a['on_certificate']): ?>
                 <div style="padding:0 10px 10px">
                   <?php if ($editable): ?>

@@ -411,6 +411,19 @@ final class InspectorController extends Controller
         });
     }
 
+    /** Caption / "show on certificate" of one photo (inspector, or QC while the job is under review). */
+    public function updateAttachment(string $id): void
+    {
+        try {
+            $sjId = InspectionService::updateAttachment((int) $id, input('caption'), !empty($_POST['on_certificate']));
+            flash('success', 'Photo updated.');
+            redirect('inspector/subjobs/' . $sjId . '#tab-files');
+        } catch (DomainException $e) {
+            flash('error', $e->getMessage());
+            redirect($_SERVER['HTTP_REFERER'] ?? 'inspector');
+        }
+    }
+
     public function deleteAttachment(string $id): void
     {
         $this->attempt(fn () => InspectionService::deleteAttachment((int) $id), 'Attachment removed.');

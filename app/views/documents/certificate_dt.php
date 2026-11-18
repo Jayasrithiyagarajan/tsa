@@ -25,7 +25,22 @@ $t1 .= '<tr style="' . $hh(12.7) . '"><td class="l">Material Description</td><td
 
 // ---- photo
 $photos = array_values($m['photos'] ?? []);
-$img = '<div class="dt-img">' . (isset($photos[0]) ? '<img src="' . $photos[0]['src'] . '" alt="">' : '') . '</div>';
+// the whole photo is shown (never cropped), scaled up or down to the largest size that fits the 187.4 x 79 mm image area and centred in it
+$img = '<div class="dt-img"></div>';
+if (isset($photos[0])) {
+    $bw = 187.4; $bh = 79.0;
+    $src0 = (string) $photos[0]['src'];
+    $raw = str_contains($src0, 'base64,') ? base64_decode(substr($src0, strpos($src0, 'base64,') + 7), true) : false;
+    $dim = $raw !== false ? @getimagesizefromstring($raw) : false;
+    if ($dim && $dim[0] > 0 && $dim[1] > 0) {
+        $k = min($bw / $dim[0], $bh / $dim[1]);
+        $iw = round($dim[0] * $k, 2); $ih = round($dim[1] * $k, 2);
+        $pad = round(($bh - $ih) / 2, 2);
+        $img = '<div class="dt-img" style="padding-top:' . $pad . 'mm;height:' . round($bh - $pad, 2) . 'mm"><img src="' . $src0 . '" style="width:' . $iw . 'mm;height:' . $ih . 'mm" alt=""></div>';
+    } else {
+        $img = '<div class="dt-img" style="width:187.4mm;background:url(\'' . $src0 . '\') center center no-repeat;background-size:contain"></div>';
+    }
+}
 
 // ---- sample details
 $t2 = '<table class="f dt" style="margin-top:3.1mm">' . doc_sizer([43.8, 95.3, 48.2])
@@ -37,13 +52,15 @@ $t2 = '<table class="f dt" style="margin-top:3.1mm">' . doc_sizer([43.8, 95.3, 4
 $insp = $m['inspector'];
 $rev = $m['reviewer'];
 $signed = in_array($c['status'], ['pending_qc', 'issued'], true);
-$im = fn ($p, $ok) => ($ok && $p && !empty($p['signature'])) ? '<img src="' . $p['signature'] . '" style="max-height:13mm;max-width:22mm;vertical-align:middle;margin:0 1mm" alt="">' : '';
-$sigs = $im($insp, $signed) . $im($rev, $m['issued']) . ($m['issued'] ? '<img src="' . $brand['stamp'] . '" style="width:19mm;height:19mm;vertical-align:middle;margin:0 1mm" alt="">' : '');   // inside the table cell, so they follow it
+$im = fn ($p, $ok) => ($ok && $p && !empty($p['signature'])) ? '<img src="' . $p['signature'] . '" style="max-height:13mm;max-width:34mm;vertical-align:middle;margin:0 1.5mm" alt="">' : '';
+$seal = $m['issued'] ? '<img src="' . $brand['stamp'] . '" style="width:15mm;height:15mm;vertical-align:middle;margin:0 1.5mm" alt="">' : '';
 $sig = '';
 $stamp = '';
+// each person's signature sits in the same row as their name; the seal is beside the reviewer's signature
 $t3 = '<table class="f dt" style="margin-top:4.2mm">' . doc_sizer([43.8, 72.7, 70.9])
-    . '<tr style="' . $hh(9.4) . '"><td class="l b h11">' . e($tpl['inspector_label']) . '</td><td class="c b h11">' . e($insp['name'] ?? '') . '</td><td class="l c b h11">Signature / Stamp</td></tr>'
-    . '<tr style="' . $hh(21) . '"><td class="l b">Reviewed by</td><td class="c b">' . ($m['issued'] ? e($rev['name'] ?? '') : '<span class="muted">Pending QC review</span>') . '</td><td class="c">' . $sigs . '</td></tr></table>';
+    . '<tr style="' . $hh(9.4) . '"><td class="l c b h11">Role</td><td class="l c b h11">Name</td><td class="l c b h11">Signature / Stamp</td></tr>'
+    . '<tr style="' . $hh(16) . '"><td class="l b">' . e($tpl['inspector_label']) . '</td><td class="c b">' . e($insp['name'] ?? '') . '</td><td class="c">' . $im($insp, $signed) . '</td></tr>'
+    . '<tr style="' . $hh(16) . '"><td class="l b">Reviewed by</td><td class="c b">' . ($m['issued'] ? e($rev['name'] ?? '') : '<span class="muted">Pending QC review</span>') . '</td><td class="c">' . $im($rev, $m['issued']) . $seal . '</td></tr></table>';
 
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;
 
