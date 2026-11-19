@@ -54,7 +54,7 @@ $intro = '<table class="f scf g53">' . doc_sizer([183.1])
 $std = '<table class="f scf g40">' . doc_sizer([68.2, 44.3, 70.6])
     . '<tr><td class="band c" colspan="3">Reference Standard</td></tr>'
     . '<tr class="h77"><td class="hb c">Title</td><td class="hb c">Standard</td><td class="hb c">Remarks</td></tr>';
-foreach ($m['notes'] as $n) {
+foreach (($lines('ref_std') ?: $m['notes']) as $n) {
     $p = array_map('trim', explode('|', $n)) + ['', '', ''];
     $std .= '<tr class="h76"><td>' . e($p[0]) . '</td><td class="c">' . e($p[1]) . '</td><td class="c">' . e($p[2]) . '</td></tr>';
 }

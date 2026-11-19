@@ -206,6 +206,11 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
           </div>
           <div class="form-grid">
             <?php $lastSec = null; $anTbl = ($certTpl['layout'] ?? '') === 'an'; $utTbl = ($certTpl['layout'] ?? '') === 'ut'; $chTbl = in_array($certTpl['layout'] ?? '', ['ch', 'pp', 'tr', 'mo'], true); $chMo = ($certTpl['layout'] ?? '') === 'mo'; $chAns = $chMo ? ['Pass' => 'p', 'Fail' => 'f', 'N/A' => 'na'] : ['Yes' => 'p', 'No' => 'f', 'N/A' => 'na']; $chA = array_keys($chAns); $chSec = null; $chN = 0; $fk = array_column($fields, null, 'key'); foreach ($fields as $f): ?>
+              <?php $scH = ['client' => 'Report details', 'eq_item' => 'Inspected item', 'stage' => 'Stage of inspection', 'type_insp' => 'Type of inspection', 'intro' => 'Introduction', 'conclusions' => 'Conclusions and remarks', 'attendees' => 'Attendees and scope of inspection', 'gen_desc' => 'Detail of inspection activities'];
+                if (in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) && isset($scH[$f['key']])): ?>
+                <div class="form-section mt-1"><?= icon('check', 'sm') ?> <?= e($scH[$f['key']]) ?></div>
+                <?php if ($f['key'] === 'gen_desc'): ?><div class="col-12 small muted" style="margin:-4px 0 6px">Drawings and pictures are added in the Files tab: images whose caption contains "draw" print on the drawing pages (up to 3), all others as inspection pictures (up to 16).</div><?php endif; ?>
+              <?php endif; ?>
               <?php if ($chTbl && substr($f['key'], -2) === '_r' && isset($fk[substr($f['key'], 0, -2)]['item'])) continue;   // remarks are shown inside their check row ?>
               <?php if ($chTbl && isset($f['item'], $f['section'])): ?>
                 <?php if ($chSec !== $f['section']): $chSec = $f['section']; ?>
@@ -241,6 +246,108 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
                   </span></span>
                   <?php if (!$chMo): ?><div class="rem"><input class="input" type="text" name="fields[<?= e($rk) ?>]" value="<?= e((string) ($fk[$rk]['value'] ?? '')) ?>" placeholder="Remarks" maxlength="190"<?= $dis ?>></div><?php endif; ?>
                 </div></div>
+                <?php continue; ?>
+              <?php endif; ?>
+              <?php if (in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) && in_array($f['key'], ['scope_scope', 'scope_remarks'], true)) continue;   // shown inside the Scope table ?>
+              <?php if (in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) && $f['key'] === 'standard') continue;   // replaced by the Reference Standard table (ref_std) ?>
+              <?php if (in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) && $f['key'] === 'ref_std'): $rsSrc = trim((string) $f['value']) !== '' ? (string) $f['value'] : (is_array($certTpl['notes'] ?? null) ? implode("\n", $certTpl['notes']) : (string) ($certTpl['notes'] ?? '')); $rsRows = array_values(array_filter(array_map('trim', preg_split('/\R/u', $rsSrc)), 'strlen')); if (!$rsRows) $rsRows = ['']; ?>
+                <div class="form-section mt-1"><?= icon('check', 'sm') ?> Reference standard</div>
+                <div class="field col-12">
+                  <input type="hidden" name="fields[ref_std]" value="<?= e(implode("\n", $rsRows)) ?>" data-rs-hidden>
+                  <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #9aa3b2;background:#fff">
+                    <tr><td colspan="4" style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px;background:#fff;font-size:13px">REFERENCE STANDARD</td></tr>
+                    <tr><td style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px">TITLE</td><td style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px">STANDARD</td><td style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px">REMARKS</td><td style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px;width:44px"></td></tr>
+                    <tbody data-rs-rows>
+                    <?php foreach ($rsRows as $rr): $rp = array_map('trim', explode('|', $rr)) + ['', '', '']; ?>
+                      <tr data-rs-row><?php foreach ([0, 1, 2] as $ci): ?><td style="border:1px solid #9aa3b2;padding:4px"><input class="input" type="text" maxlength="160" value="<?= e($rp[$ci]) ?>" style="text-align:center"<?= $dis ?>></td><?php endforeach; ?><td style="border:1px solid #9aa3b2;padding:4px;text-align:center"><?php if ($editable): ?><button type="button" class="icon-btn" data-rs-del title="Remove row"><?= icon('trash', 'sm') ?></button><?php endif; ?></td></tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                  </table>
+                  <?php if ($editable): ?><button type="button" class="btn btn-secondary btn-sm mt-1" data-rs-add><?= icon('plus', 'sm') ?> Add standard</button><?php endif; ?>
+                  <script>(function () {
+                    var w = document.currentScript.parentNode, hid = w.querySelector('[data-rs-hidden]'), body = w.querySelector('[data-rs-rows]');
+                    function sync() { var out = []; body.querySelectorAll('[data-rs-row]').forEach(function (r) { var v = [].map.call(r.querySelectorAll('input'), function (i) { return i.value.replace(/\|/g, '/').trim(); }); if (v.join('') !== '') out.push(v.join(' | ')); }); hid.value = out.join('\n'); hid.dispatchEvent(new Event('change', { bubbles: true })); }
+                    w.addEventListener('input', sync);
+                    w.addEventListener('click', function (e) {
+                      if (e.target.closest('[data-rs-add]')) { var r = body.querySelector('[data-rs-row]').cloneNode(true); r.querySelectorAll('input').forEach(function (i) { i.value = ''; }); body.appendChild(r); r.querySelector('input').focus(); }
+                      var d = e.target.closest('[data-rs-del]'); if (d) { if (body.querySelectorAll('[data-rs-row]').length > 1) d.closest('[data-rs-row]').remove(); else d.closest('[data-rs-row]').querySelectorAll('input').forEach(function (i) { i.value = ''; }); sync(); }
+                    });
+                  })();</script>
+                </div>
+                <?php continue; ?>
+              <?php endif; ?>
+              <?php if (in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) && $f['key'] === 'ncr_outstanding') continue;   // shown with the NCR block ?>
+              <?php if (in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) && $f['key'] === 'ncr_issued'): ?>
+                <div class="form-section mt-1"><?= icon('check', 'sm') ?> Result of inspection</div>
+                <div class="col-12 result-pick" style="grid-template-columns:repeat(2,1fr)">
+                  <input type="hidden" name="result" value="">
+                  <?php foreach (["accepted" => "SATISFACTORY", "rejected" => "UNSATISFACTORY"] as $o => $lbl): ?>
+                    <label class="<?= $o ?>"><input type="checkbox" name="result" value="<?= $o ?>"<?= checked(($cert['result'] === $o) || ($o === 'rejected' && $cert['result'] === 'repair')) . $dis ?> onchange="if(this.checked){var s=this;this.closest('.result-pick').querySelectorAll('input[type=checkbox]').forEach(function(x){if(x!==s)x.checked=false})}"> <?= $lbl ?></label>
+                  <?php endforeach; ?>
+                </div>
+                <div class="col-12" style="font-weight:700;margin-top:6px">NON-CONFORMITIES REPORTS (NCR):</div>
+                <div class="field col-12"><label>1. NCRs issued during reports:</label><input class="input" type="text" name="fields[ncr_issued]" value="<?= e((string) $f['value']) ?>" placeholder="N/A" maxlength="190"<?= $dis ?>></div>
+                <div class="field col-12"><label>2. List of outstanding NCRs:</label><input class="input" type="text" name="fields[ncr_outstanding]" value="<?= e((string) ($fk['ncr_outstanding']['value'] ?? '')) ?>" placeholder="N/A" maxlength="190"<?= $dis ?>></div>
+                <?php continue; ?>
+              <?php endif; ?>
+              <?php if (in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) && $f['key'] === 'conclusions'): $cnRows = array_values(array_filter(array_map('trim', preg_split('/\R/u', (string) $f['value'])), 'strlen')); if (!$cnRows) $cnRows = ['']; ?>
+                <div class="field col-12">
+                  <label>Conclusions and remarks <span class="muted" style="font-weight:400">— one numbered point per row</span></label>
+                  <input type="hidden" name="fields[conclusions]" value="<?= e((string) $f['value']) ?>" data-cn-hidden>
+                  <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #9aa3b2;background:#fff"><colgroup><col style="width:42px"><col><col style="width:44px"></colgroup><tbody data-cn-rows>
+                  <?php foreach ($cnRows as $cr): ?>
+                    <tr data-cn-row><td style="border:1px solid #9aa3b2;padding:4px;text-align:center;font-weight:700" data-cn-n></td><td style="border:1px solid #9aa3b2;padding:4px"><input class="input" type="text" maxlength="400" value="<?= e($cr) ?>"<?= $dis ?>></td><td style="border:1px solid #9aa3b2;padding:4px;text-align:center"><?php if ($editable): ?><button type="button" class="icon-btn" data-cn-del title="Remove point"><?= icon('trash', 'sm') ?></button><?php endif; ?></td></tr>
+                  <?php endforeach; ?>
+                  </tbody></table>
+                  <?php if ($editable): ?><button type="button" class="btn btn-secondary btn-sm mt-1" data-cn-add><?= icon('plus', 'sm') ?> Add point</button><?php endif; ?>
+                  <script>(function () {
+                    var w = document.currentScript.parentNode, hid = w.querySelector('[data-cn-hidden]'), body = w.querySelector('[data-cn-rows]');
+                    function num() { body.querySelectorAll('[data-cn-row]').forEach(function (r, i) { r.querySelector('[data-cn-n]').textContent = (i + 1) + '.'; }); }
+                    function sync() { var out = []; body.querySelectorAll('[data-cn-row] input').forEach(function (i) { if (i.value.trim() !== '') out.push(i.value.trim()); }); hid.value = out.join('\n'); hid.dispatchEvent(new Event('change', { bubbles: true })); }
+                    num(); w.addEventListener('input', sync);
+                    w.addEventListener('click', function (e) {
+                      if (e.target.closest('[data-cn-add]')) { var r = body.querySelector('[data-cn-row]').cloneNode(true); r.querySelector('input').value = ''; body.appendChild(r); num(); r.querySelector('input').focus(); }
+                      var d = e.target.closest('[data-cn-del]'); if (d) { if (body.querySelectorAll('[data-cn-row]').length > 1) d.closest('[data-cn-row]').remove(); else d.closest('[data-cn-row]').querySelector('input').value = ''; num(); sync(); }
+                    });
+                  })();</script>
+                </div>
+                <?php continue; ?>
+              <?php endif; ?>
+              <?php if (in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) && $f['key'] === 'attendees'): $attRows = array_values(array_filter(array_map('trim', preg_split('/\R/u', (string) $f['value'])), 'strlen')); if (!$attRows) $attRows = ['', '']; ?>
+                <div class="field col-12" data-att>
+                  <label>Attendees</label>
+                  <input type="hidden" name="fields[attendees]" value="<?= e((string) $f['value']) ?>" data-att-hidden>
+                  <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #9aa3b2;background:#fff">
+                    <tr><td colspan="4" style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px;background:#fff;font-size:13px">ATTENDEES</td></tr>
+                    <tr><td style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px">NAME</td><td style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px">DESIGNATION</td><td style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px">REPRESENTATIVE</td><td style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px;width:44px"></td></tr>
+                    <tbody data-att-rows>
+                    <?php foreach ($attRows as $ar): $ap = array_map('trim', explode('|', $ar)) + ['', '', '']; ?>
+                      <tr data-att-row><?php foreach ([0, 1, 2] as $ci): ?><td style="border:1px solid #9aa3b2;padding:4px"><input class="input" type="text" maxlength="120" value="<?= e($ap[$ci]) ?>" style="text-align:center"<?= $dis ?>></td><?php endforeach; ?><td style="border:1px solid #9aa3b2;padding:4px;text-align:center"><?php if ($editable): ?><button type="button" class="icon-btn" data-att-del title="Remove row"><?= icon('trash', 'sm') ?></button><?php endif; ?></td></tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                  </table>
+                  <?php if ($editable): ?><button type="button" class="btn btn-secondary btn-sm mt-1" data-att-add><?= icon('plus', 'sm') ?> Add attendee</button><?php endif; ?>
+                  <script>(function () {
+                    var w = document.currentScript.parentNode, hid = w.querySelector('[data-att-hidden]'), body = w.querySelector('[data-att-rows]');
+                    function sync() { var out = []; body.querySelectorAll('[data-att-row]').forEach(function (r) { var v = [].map.call(r.querySelectorAll('input'), function (i) { return i.value.replace(/\|/g, '/').trim(); }); if (v.join('') !== '') out.push(v.join(' | ')); }); hid.value = out.join('\n'); hid.dispatchEvent(new Event('change', { bubbles: true })); }
+                    w.addEventListener('input', sync);
+                    w.addEventListener('click', function (e) {
+                      if (e.target.closest('[data-att-add]')) { var r = body.querySelector('[data-att-row]').cloneNode(true); r.querySelectorAll('input').forEach(function (i) { i.value = ''; }); body.appendChild(r); r.querySelector('input').focus(); }
+                      var d = e.target.closest('[data-att-del]'); if (d) { if (body.querySelectorAll('[data-att-row]').length > 1) d.closest('[data-att-row]').remove(); else d.closest('[data-att-row]').querySelectorAll('input').forEach(function (i) { i.value = ''; }); sync(); }
+                    });
+                  })();</script>
+                </div>
+                <?php continue; ?>
+              <?php endif; ?>
+              <?php if (in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) && $f['key'] === 'scope_method'): ?>
+                <div class="field col-12">
+                  <label>Scope of inspection</label>
+                  <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #9aa3b2;background:#fff">
+                    <tr><td colspan="3" style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px;background:#fff;font-size:13px">SCOPE OF INSPECTION</td></tr>
+                    <tr><td style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px">INSPECTION METHOD</td><td style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px">SCOPE</td><td style="border:1px solid #9aa3b2;background:#aabee3;font-weight:700;text-align:center;padding:8px;font-size:12px">REMARKS</td></tr>
+                    <tr><?php foreach (['scope_method', 'scope_scope', 'scope_remarks'] as $sk): ?><td style="border:1px solid #9aa3b2;padding:4px"><input class="input" type="text" maxlength="190" name="fields[<?= $sk ?>]" value="<?= e((string) ($fk[$sk]['value'] ?? '')) ?>" style="text-align:center"<?= $dis ?>></td><?php endforeach; ?></tr>
+                  </table>
+                </div>
                 <?php continue; ?>
               <?php endif; ?>
               <?php if ($f['key'] === 'cert_remarks'): ?>
@@ -366,7 +473,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
                 <?php elseif (($f['type'] ?? 'text') === 'select'): ?>
                   <select class="select" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><option value="">Select…</option><?php foreach ($f['options'] ?? [] as $o): ?><option<?= selected($o, $f['value']) ?>><?= e($o) ?></option><?php endforeach; ?></select>
                 <?php elseif (($f['type'] ?? 'text') === 'textarea'): ?>
-                  <textarea class="input" rows="24" style="min-height:520px;resize:vertical;line-height:1.5" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><?= e($f['value']) ?></textarea>
+                  <textarea class="input" rows="<?= in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) ? 6 : 24 ?>" style="min-height:<?= in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) ? 140 : 520 ?>px;resize:vertical;line-height:1.5" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><?= e($f['value']) ?></textarea>
                 <?php else: ?>
                   <?php if (!empty($f['is_date'])): ?>
                   <input class="input" type="date" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['iso']) ?>"<?= $dis ?>>
@@ -380,9 +487,10 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <div class="form-section mt-1"><?= icon('calendar', 'sm') ?> Dates</div>
             <div class="field col-6"><label>Inspection date</label><input class="input" type="date" name="inspection_date" value="<?= e($cert['inspection_date']) ?>"<?= $dis ?>></div>
             <div class="field col-6"><label>Next inspection date</label><input class="input" type="date" name="next_inspection_date" value="<?= e($cert['next_inspection_date']) ?>"<?= $dis ?>><div class="help">Defaults to inspection date + <?= (int) $sj['validity_months'] ?> months − 1 day.</div></div>
-            <div class="form-section mt-1"><?= icon('check', 'sm') ?> Result</div>
+            <div class="form-section mt-1"><?= icon('check', 'sm') ?> <?= in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) ? 'Certification statement' : 'Result' ?></div>
             <?php $scRes = in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true); ?>
-            <div class="col-12 result-pick"<?= $scRes ? ' style="grid-template-columns:repeat(2,1fr)"' : '' ?>>
+            <?php if (!$scRes): ?>
+            <div class="col-12 result-pick">
               <?php if ($scRes): /* tick-box result, as printed on the form: SATISFACTORY / UNSATISFACTORY */ ?>
                 <input type="hidden" name="result" value="">
                 <?php foreach (["accepted" => "SATISFACTORY", "rejected" => "UNSATISFACTORY"] as $o => $lbl): ?>
@@ -394,7 +502,8 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
               <?php endforeach; ?>
               <?php endif; ?>
             </div>
-            <div class="field col-12"><label>Result statement (printed under the result)</label><textarea class="input" name="result_statement" rows="5" style="min-height:130px;resize:vertical;line-height:1.5"<?= $dis ?>><?= e($cert['result_statement']) ?></textarea></div>
+            <?php endif; ?>
+            <div class="field col-12"><label><?= in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) ? 'Statement (printed in the RESULT OF INSPECTION band at the end of the report)' : 'Result statement (printed under the result)' ?></label><textarea class="input" name="result_statement" rows="5" style="min-height:130px;resize:vertical;line-height:1.5"<?= $dis ?>><?= e($cert['result_statement']) ?></textarea></div>
             <div class="field col-12"><label>Message to QC <span class="muted" style="font-weight:400">— type here if you want to send a message to QC, otherwise leave it blank</span></label><textarea class="textarea" name="remarks" placeholder="Optional — leave blank if there is nothing for QC"<?= $dis ?>><?= e($cert['remarks']) ?></textarea></div>
           </div>
         </div>

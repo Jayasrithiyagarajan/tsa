@@ -161,6 +161,12 @@ final class CertificateService
             $have = array_column($fields, 'key');
             if (!in_array('ut_notes', $have, true)) $fields[] = ['key' => 'ut_notes', 'label' => 'Notes', 'type' => 'textarea', 'required' => false];
         }
+        if (in_array($tpl['layout'] ?? '', ['sc', 'ss'], true) && !in_array('ref_std', array_column($fields, 'key'), true))   // editable Reference Standard table (Title | Standard | Remarks per line); empty = the template's standard rows
+        {   // placed right after the Introduction, as on the printed form
+            $rs = ['key' => 'ref_std', 'label' => 'Reference Standard', 'type' => 'textarea', 'required' => false];
+            $at = array_search('intro', array_column($fields, 'key'), true);
+            if ($at === false) $fields[] = $rs; else array_splice($fields, $at + 1, 0, [$rs]);
+        }
         if (($tpl['layout'] ?? '') === 'pp') return $fields;   // vehicle form: no Capacity / SWL box
         foreach ($fields as $f) {
             if (in_array($f['key'] ?? '', ['swl', 'capacity'], true) || ($f['source'] ?? '') === 'equipment.capacity') return $fields;

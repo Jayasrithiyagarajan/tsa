@@ -74,7 +74,7 @@ $std = '<table class="f sst"' . $gap(5.1) . '>' . doc_sizer([61.7, 50.8, 68.1])
     . '<tr><td class="band c" colspan="3" style="height:10mm">Reference Standard</td></tr>'
     . $row(7.0, [['hdb c', 'Title'], ['hdb c', 'Standard'], ['hdb c', 'Remarks']]);
 $hs = [9.3, 9.4, 9.3];
-foreach ($m['notes'] as $i => $n) {
+foreach (array_values($lines('ref_std') ?: $m['notes']) as $i => $n) {
     $p = array_map('trim', explode('|', $n)) + ['', '', ''];
     $std .= $row($hs[$i] ?? 9.3, [['', e($p[0])], ['c', e($p[1])], ['c', e($p[2])]]);
 }
