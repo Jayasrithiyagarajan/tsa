@@ -365,10 +365,18 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <div class="field col-6"><label>Inspection date</label><input class="input" type="date" name="inspection_date" value="<?= e($cert['inspection_date']) ?>"<?= $dis ?>></div>
             <div class="field col-6"><label>Next inspection date</label><input class="input" type="date" name="next_inspection_date" value="<?= e($cert['next_inspection_date']) ?>"<?= $dis ?>><div class="help">Defaults to inspection date + <?= (int) $sj['validity_months'] ?> months − 1 day.</div></div>
             <div class="form-section mt-1"><?= icon('check', 'sm') ?> Result</div>
-            <div class="col-12 result-pick">
+            <?php $scRes = in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true); ?>
+            <div class="col-12 result-pick"<?= $scRes ? ' style="grid-template-columns:repeat(2,1fr)"' : '' ?>>
+              <?php if ($scRes): /* tick-box result, as printed on the form: SATISFACTORY / UNSATISFACTORY */ ?>
+                <input type="hidden" name="result" value="">
+                <?php foreach (["accepted" => "SATISFACTORY", "rejected" => "UNSATISFACTORY"] as $o => $lbl): ?>
+                  <label class="<?= $o ?>"><input type="checkbox" name="result" value="<?= $o ?>"<?= checked(($cert['result'] === $o) || ($o === 'rejected' && $cert['result'] === 'repair')) . $dis ?> onchange="if(this.checked){var s=this;this.closest('.result-pick').querySelectorAll('input[type=checkbox]').forEach(function(x){if(x!==s)x.checked=false})}"> <?= $lbl ?></label>
+                <?php endforeach; ?>
+              <?php else: ?>
               <?php foreach (explode(',', $certTpl['result_options']) as $o): ?>
                 <label class="<?= e($o) ?>"><input type="radio" name="result" value="<?= e($o) ?>"<?= checked($cert['result'] === $o) . $dis ?>> <?= e(Workflow::label($o)) ?></label>
               <?php endforeach; ?>
+              <?php endif; ?>
             </div>
             <div class="field col-12"><label>Result statement (printed under the result)</label><textarea class="input" name="result_statement" rows="5" style="min-height:130px;resize:vertical;line-height:1.5"<?= $dis ?>><?= e($cert['result_statement']) ?></textarea></div>
             <div class="field col-12"><label>Message to QC <span class="muted" style="font-weight:400">— type here if you want to send a message to QC, otherwise leave it blank</span></label><textarea class="textarea" name="remarks" placeholder="Optional — leave blank if there is nothing for QC"<?= $dis ?>><?= e($cert['remarks']) ?></textarea></div>
