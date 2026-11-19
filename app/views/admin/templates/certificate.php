@@ -3,7 +3,7 @@ $h = fn ($k, $d = '') => old($k, $tpl[$k] ?? $d);
 $rows = old('fields') ?: $fields;
 if (!$rows) $rows = [['label' => 'Client Name', 'source' => 'client.name'], ['label' => 'Inspection Location', 'source' => 'job.location']];
 $opts = explode(',', $h('result_options', 'accepted,rejected,repair'));
-$row = function ($i, $f) { $isOpt = ($f['type'] ?? 'text') === 'select'; ?>
+$row = function ($i, $f) { $isOpt = in_array($f['type'] ?? 'text', ['select', 'checks'], true); ?>
   <div data-repeat-row style="padding:10px 0;border-bottom:1px dashed var(--border)">
     <div class="row" style="gap:8px;flex-wrap:wrap">
       <span class="row" style="gap:2px"><button type="button" class="btn btn-ghost btn-sm" data-move="up">↑</button><button type="button" class="btn btn-ghost btn-sm" data-move="down">↓</button></span>
@@ -14,12 +14,12 @@ $row = function ($i, $f) { $isOpt = ($f['type'] ?? 'text') === 'select'; ?>
       <select class="select" style="flex:2;min-width:200px" name="fields[<?= $i ?>][source]" aria-label="Value source">
         <?php foreach (CertificateService::SOURCES as $k => $l): ?><option value="<?= e($k) ?>"<?= selected($k, $f['source'] ?? '') ?>><?= e($l) ?></option><?php endforeach; ?>
       </select>
-      <select class="select" style="flex:1;min-width:110px" name="fields[<?= $i ?>][type]" aria-label="Input type"><?php foreach (['text' => 'Text', 'date' => 'Date', 'textarea' => 'Multi-line text', 'number' => 'Number', 'select' => 'Dropdown'] as $k => $l): ?><option value="<?= $k ?>"<?= selected($k, $f['type'] ?? 'text') ?>><?= $l ?></option><?php endforeach; ?></select>
+      <select class="select" style="flex:1;min-width:110px" name="fields[<?= $i ?>][type]" aria-label="Input type"><?php foreach (['text' => 'Text', 'date' => 'Date', 'textarea' => 'Multi-line text', 'number' => 'Number', 'select' => 'Dropdown', 'checks' => 'Checkboxes'] as $k => $l): ?><option value="<?= $k ?>"<?= selected($k, $f['type'] ?? 'text') ?>><?= $l ?></option><?php endforeach; ?></select>
       <label class="check small"><input type="checkbox" name="fields[<?= $i ?>][required]" value="1"<?= checked(!empty($f['required'])) ?>> Required</label>
       <label class="check small" title="Pre-fill from the inspector's previous certificate (equipment / consumables)"><input type="checkbox" name="fields[<?= $i ?>][carry]" value="1"<?= checked(!empty($f['carry'])) ?>> Carry over</label>
       <button type="button" class="icon-btn" data-repeat-remove title="Remove"><?= icon('trash', 'sm') ?></button>
     </div>
-    <input class="input mt-1" name="fields[<?= $i ?>][options]" value="<?= e(implode(', ', (array) ($f['options'] ?? []))) ?>" placeholder="Dropdown options, comma-separated (only for Dropdown)">
+    <input class="input mt-1" name="fields[<?= $i ?>][options]" value="<?= e(implode(', ', (array) ($f['options'] ?? []))) ?>" placeholder="Dropdown options, comma-separated (only for Dropdown / Checkboxes)">
   </div>
 <?php }; ?>
 <div class="page-head">

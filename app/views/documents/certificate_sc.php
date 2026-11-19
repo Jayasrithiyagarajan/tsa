@@ -43,9 +43,9 @@ $choice = function (string $title, array $opts, array $picked, array $cols, stri
     }
     return $h . '</table>';
 };
-$stage = $choice('STAGE OF INSPECTION', ['Before Manufacturing', 'During Manufacturing', 'Final', 'Packing', 'After Installed', 'In-Service Inspection'], [$fv['stage'] ?? ''], [59.0, 66.5, 57.6], 'rs1', 'rs2');
+$stage = $choice('STAGE OF INSPECTION', ['Before Manufacturing', 'During Manufacturing', 'Final', 'Packing', 'After Installed', 'In-Service Inspection'], array_filter(array_map('trim', explode('|', $fv['stage'] ?? ''))), [59.0, 66.5, 57.6], 'rs1', 'rs2');
 // the form has separate VISUAL and EXAMINATION/CHECKS boxes; the stored option "Visual Examination/Checks" ticks VISUAL
-$typePicked = array_map(fn ($x) => $x === 'Visual Examination/Checks' ? 'Visual' : $x, array_filter([$fv['type_insp'] ?? '', $fv['type_insp2'] ?? '']));
+$typePicked = array_map(fn ($x) => $x === 'Visual Examination/Checks' ? 'Visual' : $x, array_filter(array_map('trim', explode('|', implode('|', [$fv['type_insp'] ?? '', $fv['type_insp2'] ?? '', $fv['type_insp3'] ?? ''])))));
 $types = $choice('TYPE OF INSPECTION', ['Pre-Inspection', 'Document and QC Record Review', 'Visual', 'Examination/Checks', 'Witnessing Tests', 'Final Inspection'], $typePicked, [57.1, 68.8, 57.2], 'rt1', 'rt2');
 
 $intro = '<table class="f scf g53">' . doc_sizer([183.1])

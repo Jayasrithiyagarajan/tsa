@@ -337,13 +337,16 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
               <?php if (!empty($f['section']) && $f['section'] !== $lastSec): $lastSec = $f['section']; $sp = explode('|', $f['section']); ?>
                 <div class="form-section mt-1"><?= icon('check', 'sm') ?> <?= e(($sp[1] ?? '') !== '' ? $sp[0] . '. ' . $sp[1] : 'Section ' . $sp[0]) ?></div>
               <?php endif; ?>
-              <div class="field <?= ($f['type'] ?? '') === 'textarea' ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && (!$f['bound'] || !empty($f['is_cap'])) ? ' <span class="req">*</span>' : '' ?></label>
+              <div class="field <?= in_array($f['type'] ?? '', ['textarea', 'checks'], true) ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && (!$f['bound'] || !empty($f['is_cap'])) ? ' <span class="req">*</span>' : '' ?></label>
                 <?php if ($f['bound']): ?>
                   <?php if (!empty($f['is_date'])): ?>
                   <input class="input" type="date" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['iso']) ?>" title="<?= $f['source'] === 'cert.issue_date' ? 'Defaults to today — pick another date if needed' : 'Pre-filled from the job record — you can edit it' ?>"<?= $dis ?>>
                   <?php else: ?>
                   <input class="input" type="text" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['value']) ?>" placeholder="From job record" title="Pre-filled from the job record — you can edit it"<?= $dis ?>>
                   <?php endif; ?>
+                <?php elseif (($f['type'] ?? '') === 'checks'): $sel = array_map(fn ($x) => $x === 'Visual Examination/Checks' ? 'Visual' : $x, array_map('trim', explode('|', (string) $f['value']))); ?>
+                  <input type="hidden" name="fields[<?= e($f['key']) ?>][]" value="">
+                  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 16px;padding:4px 0"><?php foreach ($f['options'] ?? [] as $o): ?><label class="check"><input type="checkbox" name="fields[<?= e($f['key']) ?>][]" value="<?= e($o) ?>"<?= checked(in_array($o, $sel, true)) . $dis ?>> <?= e($o) ?></label><?php endforeach; ?></div>
                 <?php elseif (($f['type'] ?? 'text') === 'select'): ?>
                   <select class="select" name="fields[<?= e($f['key']) ?>]"<?= $dis ?>><option value="">Select…</option><?php foreach ($f['options'] ?? [] as $o): ?><option<?= selected($o, $f['value']) ?>><?= e($o) ?></option><?php endforeach; ?></select>
                 <?php elseif (($f['type'] ?? 'text') === 'textarea'): ?>

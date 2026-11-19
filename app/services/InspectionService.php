@@ -269,6 +269,13 @@ final class InspectionService
                     }
                     continue;
                 }
+                if (($f['type'] ?? '') === 'checks') {                  // tick-boxes: stored as option|option
+                    if (array_key_exists($f['key'], $in['fields'] ?? [])) {
+                        $picked = array_values(array_filter(array_map('trim', (array) $in['fields'][$f['key']]), fn ($x) => in_array($x, $f['options'] ?? [], true)));
+                        $data[$f['key']] = implode('|', array_unique($picked));
+                    }
+                    continue;
+                }
                 if (array_key_exists($f['key'], $in['fields'] ?? [])) {
                     $v = mb_substr(trim((string) $in['fields'][$f['key']]), 0, ($f['type'] ?? '') === 'textarea' ? 1500 : 190);
                     if (($f['type'] ?? '') === 'select' && !in_array($f['key'] ?? '', CertificateService::FREE_TEXT_SELECTS, true) && $v !== '' && !in_array($v, $f['options'] ?? [], true)) continue;
