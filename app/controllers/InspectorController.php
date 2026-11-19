@@ -78,7 +78,7 @@ final class InspectorController extends Controller
         'CRWL' => 'LFTC', 'FORK' => 'LFTC', 'JIBC' => 'LFTC', 'MCR' => 'LFTC', 'TELE' => 'LFTC', 'TCR' => 'LFTC', 'VLD' => 'LFTC',
         'ELEV' => 'ELEV', 'ESCL' => 'ESCL',
         'SLNG' => 'LFTC', 'RGHW' => 'LFTC', 'OVHC' => 'LFTC', 'CHBK' => 'LFTC', 'GRDR' => 'SPEC',
-        'LVHT' => 'LFTC', 'TRNC' => 'SPEC', 'DUMP' => 'SPEC', 'WLDM' => 'SPEC', 'MCPM' => 'SPEC', 'CMXR' => 'SPEC',
+        'BSEW' => 'LFTC', 'LVHT' => 'LFTC', 'TRNC' => 'SPEC', 'DUMP' => 'SPEC', 'WLDM' => 'SPEC', 'MCPM' => 'SPEC', 'CMXR' => 'SPEC',
     ];
 
     /** Certificate-only types (no checklist) => sticker default (0 = no sticker, 1 = sticker, 2 = RED sticker), per the sheet. */
@@ -88,7 +88,7 @@ final class InspectorController extends Controller
     private const CHECKLIST_STICKER = [
         'AIRC' => 1, 'BKHO' => 1, 'BOOM' => 1, 'BLDZ' => 1, 'CRWL' => 1, 'DRIL' => 1, 'ELEV' => 1, 'EXCV' => 1, 'FORK' => 1, 'GEN' => 1,
         'JIBC' => 1, 'MCR' => 1, 'ROLL' => 1, 'SKID' => 1, 'TELE' => 1, 'TCR' => 1, 'VLD' => 1, 'WLDR' => 1, 'ESCL' => 1,
-        'MOTO' => 1, 'TRNC' => 1, 'WLDM' => 1, 'CMXR' => 1, 'MCPM' => 1, 'DUMP' => 1, 'CHBK' => 0, 'LVHT' => 0, 'SLNG' => 0, 'RGHW' => 0, 'OVHC' => 1, 'GRDR' => 1,
+        'MOTO' => 1, 'BSEW' => 1, 'TRNC' => 1, 'WLDM' => 1, 'CMXR' => 1, 'MCPM' => 1, 'DUMP' => 1, 'CHBK' => 0, 'LVHT' => 0, 'SLNG' => 0, 'RGHW' => 0, 'OVHC' => 1, 'GRDR' => 1,
     ];
 
     private static function certOnlySql(string $col = 't.code'): string

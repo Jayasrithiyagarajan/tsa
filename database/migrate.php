@@ -237,6 +237,9 @@ foreach (['ESCL' => ['Lifts & Elevators', 'Escalator'], 'PTNK' => ['Vehicles', '
 // Petroleum Tanks used the placeholder ref "CL 23", which is the Wire Rope Sling form - move it to CL 27
 if (DB::run("UPDATE checklist_templates c JOIN inspection_types t ON t.id = c.inspection_type_id SET c.code = 'F-7.5.1-CL 27', c.doc_ref = 'F-7.5.1-CL 27' WHERE t.code = 'TNKR' AND c.doc_ref = 'F-7.5.1-CL 23'")->rowCount() > 0) echo "✓ TNKR document ref moved to F-7.5.1-CL 27\n";
 
+// CL 27 is the Boom Supported Elevating Work Platform form - the Petroleum Tanks placeholder moves to CL 35
+if (DB::run("UPDATE checklist_templates c JOIN inspection_types t ON t.id = c.inspection_type_id SET c.code = 'F-7.5.1-CL 35', c.doc_ref = 'F-7.5.1-CL 35' WHERE t.code = 'TNKR' AND c.doc_ref = 'F-7.5.1-CL 27'")->rowCount() > 0) echo "✓ TNKR placeholder document ref moved to F-7.5.1-CL 35\n";
+
 foreach (require __DIR__ . '/seed_templates.php' as $def) {
     $code = $def['type']['code'];
     $type = DB::one('SELECT * FROM inspection_types WHERE code = ?', [$code]);
