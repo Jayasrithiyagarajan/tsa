@@ -337,8 +337,24 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
               <?php if (!empty($f['section']) && $f['section'] !== $lastSec): $lastSec = $f['section']; $sp = explode('|', $f['section']); ?>
                 <div class="form-section mt-1"><?= icon('check', 'sm') ?> <?= e(($sp[1] ?? '') !== '' ? $sp[0] . '. ' . $sp[1] : 'Section ' . $sp[0]) ?></div>
               <?php endif; ?>
-              <div class="field <?= in_array($f['type'] ?? '', ['textarea', 'checks'], true) ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && (!$f['bound'] || !empty($f['is_cap'])) ? ' <span class="req">*</span>' : '' ?></label>
-                <?php if ($f['bound']): ?>
+              <div class="field <?= in_array($f['type'] ?? '', ['textarea', 'checks'], true) || ($f['key'] === 'vin' && in_array($certTpl['layout'] ?? '', ['pp', 'tr'], true)) ? 'col-12' : 'col-6' ?>"><label><?= e(rtrim($f['label'], ':')) ?><?= !empty($f['required']) && (!$f['bound'] || !empty($f['is_cap'])) ? ' <span class="req">*</span>' : '' ?></label>
+                <?php if ($f['key'] === 'vin' && in_array($certTpl['layout'] ?? '', ['pp', 'tr'], true)): $vc = preg_split('//u', strtoupper((string) $f['value']), -1, PREG_SPLIT_NO_EMPTY); /* one box per character, as on the form */ ?>
+                  <input type="hidden" name="fields[vin]" value="<?= e((string) $f['value']) ?>" data-vin-hidden>
+                  <div class="row" data-vin-boxes style="gap:4px;flex-wrap:wrap">
+                    <?php for ($i = 0; $i < 17; $i++): ?><span style="display:flex;flex-direction:column;align-items:center;gap:2px"><small class="muted" style="font-size:10px"><?= $i + 1 ?></small><input class="input" type="text" maxlength="1" autocomplete="off" autocapitalize="characters" aria-label="VIN character <?= $i + 1 ?>" value="<?= e(trim((string) ($vc[$i] ?? ''))) ?>" style="width:34px;padding:6px 0;text-align:center;font-weight:700;text-transform:uppercase"<?= $dis ?>></span><?php endfor; ?>
+                  </div>
+                  <div class="help">One character per box (17 characters).</div>
+                  <script>(function () {
+                    var w = document.currentScript.parentNode, hid = w.querySelector('[data-vin-hidden]'), bx = [].slice.call(w.querySelectorAll('[data-vin-boxes] input'));
+                    function sync() { hid.value = bx.map(function (b) { return b.value || ' '; }).join('').replace(/\s+$/, ''); hid.dispatchEvent(new Event('change', { bubbles: true })); }
+                    function clean(v) { return v.toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+                    bx.forEach(function (b, i) {
+                      b.addEventListener('input', function () { var v = clean(b.value); if (v.length > 1) { for (var j = 0; j < v.length && i + j < 17; j++) bx[i + j].value = v.charAt(j); bx[Math.min(16, i + v.length)].focus(); } else { b.value = v; if (v && bx[i + 1]) bx[i + 1].focus(); } sync(); });
+                      b.addEventListener('keydown', function (e) { if (e.key === 'Backspace' && !b.value && bx[i - 1]) { bx[i - 1].focus(); bx[i - 1].value = ''; sync(); e.preventDefault(); } else if (e.key === 'ArrowLeft' && bx[i - 1]) bx[i - 1].focus(); else if (e.key === 'ArrowRight' && bx[i + 1]) bx[i + 1].focus(); });
+                      b.addEventListener('paste', function (e) { var t = clean((e.clipboardData || window.clipboardData).getData('text')); if (!t) return; e.preventDefault(); for (var j = 0; j < t.length && i + j < 17; j++) bx[i + j].value = t.charAt(j); bx[Math.min(16, i + t.length)].focus(); sync(); });
+                    });
+                  })();</script>
+                <?php elseif ($f['bound']): ?>
                   <?php if (!empty($f['is_date'])): ?>
                   <input class="input" type="date" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['iso']) ?>" title="<?= $f['source'] === 'cert.issue_date' ? 'Defaults to today — pick another date if needed' : 'Pre-filled from the job record — you can edit it' ?>"<?= $dis ?>>
                   <?php else: ?>
