@@ -44,13 +44,16 @@ $insp = $m['inspector'];
 $rev = $m['reviewer'];
 $signed = in_array($c['status'], ['pending_qc', 'issued'], true);
 $im = fn ($p, $ok) => ($ok && $p && !empty($p['signature'])) ? '<img src="' . $p['signature'] . '" style="max-height:13mm;max-width:27mm;vertical-align:middle;margin:0 1.5mm" alt="">' : '';
-$sigs = $im($insp, $signed) . $im($rev, $m['issued']) . ($m['issued'] ? '<img src="' . $brand['stamp'] . '" style="width:19mm;height:19mm;vertical-align:middle;margin:0 1.5mm" alt="">' : '');   // all inside the table cell, so they follow it
+$sigI = $im($insp, $signed);
+$sigR = $im($rev, $m['issued']) . ($m['issued'] ? '<img src="' . $brand['stamp'] . '" style="width:19mm;height:19mm;vertical-align:middle;margin:0 1.5mm" alt="">' : '');   // inside the table cells, so they follow them
 $sig = '';
 $sig2 = '';
 $stamp = '';
-$t4 = '<table class="f lp gap" style="margin-top:5.18mm">' . doc_sizer([47.6, 47.6, 95.3])
-    . '<tr style="' . $hh(12.7) . '"><td class="l c h12 b">Test Witnessed by</td><td class="c">' . e($insp['name'] ?? '') . '</td><td class="l c h12 b">Signature / Stamp</td></tr>'
-    . '<tr style="' . $hh(21) . '"><td class="l c h12 b">Reviewed by</td><td class="c">' . ($m['issued'] ? e($rev['name'] ?? '') : '<span class="muted">Pending QC review</span>') . '</td><td class="c">' . $sigs . '</td></tr></table>';
+// names in the first rows, signatures (and the seal) in the row below, each under its own person
+$t4 = '<table class="f lp gap" style="margin-top:5.18mm">' . doc_sizer([95.25, 95.25])
+    . '<tr style="' . $hh(10.5) . '"><td class="l c h12 b">Test Witnessed by</td><td class="l c h12 b">Reviewed by</td></tr>'
+    . '<tr style="' . $hh(10.5) . '"><td class="c">' . e($insp['name'] ?? '') . '</td><td class="c">' . ($m['issued'] ? e($rev['name'] ?? '') : '<span class="muted">Pending QC review</span>') . '</td></tr>'
+    . '<tr style="' . $hh(22) . '"><td class="c">' . $sigI . '</td><td class="c">' . $sigR . '</td></tr></table>';
 
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;
 
