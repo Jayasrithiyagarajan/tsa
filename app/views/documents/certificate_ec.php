@@ -37,10 +37,9 @@ $insp = $m['inspector'];
 $rev = $m['reviewer'];
 $who = fn ($p) => $p ? e($p['name'] . ($p['qualification'] ? ' - ' . $p['qualification'] : '')) : '';
 $signed = in_array($c['status'], ['pending_qc', 'issued'], true);
-$sigs = '';
-if ($signed && $insp && !empty($insp['signature'])) $sigs .= '<img class="sg" src="' . $insp['signature'] . '" alt="">';
-if ($m['issued'] && $rev && !empty($rev['signature'])) $sigs .= '<img class="sg" src="' . $rev['signature'] . '" alt="">';
-if ($m['issued']) $sigs .= '<img class="sp" src="' . $brand['stamp'] . '" alt="">';
+$sgI = ($signed && $insp && !empty($insp['signature'])) ? '<img src="' . $insp['signature'] . '" style="max-width:36mm; max-height:11.5mm" alt="">' : '';
+$sgR = ($m['issued'] && $rev && !empty($rev['signature'])) ? '<img src="' . $rev['signature'] . '" style="max-width:30mm; max-height:11.5mm; vertical-align:middle" alt="">' : '';
+$spR = $m['issued'] ? '<img src="' . $brand['stamp'] . '" style="width:13mm; height:13mm; vertical-align:middle; margin-left:3mm" alt="">' : '';
 
 $cd0 = json_decode((string) ($c['data'] ?? ''), true) ?: [];
 $remarksTxt = (string) (array_key_exists('cert_remarks', $cd0) ? $cd0['cert_remarks'] : ($c['remarks'] ?? ''));   // own Remarks \ Notes field; the Message to QC is not printed
@@ -57,8 +56,8 @@ $t2 = '<table class="f ec" style="margin-top:4.3mm">' . doc_sizer([39.7, 19.0, 4
     . '<tr class="h102"><td colspan="2" class="l rm">Remarks \ Notes:</td><td colspan="5" class="val"></td></tr>'
     . ($notes ? '<tr><td colspan="7" class="nt">'
                 . ($notes ? '<ul>' . $notes . '</ul>' : '') . '</td></tr>' : '')
-    . '<tr class="h102"><td colspan="3" class="l ins">' . e(rtrim($tpl['inspector_label'], ': ')) . '</td><td colspan="2" class="val ins">' . $who($insp) . '</td><td colspan="2" rowspan="2" class="sgcell">' . $sigs . '</td></tr>'
-    . '<tr class="h102"><td colspan="3" class="l ins">Approved by</td><td colspan="2" class="val ins">' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td></tr>'
+    . '<tr class="h102 sgrow"><td colspan="3" class="l ins">' . e(rtrim($tpl['inspector_label'], ': ')) . '</td><td colspan="2" class="val ins">' . $who($insp) . '</td><td colspan="2" class="sgcell">' . $sgI . '</td></tr>'
+    . '<tr class="h102 sgrow"><td colspan="3" class="l ins">Approved by</td><td colspan="2" class="val ins">' . ($m['issued'] ? $who($rev) : '<span class="muted">Pending QC review</span>') . '</td><td colspan="2" class="sgcell">' . $sgR . $spR . '</td></tr>'
     . '</table>';
 
 $pages = [[

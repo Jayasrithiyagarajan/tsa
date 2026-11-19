@@ -107,6 +107,7 @@ table.f.ec td.stmt { font-weight: bold; font-size: 10pt; height: 10mm; vertical-
 table.f.ec td.nt { height: 17.2mm; padding: 0 1.2mm; vertical-align: middle; }
 table.f.ec td.nt ul { margin: 0; padding-left: 1.9mm; font-size: 8pt; line-height: 2.57mm; }
 table.f.ec td.sgcell { text-align: center; padding: 0; }
+table.f.ec tr.sgrow td { height: 16mm; }
 .ec-img { text-align: center; }
 .ec-img img { margin: 0.8mm 1mm; vertical-align: middle; }
 .sgcell img.sg { max-height: 10mm; max-width: 20mm; margin: 0 1mm; vertical-align: middle; }
