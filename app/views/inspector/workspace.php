@@ -205,14 +205,14 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <?php if ($editable): ?><span class="save-state" id="cf-save-state">Autosave on</span><?php endif; ?>
           </div>
           <div class="form-grid">
-            <?php $lastSec = null; $anTbl = ($certTpl['layout'] ?? '') === 'an'; $utTbl = ($certTpl['layout'] ?? '') === 'ut'; $chTbl = in_array($certTpl['layout'] ?? '', ['ch', 'pp', 'tr'], true); $chSec = null; $chN = 0; $fk = array_column($fields, null, 'key'); foreach ($fields as $f): ?>
+            <?php $lastSec = null; $anTbl = ($certTpl['layout'] ?? '') === 'an'; $utTbl = ($certTpl['layout'] ?? '') === 'ut'; $chTbl = in_array($certTpl['layout'] ?? '', ['ch', 'pp', 'tr', 'mo'], true); $chMo = ($certTpl['layout'] ?? '') === 'mo'; $chAns = $chMo ? ['Pass' => 'p', 'Fail' => 'f', 'N/A' => 'na'] : ['Yes' => 'p', 'No' => 'f', 'N/A' => 'na']; $chA = array_keys($chAns); $chSec = null; $chN = 0; $fk = array_column($fields, null, 'key'); foreach ($fields as $f): ?>
               <?php if ($chTbl && substr($f['key'], -2) === '_r' && isset($fk[substr($f['key'], 0, -2)]['item'])) continue;   // remarks are shown inside their check row ?>
               <?php if ($chTbl && isset($f['item'], $f['section'])): ?>
                 <?php if ($chSec !== $f['section']): $chSec = $f['section']; ?>
                   <?php if ($chN === 0 && $editable): ?>
                     <div class="col-12 row" style="gap:8px;align-items:center;flex-wrap:wrap"><b>All sections:</b>
-                      <button type="button" class="btn btn-secondary btn-sm" data-ch-mark="Yes" data-ch-sec="">Mark all as Yes</button>
-                      <button type="button" class="btn btn-secondary btn-sm" data-ch-mark="No" data-ch-sec="">Mark all as No</button>
+                      <button type="button" class="btn btn-secondary btn-sm" data-ch-mark="<?= e($chA[0]) ?>" data-ch-sec="">Mark all as <?= e($chA[0]) ?></button>
+                      <button type="button" class="btn btn-secondary btn-sm" data-ch-mark="<?= e($chA[1]) ?>" data-ch-sec="">Mark all as <?= e($chA[1]) ?></button>
                       <button type="button" class="btn btn-ghost btn-sm" data-ch-mark="N/A" data-ch-sec="">Mark all as N/A</button>
                     </div>
                     <script>document.addEventListener('click', function (e) {
@@ -225,21 +225,21 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
                       form.dispatchEvent(new Event('change', { bubbles: true }));   // triggers the autosave
                     });</script>
                   <?php endif; ?>
-                  <div class="col-12 cl-section" style="border-radius:8px;margin-top:6px"><span><?= e(rtrim($chSec, ': ')) ?></span>
+                  <div class="col-12 cl-section" style="border-radius:8px;margin-top:6px"><span><?php if ($chMo) { $sp = explode('|', $chSec); echo e(($sp[1] ?? '') !== '' ? $sp[0] . '. ' . $sp[1] : 'Section ' . $sp[0]); } else echo e(rtrim($chSec, ': ')); ?></span>
                     <?php if ($editable): ?><span class="row" style="gap:6px">
-                      <button type="button" class="btn btn-ghost btn-sm" style="height:24px;color:inherit" data-ch-mark="Yes" data-ch-sec="<?= e($chSec) ?>">Mark all as Yes</button>
-                      <button type="button" class="btn btn-ghost btn-sm" style="height:24px;color:inherit" data-ch-mark="No" data-ch-sec="<?= e($chSec) ?>">Mark all as No</button>
+                      <button type="button" class="btn btn-ghost btn-sm" style="height:24px;color:inherit" data-ch-mark="<?= e($chA[0]) ?>" data-ch-sec="<?= e($chSec) ?>">Mark all as <?= e($chA[0]) ?></button>
+                      <button type="button" class="btn btn-ghost btn-sm" style="height:24px;color:inherit" data-ch-mark="<?= e($chA[1]) ?>" data-ch-sec="<?= e($chSec) ?>">Mark all as <?= e($chA[1]) ?></button>
                     </span><?php endif; ?></div>
                 <?php endif; $chN++; $rk = $f['key'] . '_r'; ?>
-                <div class="col-12"><div class="cl-item show-rem" data-ch-sec="<?= e($chSec) ?>" style="padding:10px 4px">
-                  <span class="n"><?= $chN ?></span>
-                  <span class="lbl"><?php $chTxt = (string) $f['item']; if (($certTpl['layout'] ?? '') === 'tr') { $en = trim(preg_replace('/^.*\p{Arabic}.*\R?/mu', '', $chTxt)); if ($en !== '') $chTxt = $en; }   // bilingual form: the inspector form shows the English text ?><?= nl2br(e($chTxt)) ?></span>
+                <div class="col-12"><div class="cl-item<?= $chMo ? '' : ' show-rem' ?>" data-ch-sec="<?= e($chSec) ?>" style="padding:10px 4px">
+                  <span class="n"><?php if ($chMo && preg_match('/^@(\S+)/', (string) $f['item'], $mm)) echo e($mm[1]); else echo $chN; ?></span>
+                  <span class="lbl"><?php $chTxt = (string) $f['item']; if ($chMo) $chTxt = preg_replace('/^@\S+\R?/', '', $chTxt); if (in_array($certTpl['layout'] ?? '', ['tr', 'mo'], true)) { $en = trim(preg_replace('/^.*\p{Arabic}.*\R?/mu', '', $chTxt)); if ($en !== '') $chTxt = $en; }   // bilingual form: the inspector form shows the English text ?><?= nl2br(e($chTxt)) ?></span>
                   <span class="ctrl row" style="gap:6px"><span class="seg" role="radiogroup" aria-label="<?= e($f['item']) ?>">
-                    <?php foreach (['Yes' => 'p', 'No' => 'f', 'N/A' => 'na'] as $ans => $cls): ?>
+                    <?php foreach ($chAns as $ans => $cls): ?>
                       <label><input type="radio" name="fields[<?= e($f['key']) ?>]" value="<?= e($ans) ?>"<?= checked((string) $f['value'] === $ans) . $dis ?>><span class="<?= $cls ?>"><?= e($ans) ?></span></label>
                     <?php endforeach; ?>
                   </span></span>
-                  <div class="rem"><input class="input" type="text" name="fields[<?= e($rk) ?>]" value="<?= e((string) ($fk[$rk]['value'] ?? '')) ?>" placeholder="Remarks" maxlength="190"<?= $dis ?>></div>
+                  <?php if (!$chMo): ?><div class="rem"><input class="input" type="text" name="fields[<?= e($rk) ?>]" value="<?= e((string) ($fk[$rk]['value'] ?? '')) ?>" placeholder="Remarks" maxlength="190"<?= $dis ?>></div><?php endif; ?>
                 </div></div>
                 <?php continue; ?>
               <?php endif; ?>
