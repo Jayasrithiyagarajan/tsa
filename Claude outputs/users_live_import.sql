@@ -1,0 +1,18 @@
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS=0;
+INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `role`, `phone`, `client_id`, `signature_path`, `status`, `last_login_at`, `created_at`, `updated_at`) VALUES
+(1, 'System Administrator', 'admin@tuveast.test', '$2y$10$w6Ec2SQDQUvOr0sHECpAcefuDbA.dLcjF2LdDINzhJBHppzGon8Si', 'superadmin', '+966 13 818 5501', NULL, NULL, 'active', '2026-11-20 09:45:39', '2026-10-14 14:10:40', '2026-11-20 09:45:39'),
+(2, 'Omar Khalid', 'omar.khalid@tuveast.test', '$2y$10$w6Ec2SQDQUvOr0sHECpAcefuDbA.dLcjF2LdDINzhJBHppzGon8Si', 'inspector', '+966 55000000', NULL, 'signatures/2026/10/be20b5d12461b991cde3e1b1.jpg', 'active', '2026-11-19 16:17:08', '2026-10-14 14:10:40', '2026-11-19 16:17:08'),
+(3, 'Faisal Rahman', 'faisal.rahman@tuveast.test', '$2y$10$w6Ec2SQDQUvOr0sHECpAcefuDbA.dLcjF2LdDINzhJBHppzGon8Si', 'inspector', '+966 55012345', NULL, 'signatures/demo-de847f3a2b.png', 'active', '2026-10-14 15:43:34', '2026-10-14 14:10:40', '2026-10-14 15:43:34'),
+(4, 'Yousef Haddad', 'yousef.haddad@tuveast.test', '$2y$10$0X2vxbcIg4SkQwqP6ZHiounU6pxmO8Pctg..lkJrSyzKvfvI.AZ1G', 'inspector', '+966 55024690', NULL, 'signatures/demo-19b6d9401c.png', 'active', '2026-11-19 11:19:36', '2026-10-14 14:10:40', '2026-11-19 11:19:36'),
+(5, 'Sara Nasser', 'sara.nasser@tuveast.test', '$2y$10$w6Ec2SQDQUvOr0sHECpAcefuDbA.dLcjF2LdDINzhJBHppzGon8Si', 'qc', '+966 55037035', NULL, 'signatures/demo-d83e260f49.png', 'active', '2026-11-19 10:32:35', '2026-10-14 14:10:40', '2026-11-19 10:32:35'),
+(6, 'Khalid Al Otaibi', 'customer@alnoor.test', '$2y$10$w6Ec2SQDQUvOr0sHECpAcefuDbA.dLcjF2LdDINzhJBHppzGon8Si', 'customer', NULL, 1, NULL, 'active', '2026-10-21 19:50:51', '2026-10-14 14:10:40', '2026-10-21 19:50:51'),
+(7, 'Ravi Menon', 'customer@gulfsteel.test', '$2y$10$w6Ec2SQDQUvOr0sHECpAcefuDbA.dLcjF2LdDINzhJBHppzGon8Si', 'customer', NULL, 2, NULL, 'active', NULL, '2026-10-14 14:10:40', NULL),
+(8, 'Nadia Farouk', 'nadia.farouk@tuveast.test', '$2y$10$w6Ec2SQDQUvOr0sHECpAcefuDbA.dLcjF2LdDINzhJBHppzGon8Si', 'qc', '+966 55 7788 120', NULL, NULL, 'active', NULL, '2026-10-14 16:11:01', NULL),
+(9, 'Operations Admin', 'ops.admin@tuveast.test', '$2y$10$tkBRXXKweNKnAj3ZLlZv8eSD6bahMJ6oGWaUkOh4MVf2tqmRRnS1W', 'admin', NULL, NULL, NULL, 'active', '2026-11-02 08:48:28', '2026-10-19 14:28:20', '2026-11-02 08:48:28'),
+(10, 'Jaya', 'jayadhanasvs@gmail.com', '$2y$10$sjPlRr2g8g2WT68QoXh3T.zdczkwAt.JOOCuXR5o9u6y5qnzhR3TW', 'customer', '8608700939', 6, NULL, 'active', '2026-10-21 17:23:39', '2026-10-21 17:20:08', '2026-10-21 17:23:39'),
+(12, 'Mohamed Rabie', 'mohammedrabiee828@gmail.com', '$2y$10$LjQGEYelmew6DkflASgUrezt3qgG5NPWQM1huPk3gL10NQmkoZczO', 'qc', NULL, NULL, 'signatures/2026/11/baa539af77ada7c1fb46f36d.jpg', 'active', '2026-11-19 14:57:38', '2026-11-19 13:01:04', '2026-11-19 14:57:38'),
+(13, 'Ahmed Ramadan', 'ahmed.salman9990@gmail.com', '$2y$10$qtnTQH2wdJ.MA4X4XXktdeScSKz3EnGx1qkhHE6VEAFnN61WkNGA.', 'inspector', NULL, NULL, 'signatures/2026/11/ae28d37ebe8e8b4590f44de8.jpg', 'active', '2026-11-19 15:22:25', '2026-11-19 13:02:20', '2026-11-19 15:22:25'),
+(14, 'Sultan Shirdekar', 'sultanshirdekar891@gmail.com', '$2y$10$cimYYADFO4k8fSjnH/scDe/xnzfPoN0uKFHdaOcVPsOP31PQP6kuK', 'admin', NULL, NULL, NULL, 'active', '2026-11-19 15:04:25', '2026-11-19 13:03:49', '2026-11-19 15:04:25')
+ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `email`=VALUES(`email`), `password_hash`=VALUES(`password_hash`), `role`=VALUES(`role`), `phone`=VALUES(`phone`), `client_id`=VALUES(`client_id`), `signature_path`=VALUES(`signature_path`), `status`=VALUES(`status`), `last_login_at`=VALUES(`last_login_at`), `created_at`=VALUES(`created_at`), `updated_at`=VALUES(`updated_at`);
+SET FOREIGN_KEY_CHECKS=1;
