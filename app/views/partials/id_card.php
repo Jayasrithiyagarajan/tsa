@@ -33,7 +33,11 @@ $rings = fn (float $x, float $y, array $radii, float $w) => implode('', array_ma
   <span class="val exp" data-f="expiry_date" style="top:41.3mm"><?= e(fmt_date($c['expiry_date'], 'd-M-Y')) ?></span>
 
   <div class="band band-bottom"></div>
-  <span class="title" data-f="title" style="font-size:<?= $fit($c['title'], 8.6, 38) ?>pt"><?= e($c['title']) ?></span>
+  <?php $tfs = $fit($c['title'], 8.6, 38); ?>
+  <?php /* three offset copies = heavier strokes, so the white title does not wash out on a printed card (also in PDF, which has no text-stroke) */ ?>
+  <span class="title" data-f="title" style="font-size:<?= $tfs ?>pt"><?= e($c['title']) ?></span>
+  <span class="title t2" data-f="title" style="font-size:<?= $tfs ?>pt" aria-hidden="true"><?= e($c['title']) ?></span>
+  <span class="title t3" data-f="title" style="font-size:<?= $tfs ?>pt" aria-hidden="true"><?= e($c['title']) ?></span>
 </div>
 <?php else: ?>
 <div class="idc idc-back">

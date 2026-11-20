@@ -22,11 +22,13 @@
 .idc-front .logos .uaf { left: 1mm; top: .5mm; width: 14.6mm; height: 6.6mm; border: .15mm solid #9aa3b2; background: #fff; }
 .idc-front .logos .uaf img { left: .5mm; top: .4mm; width: 13.6mm; height: 5.8mm; }
 .idc-front .logos img.leea { left: 16.6mm; top: 0; width: 6.4mm; height: 7.6mm; }
-.idc-front .lbl { left: 35.5mm; font-size: 4.7pt; letter-spacing: .3mm; color: #2b2b2b; white-space: nowrap; }
+.idc-front .lbl { left: 35.5mm; font-size: 4.7pt; font-weight: bold; letter-spacing: .3mm; color: #2b2b2b; white-space: nowrap; }
 .idc-front .val { left: 35.3mm; font-size: 7.8pt; color: #111; white-space: nowrap; width: 48mm; overflow: hidden; }
 .idc-front .lbl.exp, .idc-front .val.exp { left: 59.5mm; width: 24mm; }
 .idc-front .band-bottom { top: 45.8mm; height: 8.2mm; }
 .idc-front .title { left: 0; top: 47.7mm; width: 85.6mm; text-align: center; color: #fff; font-size: 8.6pt; font-weight: bold; letter-spacing: .2mm; white-space: nowrap; }
+.idc-front .title.t2 { left: .16mm; }
+.idc-front .title.t3 { top: 47.82mm; }
 
 /* ---------- back ---------- */
 .idc-back .ring { border-color: #e3e9f2; }
