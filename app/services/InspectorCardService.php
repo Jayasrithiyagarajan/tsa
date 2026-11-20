@@ -182,7 +182,7 @@ final class InspectorCardService
             'logo' => self::brandCrop('tuv'),
             'logos' => setting('card_logos_path') ? [upload_data_uri(setting('card_logos_path'))] : self::accreditationLogos(),
             'emails' => setting('card_emails', 'info@tuv-east.com - operations@tuv-east.com'),
-            'address' => setting('card_address', 'Main Office:  Eastern Province - Dhahran, King Abdulaziz Rd – Al Waleedi Business Tower, Saudi Arabia'),
+            'address' => setting('card_address', 'Main Office: Eastern Province - Al Khobar, 6205 Prince Muteb St, Al Sharq Business Tower, Saudi Arabia'),
             'state' => self::state($card),
         ];
     }

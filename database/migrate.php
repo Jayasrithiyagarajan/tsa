@@ -240,6 +240,9 @@ if (DB::run("UPDATE checklist_templates c JOIN inspection_types t ON t.id = c.in
 // CL 27 is the Boom Supported Elevating Work Platform form - the Petroleum Tanks placeholder moves to CL 35
 if (DB::run("UPDATE checklist_templates c JOIN inspection_types t ON t.id = c.inspection_type_id SET c.code = 'F-7.5.1-CL 35', c.doc_ref = 'F-7.5.1-CL 35' WHERE t.code = 'TNKR' AND c.doc_ref = 'F-7.5.1-CL 27'")->rowCount() > 0) echo "✓ TNKR placeholder document ref moved to F-7.5.1-CL 35\n";
 
+// ID card footer address moved to the Al Khobar office (only replaces the old default, never a custom address)
+if (DB::run("UPDATE settings SET `value` = ? WHERE `key` = 'card_address' AND `value` = ?", ['Main Office: Eastern Province - Al Khobar, 6205 Prince Muteb St, Al Sharq Business Tower, Saudi Arabia', 'Main Office:  Eastern Province - Dhahran, King Abdulaziz Rd – Al Waleedi Business Tower, Saudi Arabia'])->rowCount() > 0) echo "✓ ID card footer address updated (Al Khobar office)\n";
+
 foreach (require __DIR__ . '/seed_templates.php' as $def) {
     $code = $def['type']['code'];
     $type = DB::one('SELECT * FROM inspection_types WHERE code = ?', [$code]);
