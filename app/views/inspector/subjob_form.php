@@ -117,7 +117,7 @@ $old = fn ($k, $d = '') => old($k, $d);
         <div class="card-b"><div class="form-grid">
           <div class="field col-6"><label>Job Ref <span class="req">*</span></label><input class="input mono" name="job_ref" value="<?= e($old('job_ref')) ?>" required maxlength="60" placeholder="e.g. client job / PO reference"></div>
           <div class="field col-6"><label>Certification <span class="req">*</span></label><input class="input" name="certification" value="<?= e($old('certification')) ?>" required maxlength="120"></div>
-          <div class="field col-6"><label>Assessor <span class="req">*</span></label><input class="input" name="assessor" value="<?= e($old('assessor', Auth::user()['name'] ?? '')) ?>" required maxlength="120"></div>
+          <div class="field col-6"><label>Assessor <span class="req">*</span></label><input class="input" type="text" name="assessor" value="<?= e($old('assessor', 'Mohamed Al Mousa')) ?>" placeholder="Mohamed Al Mousa" required maxlength="120" autocomplete="off"></div>
           <div class="field col-12"><label>Certificate of Competence <span class="req">*</span></label><textarea class="textarea" name="competence" rows="5" maxlength="1000" required><?= e($old('competence')) ?></textarea>
             <div class="help">One line per competence.</div></div>
         </div></div>

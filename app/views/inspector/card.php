@@ -12,7 +12,7 @@ $c = $m['card'] ?? null;
 </style>
 <div class="page-head">
   <div class="ph-text"><h1>My ID card</h1><div class="sub">Show this to the client on site. Scanning the QR code opens the live verification page.</div></div>
-  <?php if ($c): ?><div class="actions"><a class="btn btn-secondary" href="<?= url('verify/card/' . $c['verify_token']) ?>" target="_blank" rel="noopener"><?= icon('qr', 'sm') ?> Open verification page</a></div><?php endif; ?>
+  <?php if ($c): ?><div class="actions"><a class="btn btn-primary" href="<?= url('inspector/card/download') ?>"><?= icon('download', 'sm') ?> Download ID card</a> <a class="btn btn-secondary" href="<?= url('verify/card/' . $c['verify_token']) ?>" target="_blank" rel="noopener"><?= icon('qr', 'sm') ?> Open verification page</a></div><?php endif; ?>
 </div>
 <?php if (!$c): ?>
   <div class="card mb-2"><?php View::render('partials/empty', ['icon' => 'user',

@@ -49,7 +49,7 @@ $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
           <div class="field"><label>Training program <span class="req">*</span></label><input class="input" name="program" required maxlength="190" placeholder="e.g. FIRE WATCH AWARENESS" value="<?= e(old('program')) ?>"></div>
           <div class="field mt-1"><label>Completion date <span class="req">*</span></label><input class="input" type="date" name="completion_date" required value="<?= e(old('completion_date', date('Y-m-d'))) ?>"></div>
           <div class="field mt-1"><label>Recommended renewal date</label><input class="input" type="date" name="renewal_date" value="<?= e(old('renewal_date', $card ? $card['expiry_date'] : '')) ?>"></div>
-          <div class="field mt-1"><label>Trainer / Instructor</label><input class="input" name="trainer" maxlength="120" value="<?= e(old('trainer', $card['assessor'] ?? (Auth::user()['name'] ?? ''))) ?>"></div>
+          <div class="field mt-1"><label>Trainer / Instructor</label><input class="input" name="trainer" maxlength="120" placeholder="Mohamed Al Mousa" value="<?= e(old('trainer', $card['assessor'] ?? 'Mohamed Al Mousa')) ?>"></div>
           <button class="btn btn-primary btn-block mt-1" onclick="return confirm('Upload the document and send this operator assessment to QC for review?')"><?= icon('send', 'sm') ?> Upload &amp; send to QC</button>
           <p class="small muted mt-1">Uploading the document sends <?= e($sj['sub_job_no']) ?> to QC. It is closed once QC approve it.</p>
         </form>
@@ -65,7 +65,7 @@ $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
           <div class="field"><label>Training program <span class="req">*</span></label><input class="input" name="program" required maxlength="190" value="<?= e(old('program')) ?>"></div>
           <div class="field mt-1"><label>Completion date <span class="req">*</span></label><input class="input" type="date" name="completion_date" required value="<?= e(old('completion_date', date('Y-m-d'))) ?>"></div>
           <div class="field mt-1"><label>Recommended renewal date</label><input class="input" type="date" name="renewal_date" value="<?= e(old('renewal_date', $card ? $card['expiry_date'] : '')) ?>"></div>
-          <div class="field mt-1"><label>Trainer / Instructor</label><input class="input" name="trainer" maxlength="120" value="<?= e(old('trainer', $card['assessor'] ?? (Auth::user()['name'] ?? ''))) ?>"></div>
+          <div class="field mt-1"><label>Trainer / Instructor</label><input class="input" name="trainer" maxlength="120" placeholder="Mohamed Al Mousa" value="<?= e(old('trainer', $card['assessor'] ?? 'Mohamed Al Mousa')) ?>"></div>
           <button class="btn btn-primary btn-block mt-1">Save certificate details</button>
         </form>
         <?php endif; ?>
@@ -91,7 +91,7 @@ $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
     <div class="col-12 small strong" style="margin-top:6px">Back side</div>
     <div class="field col-6"><label>Job Ref <span class="req">*</span></label><input class="input mono" name="job_ref" value="<?= e($card['job_ref']) ?>" required maxlength="60"></div>
     <div class="field col-6"><label>Certification <span class="req">*</span></label><input class="input" name="certification" value="<?= e($card['certification']) ?>" required maxlength="120"></div>
-    <div class="field col-12"><label>Assessor <span class="req">*</span></label><input class="input" name="assessor" value="<?= e($card['assessor']) ?>" required maxlength="120"></div>
+    <div class="field col-12"><label>Assessor <span class="req">*</span></label><input class="input" name="assessor" value="<?= e($card['assessor']) ?>" placeholder="Mohamed Al Mousa" required maxlength="120"></div>
     <div class="field col-12"><label>Certificate of Competence <span class="req">*</span></label><textarea class="textarea" name="competence" rows="5" maxlength="1000" required><?= e($card['competence']) ?></textarea><div class="help">One line per competence.</div></div>
   </div></div>
   <div class="m-f"><button type="button" class="btn btn-ghost" data-modal-close>Cancel</button><button class="btn btn-primary"><?= icon('check', 'sm') ?> Save changes</button></div>

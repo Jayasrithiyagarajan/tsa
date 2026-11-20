@@ -176,8 +176,8 @@ final class InspectorCardService
         $verifyUrl = abs_url('verify/card/' . $card['verify_token']);
         return [
             'card' => $card,
-            'photo' => upload_data_uri($card['photo_path']),
-            'qr' => DocumentService::qr($verifyUrl),
+            'photo' => self::photoForCard($card['photo_path']),
+            'qr' => DocumentService::cardQr($verifyUrl),
             'verify_url' => $verifyUrl,
             'logo' => self::brandCrop('tuv'),
             'logos' => setting('card_logos_path') ? [upload_data_uri(setting('card_logos_path'))] : self::accreditationLogos(),
@@ -185,6 +185,28 @@ final class InspectorCardService
             'address' => setting('card_address', 'Main Office:  Eastern Province - Dhahran, King Abdulaziz Rd – Al Waleedi Business Tower, Saudi Arabia'),
             'state' => self::state($card),
         ];
+    }
+
+    /**
+     * The photo cut to the card's photo box (14.2 × 18.6 mm) at its ORIGINAL resolution and re-saved at top JPEG quality.
+     * The PDF engine ignores CSS object-fit, so without this a photo of another shape would be squeezed to fit the box.
+     */
+    private static function photoForCard(?string $rel): ?string
+    {
+        if (!$rel) return null;
+        $f = upload_abs($rel);
+        if (!is_file($f) || !function_exists('imagecreatefromstring')) return upload_data_uri($rel);
+        $src = @imagecreatefromstring((string) file_get_contents($f));
+        if (!$src) return upload_data_uri($rel);
+        $w = imagesx($src); $h = imagesy($src);
+        $ratio = 14.2 / 18.6;
+        if ($w / $h > $ratio) { $cw = (int) round($h * $ratio); $ch = $h; $x = (int) (($w - $cw) / 2); $y = 0; }
+        else { $cw = $w; $ch = (int) round($w / $ratio); $x = 0; $y = (int) (($h - $ch) * 0.3); }   // portrait crops keep the head
+        $dst = imagecreatetruecolor($cw, $ch);
+        imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255));
+        imagecopy($dst, $src, 0, 0, $x, $y, $cw, $ch);
+        ob_start(); imagejpeg($dst, null, 95); $jpg = (string) ob_get_clean();
+        return $jpg !== '' ? 'data:image/jpeg;base64,' . base64_encode($jpg) : upload_data_uri($rel);
     }
 
     /** Default marks under the photo, as on the printed cards: UAF + LEEA Full Member (Saudi Accreditation as fallback). */

@@ -66,6 +66,7 @@ $nav = [
         ['Quality Control', [
             ['qc', 'grid', 'Dashboard', ''],
             ['qc/queue', 'shield', 'Review Queue', $cnt($c['queue'] ?? 0, true)],
+            ['qc/jobs', 'briefcase', 'Jobs', ''],
             ['qc/history', 'history', 'My Decisions', ''],
             ['qc/certificates', 'award', 'Issued Certificates', ''],
             ['qc/kpi', 'chart', 'QC KPIs', ''],

@@ -42,7 +42,8 @@ $ttab = fn ($t, $label, $n) => '<a class="' . ($type === $t ? 'on' : '') . '" hr
         <td data-label="Status"><?= InspectorCardService::badge($st) ?>
           <?= $c['revoked_reason'] ? '<div class="sub">' . e($c['revoked_reason']) . '</div>' : '' ?></td>
         <td class="actions">
-          <?php if (Auth::isSuper()): ?><a class="btn btn-ghost btn-sm" href="<?= url('admin/cards/' . $c['id'] . '/print', ['side' => 'front']) ?>" title="Print"><?= icon('printer', 'sm') ?></a><?php endif; ?>
+          <?php if (Auth::isSuper()): ?><a class="btn btn-ghost btn-sm" href="<?= url('admin/cards/' . $c['id'] . '/print', ['side' => 'front']) ?>" title="Print"><?= icon('printer', 'sm') ?></a>
+          <a class="btn btn-secondary btn-sm" href="<?= url('admin/cards/' . $c['id'] . '/print', ['side' => 'both', 'download' => 1]) ?>" title="Download ID card as PDF (front and back)"><?= icon('download', 'sm') ?> Download</a><?php endif; ?>
           <a class="btn btn-ghost btn-sm" href="<?= url('verify/card/' . $c['verify_token']) ?>" target="_blank" rel="noopener" title="Open verification page"><?= icon('qr', 'sm') ?></a>
         </td>
       </tr>

@@ -22,7 +22,7 @@
 .idc-front .logos .uaf { left: 1mm; top: .5mm; width: 14.6mm; height: 6.6mm; border: .15mm solid #9aa3b2; background: #fff; }
 .idc-front .logos .uaf img { left: .5mm; top: .4mm; width: 13.6mm; height: 5.8mm; }
 .idc-front .logos img.leea { left: 16.6mm; top: 0; width: 6.4mm; height: 7.6mm; }
-.idc-front .lbl { left: 35.5mm; font-size: 4.7pt; letter-spacing: .3mm; color: #8c8c8c; white-space: nowrap; }
+.idc-front .lbl { left: 35.5mm; font-size: 4.7pt; letter-spacing: .3mm; color: #2b2b2b; white-space: nowrap; }
 .idc-front .val { left: 35.3mm; font-size: 7.8pt; color: #111; white-space: nowrap; width: 48mm; overflow: hidden; }
 .idc-front .lbl.exp, .idc-front .val.exp { left: 59.5mm; width: 24mm; }
 .idc-front .band-bottom { top: 45.8mm; height: 8.2mm; }

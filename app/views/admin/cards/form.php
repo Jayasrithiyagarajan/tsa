@@ -17,6 +17,7 @@ $defaults = [
     'competence' => $person ? mb_strtoupper((string) $person['skills']) : '',
     'issue_date' => date('Y-m-d'),
     'expiry_date' => date('Y-m-d', strtotime('+1 year -1 day')),
+    'assessor' => $card ? '' : 'Mohamed Al Mousa',   // new cards start with the usual assessor; free text, editable
 ];
 $v = function (string $k) use ($card, $src, $defaults) {
     if (!$card && in_array($k, ['issue_date', 'expiry_date', 'card_no'], true)) return old($k, $defaults[$k] ?? '');
@@ -50,7 +51,8 @@ $state = $card ? InspectorCardService::state($card) : null;
   <?php if ($card): ?><div class="actions">
     <a class="btn btn-secondary" href="<?= url('verify/card/' . $card['verify_token']) ?>" target="_blank" rel="noopener"><?= icon('qr', 'sm') ?> Verification page</a>
     <?php if (Auth::isSuper()): ?><a class="btn btn-secondary" href="<?= url('admin/cards/' . $card['id'] . '/print', ['side' => 'front']) ?>"><?= icon('printer', 'sm') ?> Print front</a>
-    <a class="btn btn-secondary" href="<?= url('admin/cards/' . $card['id'] . '/print', ['side' => 'back']) ?>"><?= icon('printer', 'sm') ?> Print back</a><?php endif; ?>
+    <a class="btn btn-secondary" href="<?= url('admin/cards/' . $card['id'] . '/print', ['side' => 'back']) ?>"><?= icon('printer', 'sm') ?> Print back</a>
+    <a class="btn btn-primary" href="<?= url('admin/cards/' . $card['id'] . '/print', ['side' => 'both', 'download' => 1]) ?>"><?= icon('download', 'sm') ?> Download PDF</a><?php endif; ?>
   </div><?php endif; ?>
 </div>
 
@@ -112,7 +114,7 @@ $state = $card ? InspectorCardService::state($card) : null;
         <div class="card-b"><div class="form-grid">
           <div class="field col-6"><label>Job Ref</label><input class="input mono" name="job_ref" value="<?= e($v('job_ref')) ?>" maxlength="60"></div>
           <div class="field col-6"><label>Certification</label><input class="input" name="certification" value="<?= e($v('certification')) ?>" maxlength="120"></div>
-          <div class="field col-6"><label>Assessor</label><input class="input" name="assessor" value="<?= e($v('assessor')) ?>" maxlength="120"></div>
+          <div class="field col-6"><label>Assessor</label><input class="input" type="text" name="assessor" value="<?= e($v('assessor')) ?>" placeholder="Mohamed Al Mousa" maxlength="120" autocomplete="off"></div>
           <div class="field col-12"><label>Certificate of Competence</label><textarea class="textarea" name="competence" rows="5" maxlength="1000"><?= e($v('competence')) ?></textarea>
             <div class="help">One line per competence. The text shrinks (or splits into two columns) so every line fits in the box.</div></div>
         </div></div></div>

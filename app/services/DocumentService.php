@@ -157,6 +157,13 @@ final class DocumentService
         return (new QRCode($o))->render($text);   // data:image/png;base64,…
     }
 
+    /** QR for the printed ID card: vector (SVG) so it stays razor-sharp at any print resolution. */
+    public static function cardQr(string $text): string
+    {
+        $o = new QROptions(['outputType' => QRCode::OUTPUT_MARKUP_SVG, 'quietzoneSize' => 1, 'addQuietzone' => true, 'eccLevel' => QRCode::ECC_M]);
+        return (new QRCode($o))->render($text);   // data:image/svg+xml;base64,…
+    }
+
     /** Branding assets embedded as data URIs so the same HTML renders identically in browser and PDF. */
     public static function brand(): array
     {

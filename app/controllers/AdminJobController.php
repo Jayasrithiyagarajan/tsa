@@ -49,7 +49,7 @@ final class AdminJobController extends Controller
     }
 
     /** Adds n_total / n_done / n_pending / n_qc to a page of jobs with ONE grouped query (no per-row sub-selects). */
-    private static function withCounts(array $rows): array
+    public static function withCounts(array $rows): array
     {
         $ids = array_map('intval', array_column($rows, 'id'));
         $c = [];

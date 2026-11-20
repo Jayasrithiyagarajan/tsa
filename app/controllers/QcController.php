@@ -40,6 +40,50 @@ final class QcController extends Controller
         ]);
     }
 
+    /** Read-only list of every job, so QC can see how the sub-jobs under review fit into their job. */
+    public function jobs(): void
+    {
+        $status = (string) input('status', '');
+        $q = trim((string) input('q', ''));
+        $client = (int) input('client', 0);
+        $where = ['1=1'];
+        $p = [];
+        if ($status === 'open') $where[] = "j.status NOT IN ('completed','cancelled')";
+        elseif ($status === 'at_qc') $where[] = "EXISTS (SELECT 1 FROM sub_jobs s WHERE s.job_id = j.id AND s.status = 'submitted')";
+        elseif ($status !== '') { $where[] = 'j.status = ?'; $p[] = $status; }
+        if ($client) { $where[] = 'j.client_id = ?'; $p[] = $client; }
+        if ($q !== '') { $where[] = '(j.job_no LIKE ? OR j.title LIKE ? OR j.po_no LIKE ? OR c.name LIKE ?)'; array_push($p, "%$q%", "%$q%", "%$q%", "%$q%"); }
+        $sort = ['newest' => 'j.id DESC', 'scheduled' => 'j.scheduled_date IS NULL, j.scheduled_date', 'priority' => "FIELD(j.priority,'urgent','high','normal','low'), j.id DESC",
+            'client' => 'c.name'][input('sort', 'newest')] ?? 'j.id DESC';
+        $from = 'FROM jobs j JOIN clients c ON c.id = j.client_id WHERE ' . implode(' AND ', $where);
+        [$idRows, $meta] = paginate("SELECT j.id $from ORDER BY $sort", $p, 20, "SELECT COUNT(*) $from");
+        $ids = array_map('intval', array_column($idRows, 'id'));
+        $rows = $ids ? DB::all('SELECT j.*, c.name client_name, u.name lead_name FROM jobs j JOIN clients c ON c.id = j.client_id LEFT JOIN users u ON u.id = j.lead_inspector_id
+                                WHERE j.id IN (' . implode(',', $ids) . ') ORDER BY FIELD(j.id, ' . implode(',', $ids) . ')') : [];
+        $rows = AdminJobController::withCounts($rows);
+        $counts = array_column(DB::all('SELECT status, COUNT(*) n FROM jobs GROUP BY status'), 'n', 'status');
+        $counts['at_qc'] = (int) DB::value("SELECT COUNT(DISTINCT job_id) FROM sub_jobs WHERE status = 'submitted'");
+        $this->view('qc/jobs', compact('rows', 'meta', 'status', 'q', 'client', 'counts') + [
+            'clients' => DB::all('SELECT id, name FROM clients ORDER BY name'),
+            'title' => 'Jobs', 'crumbs' => ['Jobs' => null],
+        ]);
+    }
+
+    /** One job with its sub-jobs - read only; each sub-job opens the QC review screen. */
+    public function job(string $id): void
+    {
+        $job = DB::one('SELECT j.*, c.name client_name, u.name lead_name FROM jobs j JOIN clients c ON c.id = j.client_id LEFT JOIN users u ON u.id = j.lead_inspector_id WHERE j.id = ?', [(int) $id]);
+        if (!$job) $this->notFound();
+        $subs = JobService::subJobsOf((int) $job['id']);
+        foreach ($subs as &$s) {
+            $s['cert'] = DB::one('SELECT id, certificate_no, status FROM certificates WHERE sub_job_id = ?', [$s['id']]);
+            $s['checklist'] = DB::one('SELECT id, status FROM checklists WHERE sub_job_id = ?', [$s['id']]);
+        }
+        unset($s);
+        $this->view('qc/job', ['job' => $job, 'subs' => $subs, 'progress' => JobService::progress((int) $job['id']),
+            'title' => $job['job_no'], 'crumbs' => ['Jobs' => 'qc/jobs', $job['job_no'] => null]]);
+    }
+
     public function review(string $id): void
     {
         $sj = JobService::subJob((int) $id);

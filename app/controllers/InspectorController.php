@@ -495,6 +495,17 @@ final class InspectorController extends Controller
         ]);
     }
 
+    /** The inspector's own handed-over ID card as a PDF (front page, back page). */
+    public function cardDownload(): void
+    {
+        $card = InspectorCardService::find("c.user_id = ? AND c.handed_over_at IS NOT NULL ORDER BY c.status = 'active' DESC, c.handed_over_at DESC", [Auth::id()]);
+        if (!$card) $this->notFound();
+        $html = View::partial('documents/id_card', ['m' => InspectorCardService::model($card), 'side' => 'both', 'toolbar' => null]);
+        Audit::log('id_card.downloaded', 'inspector_card', (int) $card['id'], ['side' => 'both', 'own' => true]);
+        $pt = 72 / 25.4;
+        DocumentService::pdf($html, 'ID-Card-' . $card['card_no'] . '.pdf', true, [0, 0, InspectorCardService::W_MM * $pt, InspectorCardService::H_MM * $pt]);
+    }
+
     public function cardPhoto(): void
     {
         $this->attempt(function () {

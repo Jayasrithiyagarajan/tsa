@@ -141,12 +141,15 @@ $r->post('/inspector/subjobs/{id}/submit',     [InspectorController::class, 'sub
 $r->get('/inspector/history',                  [InspectorController::class, 'history'], $I);
 $r->get('/inspector/stickers',                 [InspectorController::class, 'stickers'], $I);
 $r->get('/inspector/card',                     [InspectorController::class, 'card'], $I);
+$r->get('/inspector/card/download',           [InspectorController::class, 'cardDownload'], $I);
 $r->post('/inspector/card/photo',              [InspectorController::class, 'cardPhoto'], $I);
 $r->get('/inspector/kpi',                      [KpiController::class, 'inspector'], $I);
 
 // ---------------------------------------------------------------- QC portal
 $r->get('/qc',                         [QcController::class, 'dashboard'], $Q);
 $r->get('/qc/queue',                   [QcController::class, 'queue'], $Q);
+$r->get('/qc/jobs',                    [QcController::class, 'jobs'], $Q);
+$r->get('/qc/jobs/{id}',               [QcController::class, 'job'], $Q);
 $r->get('/qc/review/{id}',             [QcController::class, 'review'], ['qc', 'admin']);
 $r->post('/qc/review/{id}',            [QcController::class, 'decide'], ['qc', 'admin']);
 $r->get('/qc/history',                 [QcController::class, 'history'], $Q);
