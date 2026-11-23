@@ -142,7 +142,7 @@ $pages[] = ['body' => $res . $cn . $att . $det . $cert, 'top' => 27.9, 'left' =>
 // Fixed to the form: pages 3-4 = two drawing boxes, pages 5-8 = four photo pages of 4 x 4 boxes (64), sign-off on page 8. Extra images are ignored.
 $drawTitle = trim($fv['draw_title'] ?? '') !== '' ? $v('draw_title') : 'Structure Visual inspection Picture As Per Drawing &amp; Site Visit :';
 $dbox = [208.3, 228.6];
-for ($i = 0; $i < 2; $i++) {
+for ($i = 0; $i < min(2, count($drawings)); $i++) {   // one page per drawing, none when there are no drawings
     $d = $drawings[$i] ?? null;
     $head = $i === 0 ? '<div class="sst-h" style="height:' . ($pdfMode ? 14.7 : 14.3) . 'mm">' . $drawTitle . '</div>' : '';
     $pages[] = ['body' => $head . '<div class="sst-draw" style="height:' . $dbox[$i] . 'mm' . ($pdfMode ? '' : ';line-height:' . $dbox[$i] . 'mm') . '">' . ($d ? '<img src="' . $d['src'] . '" style="max-height:' . ($dbox[$i] - 8) . 'mm" alt="">' : '') . '</div>',
@@ -157,11 +157,15 @@ $pg = [
     [40.9, 11.1, [45.6, 47.2, 46.9, 47.6], 48.25],
 ];
 $pics = array_slice($pics, 0, 64);
-for ($i = 0; $i < 4; $i++) {
-    [$top, $left, $cols, $rh] = $pg[$i];
+// 16 pictures (4 x 4) per page; the sign-off sits under the last page, whatever number of pages the pictures need
+$nPg = max(1, (int) ceil(count($pics) / 16));
+for ($i = 0; $i < $nPg; $i++) {
+    $last = $i === $nPg - 1;
+    [$top, $left, $cols, $rh] = $pg[$last ? 3 : min($i, 2)];
     $chunk = array_slice($pics, $i * 16, 16);
+    $rowsN = 4;   // the last page keeps all 4 rows so the sign-off and the seal stay where the form has them
     $g = '<table class="f sst sst-ph">' . doc_sizer($cols);
-    for ($r = 0; $r < 4; $r++) {
+    for ($r = 0; $r < $rowsN; $r++) {
         $g .= '<tr>';
         for ($k = 0; $k < 4; $k++) {
             $p = $chunk[$r * 4 + $k] ?? null;
@@ -170,7 +174,7 @@ for ($i = 0; $i < 4; $i++) {
         $g .= '</tr>';
     }
     $g .= '</table>';
-    $pages[] = ['body' => $g . ($i === 3 ? $sign : ''), 'top' => $top, 'left' => $left, 'width' => array_sum($cols), 'extra' => $i === 3 ? $stamp : ''];
+    $pages[] = ['body' => $g . ($last ? $sign : ''), 'top' => $top, 'left' => $left, 'width' => array_sum($cols), 'extra' => $last ? $stamp : ''];
 }
 // Dompdf adds the 0.5pt collapsed border to every row height; take it off again in PDF mode
 if ($pdfMode) {

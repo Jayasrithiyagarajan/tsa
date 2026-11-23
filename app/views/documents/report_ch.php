@@ -84,6 +84,7 @@ $P = $R['pictures'] ?? [];
 $flow[] = ['html' => $tr(7.76, '<td colspan="6" class="b">' . e($P['title'] ?? 'REFERENCE PHOTOS:') . '</td>'), 'h' => 7.76, 'raw' => false];
 $pc = (int) ($P['cols'] ?? 2); $pr = (int) ($P['rows'] ?? 3); $ph = (float) ($P['h'] ?? 87.13);
 $photos = $m['photos'] ?? [];
+$pr = max(1, min($pr, (int) ceil(count($photos) / $pc)));   // only as many picture rows as there are photos
 $pw = 191.1 / $pc;
 for ($r = 0; $r < $pr; $r++) {
     $cells = '';

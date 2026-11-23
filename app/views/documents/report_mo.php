@@ -141,8 +141,8 @@ $img = fn ($s, $mw, $mh) => $s ? '<img src="' . $s . '" style="max-width:' . $mw
 $tail = [];
 $tail[] = ['<table class="f mo" style="margin-left:' . $FORM['tbl_ml'] . 'mm;font-size:10pt">' . doc_sizer([185.7]) . '<tr><td class="c b" style="background:' . $BL . ';' . $h(12.7) . '">' . $mix('Vin Number Picture -', 'صورة الرقم الهيكل') . '</td></tr></table>', 12.7, 0];
 $tail[] = ['<table class="f mo" style="margin-left:' . $FORM['tbl_ml'] . 'mm;margin-top:-0.5pt">' . doc_sizer([185.7]) . '<tr><td class="c" style="' . $h(76.2) . ';padding:1mm">' . $img($vinPic, 180, 72) . '</td></tr></table>', 76.2, 0];
-$tail[] = ['<table class="f mo" style="margin-left:' . $FORM['tbl_ml'] . 'mm;font-size:10pt">' . doc_sizer([185.7]) . '<tr><td class="c b" style="background:' . $BL . ';' . $h(10.2) . '">' . $mix('Motorcycle pic.', 'صور الدراجه –') . '</td></tr></table>', 10.2, 8];
-for ($r = 0; $r < 3; $r++) {
+if ($pics) $tail[] = ['<table class="f mo" style="margin-left:' . $FORM['tbl_ml'] . 'mm;font-size:10pt">' . doc_sizer([185.7]) . '<tr><td class="c b" style="background:' . $BL . ';' . $h(10.2) . '">' . $mix('Motorcycle pic.', 'صور الدراجه –') . '</td></tr></table>', 10.2, 8];
+for ($r = 0; $r < min(3, (int) ceil(count($pics) / 2)); $r++) {   // rows only for the photos that exist
     $row = '<table class="f mo" style="margin-left:' . $FORM['tbl_ml'] . 'mm;margin-top:-0.5pt">' . doc_sizer([92.9, 92.9]) . '<tr>';
     for ($c = 0; $c < 2; $c++) $row .= '<td class="c" style="' . $h(73.7) . ';padding:1mm">' . $img($pics[$r * 2 + $c] ?? null, 88, 70) . '</td>';
     $tail[] = [$row . '</tr></table>', 73.7, 0];

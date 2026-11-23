@@ -197,12 +197,13 @@ $photos = $m['photos'] ?? [];
 $img = fn ($s, $mw, $mh) => $s ? '<img src="' . $s . '" style="max-width:' . $mw . 'mm;max-height:' . $mh . 'mm" alt="">' : '';
 $pt = '<table class="f mo trl" style="font-size:11pt;line-height:0.85">' . doc_sizer([82.8, 87.0])
     . '<tr><td colspan="2" class="c" style="background:' . $BL . ';' . $h(9.0) . '">' . $bi('صور المقطورة', 'Trailer Pictures', 10) . '</td></tr>';
-for ($r = 0; $r < 3; $r++) {
+$prT = (int) ceil(count($photos) / 2);   // rows needed for the photos; no photos = no pictures page
+for ($r = 0; $r < min(3, $prT); $r++) {
     $pt .= '<tr>';
     foreach ([82.8, 87.0] as $c => $w) $pt .= '<td class="c" style="' . $h(66.05) . ';padding:0">' . $img($photos[$r * 2 + $c] ?? null, $w - 3, 62) . '</td>';
     $pt .= '</tr>';
 }
-$pages[] = ['body' => $pt . '</table>', 'top' => 28.7, 'left' => 20.0, 'width' => 170.0];
+if ($photos) $pages[] = ['body' => $pt . '</table>', 'top' => 28.7, 'left' => 20.0, 'width' => 170.0];
 
 // ---------------------------------------------------------------- inspector notes + signatures
 $insp = $m['inspector'] ?? null;

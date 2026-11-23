@@ -93,10 +93,10 @@ $pages = [[
     'extra' => '<div class="cert-title ec-t">' . e($tpl['title']) . '</div>',
 ]];
 
-// The Word form (F-7.5.1-09) always has this second bordered sheet, so at least one is output.
+// Continuation sheets are added only when there are more photos than fit in the form (never an empty sheet).
 // Up to 30 photos: 2 sit in the form, the rest fill continuation sheets of 8 (4 rows of 2), one sheet per 8.
 $rest = array_slice($rest, 0, 28);
-foreach (array_chunk($rest, 8) ?: [[]] as $chunk) {
+foreach (array_chunk($rest, 8) as $chunk) {   // no photos beyond the two in the form = no extra sheet
     $box = '<div class="ec-page2">' . $photoRows($chunk, 178.0, 237.0, 4) . '</div>';
     $pages[] = ['body' => $box, 'top' => 25.4, 'left' => 12.8, 'width' => 182.6, 'extra' => ''];
 }

@@ -121,7 +121,7 @@ $pages[] = ['body' => $res . $att . $det . $cert, 'top' => 24.7, 'left' => 13.45
 // Fixed to the form: pages 3-5 = three drawing boxes, pages 6-8 = 6 + 6 + 4 photo boxes (16), sign-off on page 8. Extra images are ignored.
 // [body top, box left, box width, heading indent] - measured per page from the form (A4 centring applied)
 $dg = [[30.2, 17.65, 169.8, 4.8], [41.8, 22.55, 164.9, 0], [41.8, 20.85, 166.6, 0]];
-for ($i = 0; $i < 3; $i++) {
+for ($i = 0; $i < min(3, count($drawings)); $i++) {   // one page per drawing, none when there are no drawings
     $d = $drawings[$i] ?? null;
     [$top, $left, $w, $ind] = $dg[$i];
     $head = $i === 0 ? '<div class="scf-h" style="padding-left:' . $ind . 'mm">Scaffolding Structure Darwing:</div>' : '';
@@ -130,21 +130,26 @@ for ($i = 0; $i < 3; $i++) {
 }
 
 $pics = array_slice($pics, 0, 16);
-foreach ([6, 6, 4] as $i => $cells) {
-    $chunk = array_slice($pics, array_sum(array_slice([6, 6, 4], 0, $i)), $cells);
-    $rows = $cells / 2;
-    $head = $i === 0 ? '<div class="scf-h" style="padding-left:3.2mm">Scaffolding Visual inspection Picture as Per Darwing:</div>' : '';
-    $g = '<table class="f scf scf-ph">' . doc_sizer([84.1, 84.1]);
-    for ($r = 0; $r < $rows; $r++) {
-        $g .= '<tr>';
-        for ($k = 0; $k < 2; $k++) {
-            $p = $chunk[$r * 2 + $k] ?? null;
-            $g .= '<td class="c">' . ($p ? '<img src="' . $p['src'] . '" alt="">' : '') . '</td>';
+// Picture pages hold 6 pictures (2 x 3); the sign-off sits under the last page when that has 4 or fewer, otherwise on a page of its own.
+$chunks = array_chunk($pics, 6) ?: [[]];
+if (count(end($chunks)) > 4) $chunks[] = [];
+$lastIx = count($chunks) - 1;
+foreach ($chunks as $i => $chunk) {
+    $head = ($i === 0 && $chunk) ? '<div class="scf-h" style="padding-left:3.2mm">Scaffolding Visual inspection Picture as Per Darwing:</div>' : '';
+    $g = '';
+    if ($chunk) {
+        $g = '<table class="f scf scf-ph">' . doc_sizer([84.1, 84.1]);
+        for ($r = 0; $r < (int) ceil(count($chunk) / 2); $r++) {
+            $g .= '<tr>';
+            for ($k = 0; $k < 2; $k++) {
+                $p = $chunk[$r * 2 + $k] ?? null;
+                $g .= '<td class="c">' . ($p ? '<img src="' . $p['src'] . '" alt="">' : '') . '</td>';
+            }
+            $g .= '</tr>';
         }
-        $g .= '</tr>';
+        $g .= '</table>';
     }
-    $g .= '</table>';
-    $pages[] = ['body' => $head . $g . ($i === 2 ? $sign : ''), 'top' => [33.6, 44.5, 49.2][$i], 'left' => 19.25, 'width' => 168.2];
+    $pages[] = ['body' => $head . $g . ($i === $lastIx ? $sign : ''), 'top' => $i === 0 && $chunk ? 33.6 : ($i === $lastIx && $chunk ? 49.2 : 44.5), 'left' => 19.25, 'width' => 168.2];
 }
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;
 

@@ -239,6 +239,7 @@ if (!empty($R['pictures'])) {
     $P = $R['pictures'];
     $pc = (int) ($P['cols'] ?? 2); $pr = (int) ($P['rows'] ?? 3); $ph = (float) ($P['h'] ?? 45.8);
     $photos = $m['photos'] ?? [];
+    $pr = max(1, min($pr, (int) ceil(count($photos) / $pc)));   // only as many picture rows as there are photos
     $rowsHtml = '';
     for ($r = 0; $r < $pr; $r++) {
         $rowsHtml .= '<tr>';
