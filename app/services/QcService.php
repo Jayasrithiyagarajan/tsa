@@ -167,6 +167,13 @@ final class CertificateService
             $at = array_search('intro', array_column($fields, 'key'), true);
             if ($at === false) $fields[] = $rs; else array_splice($fields, $at + 1, 0, [$rs]);
         }
+        if (!array_filter($fields, fn ($x) => preg_match('/interval/i', (string) ($x['key'] ?? '')))) {   // every certificate has "Within an Interval": it sets the next inspection date
+            $fields[] = ['key' => 'interval', 'label' => 'Within an Interval', 'type' => 'select', 'required' => false, 'options' => self::INTERVALS];
+        }
+        foreach ($fields as &$ivq) {   // every "Within an Interval" dropdown offers the same choices
+            if (preg_match('/interval/i', (string) ($ivq['key'] ?? '')) && ($ivq['type'] ?? '') === 'select') $ivq['options'] = self::INTERVALS;
+        }
+        unset($ivq);
         if (($tpl['layout'] ?? '') === 'pp') return $fields;   // vehicle form: no Capacity / SWL box
         foreach ($fields as $f) {
             if (in_array($f['key'] ?? '', ['swl', 'capacity'], true) || ($f['source'] ?? '') === 'equipment.capacity') return $fields;
@@ -189,6 +196,9 @@ final class CertificateService
             || in_array($f['source'] ?? '', ['cert.issue_date', 'cert.inspection_date', 'cert.next_inspection_date'], true)
             || (($f['type'] ?? 'text') === 'text' && preg_match('/\bdate\b/i', (string) ($f['label'] ?? '')) === 1);
     }
+
+    /** Choices of the "Within an Interval" field; the next inspection date = inspection date + that period - 1 day. */
+    public const INTERVALS = ['3 Months', '6 Months', '12 Months', '2 Years', '3 Years', '4 Years', '5 Years'];
 
     public const SOURCES = [
         ''                          => 'Entered by inspector',

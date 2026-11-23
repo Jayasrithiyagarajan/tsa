@@ -292,6 +292,19 @@ final class InspectionService
                 $upd['next_inspection_date'] = !empty($in['next_inspection_date']) && strtotime($in['next_inspection_date'])
                     ? $in['next_inspection_date']
                     : self::nextDate($in['inspection_date'], (int) $sj['validity_months']);
+                // "Within an Interval" (3 / 6 / 12 Months): the next inspection date follows it - inspection date + N months - 1 day -
+                // recalculated whenever the interval or the inspection date changed and the next date was not typed in by hand
+                $oldInfo = json_decode($cert['data'] ?? '{}', true) ?: [];
+                foreach (CertificateService::templateFields($tpl ?: null) as $ivf) {
+                    if (!preg_match('/interval/i', (string) ($ivf['key'] ?? ''))) continue;
+                    $ivNew = (string) ($data[$ivf['key']] ?? ''); $ivOld = (string) ($oldInfo[$ivf['key']] ?? '');
+                    if (!preg_match('/(\d+)\s*(year|month)/i', $ivNew, $ivm) || (int) $ivm[1] < 1) break;
+                    $ivMonths = (int) $ivm[1] * (strtolower($ivm[2]) === 'year' ? 12 : 1);
+                    $handTyped = !empty($in['next_inspection_date']) && !empty($cert['next_inspection_date']) && $in['next_inspection_date'] !== $cert['next_inspection_date'];
+                    if (!$handTyped && ($ivNew !== $ivOld || $in['inspection_date'] !== (string) $cert['inspection_date'] || empty($cert['next_inspection_date'])))
+                        $upd['next_inspection_date'] = self::nextDate($in['inspection_date'], $ivMonths);
+                    break;
+                }
             }
             // push changed values back to the checklist (serial no., inspection date, remarks, report-cover values)
             $oldData = json_decode($cert['data'] ?? '{}', true) ?: [];

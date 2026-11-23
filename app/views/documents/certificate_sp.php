@@ -51,14 +51,13 @@ $opts = ($has('interval') && !empty($fdef['interval']['options'])) ? $fdef['inte
 $cells = '';
 foreach ($opts as $o) {
     $on = trim((string) ($fv['interval'] ?? '')) === trim($o);
-    $cells .= '<td class="c"><span class="rb"><span class="radio">' . ($on ? '&#9673;' : '&#9711;') . '</span> ' . e($o) . '</span></td>';
+    $cells .= '<span style="display:inline-block;margin-right:3.2mm;white-space:nowrap"><span class="radio">' . ($on ? '&#9673;' : '&#9711;') . '</span> ' . e($o) . '</span>';
 }
-$cells .= str_repeat('<td></td>', max(0, 3 - count($opts)));
 $t5 = '<table class="f sp gap">' . doc_sizer([46.9, 46.9, 47.0, 47.1])
     . '<tr style="' . $hh(7.6) . '"><td colspan="4" class="l b">NDT Details if Applicable:</td></tr>'
     . '<tr style="' . $hh(7.6) . '"><td class="c b">NDT Certificate No:</td><td class="c">' . $v('ndt_no') . '</td><td class="c b">NDT Certificate Date:</td><td class="c">' . $v('ndt_date') . '</td></tr>'
     . '<tr style="' . $hh(7.6) . '"><td colspan="4" class="l b">Was the thorough examination carried out?</td></tr>'
-    . '<tr style="' . $hh(7.6) . '"><td class="c b">Within an Interval:</td>' . $cells . '</tr></table>';
+    . '<tr style="' . $hh(7.6) . '"><td class="c b">Within an Interval:</td><td colspan="3" style="font-size:8.5pt;white-space:nowrap">' . $cells . '</td></tr></table>';   // all choices (3 months ... 5 years) in one cell
 
 // ---- inspection results (one bullet per sentence)
 $sent = preg_split('/(?<=\.)\s+/', trim((string) $c['result_statement'])) ?: [];

@@ -486,7 +486,19 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <?php endforeach; ?>
             <div class="form-section mt-1"><?= icon('calendar', 'sm') ?> Dates</div>
             <div class="field col-6"><label>Inspection date</label><input class="input" type="date" name="inspection_date" value="<?= e($cert['inspection_date']) ?>"<?= $dis ?>></div>
-            <div class="field col-6"><label>Next inspection date</label><input class="input" type="date" name="next_inspection_date" value="<?= e($cert['next_inspection_date']) ?>"<?= $dis ?>><div class="help">Defaults to inspection date + <?= (int) $sj['validity_months'] ?> months − 1 day.</div></div>
+            <div class="field col-6"><label>Next inspection date</label><input class="input" type="date" name="next_inspection_date" value="<?= e($cert['next_inspection_date']) ?>"<?= $dis ?>><div class="help">Defaults to inspection date + <?= (int) $sj['validity_months'] ?> months − 1 day.</div>
+            <script>(function () {
+              var f = document.getElementById('certificate-form'); if (!f) return;
+              var iv = f.querySelector('[name^="fields["][name*="interval"]'), d = f.querySelector('[name="inspection_date"]'), n = f.querySelector('[name="next_inspection_date"]');
+              if (!iv || !d || !n) return;
+              function calc() {
+                var m = /(\d+)\s*(year|month)/i.exec(iv.value || ''), p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d.value || ''); if (!m || !p) return;
+                var x = new Date(Date.UTC(+p[1], +p[2] - 1 + (+m[1]) * (/year/i.test(m[2]) ? 12 : 1), +p[3])); x.setUTCDate(x.getUTCDate() - 1);   // + N months - 1 day
+                n.value = x.getUTCFullYear() + '-' + ('0' + (x.getUTCMonth() + 1)).slice(-2) + '-' + ('0' + x.getUTCDate()).slice(-2);
+                n.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              iv.addEventListener('change', calc); d.addEventListener('change', calc);
+            })();</script></div>
             <div class="form-section mt-1"><?= icon('check', 'sm') ?> <?= in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true) ? 'Certification statement' : 'Result' ?></div>
             <?php $scRes = in_array($certTpl['layout'] ?? '', ['sc', 'ss'], true); ?>
             <?php if (!$scRes): ?>
