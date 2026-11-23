@@ -17,16 +17,41 @@ $t1 = '<table class="f ec">' . doc_sizer([39.7, 55.6, 44.4, 44.4])
     . '<tr class="h85"><td class="l">Location</td><td class="val">' . $v('location') . '</td><td class="c val">' . $v('insp_date') . '</td><td class="c val">' . $v('next_date') . '</td></tr>'
     . '</table>';
 
-// ---- images (first four inside the form, the rest on a continuation sheet)
+// ---- images (first two inside the form, the rest on the continuation sheet)
 $photos = array_values($m['photos'] ?? []);
-$first = array_slice($photos, 0, 4);
-$rest = array_slice($photos, 4);
-$n = count($first);
-$mw = $n <= 1 ? 172 : 84;
-$mh = $n <= 1 ? 66 : ($n === 2 ? 66 : 31);
-$img = '<div class="ec-img">';
-foreach ($first as $p) $img .= '<img style="max-width:' . $mw . 'mm; max-height:' . $mh . 'mm" src="' . $p['src'] . '" alt="">';
-$img .= '</div>';
+$first = array_slice($photos, 0, 2);
+$rest = array_slice($photos, 2);
+// Photos: identical 3:2 landscape boxes, two per row, no frames. Each photo is scaled to COVER its box
+// and centred, so a little of the edges may be trimmed when its shape differs. Dompdf has no object-fit,
+// so the cover size is worked out here in mm from the photo's pixel size and clipped by the box.
+$photoRows = function (array $list, float $areaW, float $areaH, int $maxRows): string {
+    $list = array_slice($list, 0, 2 * $maxRows);
+    if (!$list) return '';
+    $gap = 4;                                                                     // mm between boxes and rows
+    $rows = array_chunk($list, 2);
+    $bw = ($areaW - $gap * 3) / 2;                                                // two boxes per row
+    $bh = $bw * 2 / 3;                                                            // 3:2 landscape
+    $maxH = ($areaH - $gap * (count($rows) + 1)) / count($rows);
+    if ($bh > $maxH) { $bh = $maxH; $bw = $bh * 3 / 2; }
+    $bw = floor($bw * 10) / 10; $bh = floor($bh * 10) / 10;
+    $cover = function (string $src) use ($bw, $bh): string {
+        $bin = str_starts_with($src, 'data:') ? base64_decode(substr($src, strpos($src, ',') + 1)) : @file_get_contents($src);
+        $sz = $bin ? @getimagesizefromstring($bin) : false;
+        if (!$sz || !$sz[0] || !$sz[1]) return 'width:' . $bw . 'mm; height:' . $bh . 'mm';
+        $r = $sz[0] / $sz[1];
+        if ($r > $bw / $bh) { $w = $bh * $r; return 'width:' . round($w, 2) . 'mm; height:' . $bh . 'mm; margin-left:' . round(($bw - $w) / 2, 2) . 'mm'; }
+        $h = $bw / $r;
+        return 'width:' . $bw . 'mm; height:' . round($h, 2) . 'mm; margin-top:' . round(($bh - $h) / 2, 2) . 'mm';
+    };
+    $out = '<div class="ec-photos">';
+    foreach ($rows as $row) {
+        $out .= '<div class="row" style="margin-top:' . $gap . 'mm">';
+        foreach ($row as $i => $p) $out .= '<div class="ph" style="width:' . $bw . 'mm; height:' . $bh . 'mm' . ($i ? '; margin-left:' . $gap . 'mm' : '') . '"><img style="' . $cover($p['src']) . '" src="' . $p['src'] . '" alt=""></div>';
+        $out .= '</div>';
+    }
+    return $out . '</div>';
+};
+$img = $photoRows($first, 183.0, 70.0, 1);
 
 // ---- notes
 $notes = '';
@@ -70,9 +95,7 @@ $pages = [[
 
 // The Word form (F-7.5.1-09) always has this second bordered sheet, so it is always output.
 {
-    $box = '<div class="ec-page2">';
-    foreach (array_slice($rest, 0, 8) as $p) $box .= '<img src="' . $p['src'] . '" alt="">';
-    $box .= '</div>';
+    $box = '<div class="ec-page2">' . $photoRows($rest, 178.0, 237.0, 4) . '</div>';
     $pages[] = ['body' => $box, 'top' => 25.4, 'left' => 12.8, 'width' => 182.6, 'extra' => ''];
 }
 

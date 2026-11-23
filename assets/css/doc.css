@@ -108,14 +108,17 @@ table.f.ec td.nt { height: 17.2mm; padding: 0 1.2mm; vertical-align: middle; }
 table.f.ec td.nt ul { margin: 0; padding-left: 1.9mm; font-size: 8pt; line-height: 2.57mm; }
 table.f.ec td.sgcell { text-align: center; padding: 0; }
 table.f.ec tr.sgrow td { height: 16mm; }
-.ec-img { text-align: center; }
-.ec-img img { margin: 0.8mm 1mm; vertical-align: middle; }
+.ec-photos { text-align: center; }
+.ec-photos .row { white-space: nowrap; line-height: 0; font-size: 0; }
+.ec-photos .ph { display: inline-block; vertical-align: top; overflow: hidden; }
+.ec-photos img { display: block; max-width: none; }
+td.imgcell .ec-photos .row:last-child { margin-bottom: 4mm; }
 .sgcell img.sg { max-height: 10mm; max-width: 20mm; margin: 0 1mm; vertical-align: middle; }
 .sgcell img.sp { width: 20mm; height: 20mm; margin: 0 1mm; vertical-align: middle; }
 .ec-page2 { border: 0.5pt solid #7f7f7f; height: 241.7mm; padding: 2mm; text-align: center; }
 .ec-page3 { border: 0.5pt solid #7f7f7f; height: 45.1mm; padding: 2mm; text-align: center; }
 .ec-page3 img { max-width: 84mm; max-height: 40mm; margin: 0 1mm; vertical-align: middle; }
-.ec-page2 img { max-width: 84mm; max-height: 54mm; margin: 1mm; vertical-align: middle; }
+
 
 /* ---------- Ultrasonic thickness report (F-7.5.1-08) ---------- */
 table.f.ut td { border: 0.5pt solid #000; padding: 0 1.8mm; font-size: 10.5pt; line-height: 1.15; vertical-align: middle; }
