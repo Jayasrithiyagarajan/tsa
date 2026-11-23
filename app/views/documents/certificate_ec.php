@@ -31,7 +31,7 @@ $photoRows = function (array $list, float $areaW, float $areaH, int $maxRows): s
     $rows = array_chunk($list, 2);
     $bw = ($areaW - $gap * 3) / 2;                                                // two boxes per row
     $bh = $bw * 2 / 3;                                                            // 3:2 landscape
-    $maxH = ($areaH - $gap * (count($rows) + 1)) / count($rows);
+    $maxH = ($areaH - $gap * ($maxRows + 1)) / $maxRows;                          // size for a full sheet, so every box matches
     if ($bh > $maxH) { $bh = $maxH; $bw = $bh * 3 / 2; }
     $bw = floor($bw * 10) / 10; $bh = floor($bh * 10) / 10;
     $cover = function (string $src) use ($bw, $bh): string {
@@ -51,7 +51,7 @@ $photoRows = function (array $list, float $areaW, float $areaH, int $maxRows): s
     }
     return $out . '</div>';
 };
-$img = $photoRows($first, 183.0, 70.0, 1);
+$img = $photoRows($first, 178.0, 237.0, 4);   // same box size as the continuation sheets, so every photo matches
 
 // ---- notes
 $notes = '';
@@ -93,9 +93,11 @@ $pages = [[
     'extra' => '<div class="cert-title ec-t">' . e($tpl['title']) . '</div>',
 ]];
 
-// The Word form (F-7.5.1-09) always has this second bordered sheet, so it is always output.
-{
-    $box = '<div class="ec-page2">' . $photoRows($rest, 178.0, 237.0, 4) . '</div>';
+// The Word form (F-7.5.1-09) always has this second bordered sheet, so at least one is output.
+// Up to 30 photos: 2 sit in the form, the rest fill continuation sheets of 8 (4 rows of 2), one sheet per 8.
+$rest = array_slice($rest, 0, 28);
+foreach (array_chunk($rest, 8) ?: [[]] as $chunk) {
+    $box = '<div class="ec-page2">' . $photoRows($chunk, 178.0, 237.0, 4) . '</div>';
     $pages[] = ['body' => $box, 'top' => 25.4, 'left' => 12.8, 'width' => 182.6, 'extra' => ''];
 }
 
