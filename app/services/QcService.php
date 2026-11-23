@@ -171,7 +171,7 @@ final class CertificateService
         foreach ($fields as $f) {
             if (in_array($f['key'] ?? '', ['swl', 'capacity'], true) || ($f['source'] ?? '') === 'equipment.capacity') return $fields;
         }
-        $fields[] = ['key' => 'swl', 'label' => 'Capacity / SWL', 'type' => 'text', 'required' => true];
+        $fields[] = ['key' => 'swl', 'label' => 'Capacity / SWL', 'type' => 'text', 'required' => false];
         return $fields;
     }
 

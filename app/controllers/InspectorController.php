@@ -315,7 +315,7 @@ final class InspectorController extends Controller
                 $f['suggest'] = array_column($own, 'sticker_no');
             }
             $f['is_cap'] = CertificateService::isCapacityField($f);
-            if ($f['is_cap']) $f['required'] = true;
+            if ($f['is_cap']) $f['required'] = false;   // Capacity / SWL is optional
             $f['is_date'] = CertificateService::isDateField($f);
             $ts = $f['is_date'] ? strtotime((string) $f['value']) : false;
             $f['iso'] = $ts ? date('Y-m-d', $ts) : '';          // <input type="date"> needs ISO; non-date legacy text shows empty

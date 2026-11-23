@@ -498,8 +498,8 @@ final class InspectionService
                     $data  = json_decode($c['data'] ?? '{}', true) ?: [];
                     $missing = [];
                     foreach (CertificateService::templateFields($tpl) as $f) {
-                        if (CertificateService::isCapacityField($f)) {          // Capacity / SWL is always required (own entry, or the register value it is bound to)
-                            if (trim(CertificateService::fieldValue($f, $sj, $c, $data)) === '') $missing[] = $f['label'];
+                        if (CertificateService::isCapacityField($f)) {          // Capacity / SWL is optional: never blocks submitting
+                            continue;
                         } elseif (empty($f['source']) && !empty($f['required']) && trim((string) ($data[$f['key']] ?? '')) === '') {
                             $missing[] = $f['label'];
                         }
