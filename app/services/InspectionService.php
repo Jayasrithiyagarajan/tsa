@@ -483,7 +483,6 @@ final class InspectionService
             } else {
                 $stats = self::checklistStats((int) $cl['id']);
                 if ($stats['missing'] > 0) $issues[] = "Checklist: {$stats['missing']} mandatory item(s) have no result.";
-                if ($stats['fail_no_remark'] > 0) $issues[] = "Checklist: {$stats['fail_no_remark']} failed item(s) need a remark.";
             }
         }
         $certs = DB::all('SELECT * FROM certificates WHERE sub_job_id = ? ORDER BY seq', [$subJobId]);

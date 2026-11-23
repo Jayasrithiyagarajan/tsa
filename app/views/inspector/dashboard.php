@@ -39,6 +39,6 @@
       <?php if (!$recent): ?><div class="card-b muted small">Nothing yet.</div><?php endif; ?>
     </div>
     <div class="card"><div class="card-h"><h2><?= icon('info', 'sm') ?> Workflow</h2></div><div class="card-b small muted">
-      Start the inspection on site → complete every checklist item (FAIL needs a remark) → fill the certificate data and result → add photos → record the sticker → submit to QC. You cannot edit while QC is reviewing; returned items appear at the top.</div></div>
+      Start the inspection on site → complete every checklist item (remarks are optional, also for FAIL) → fill the certificate data and result → add photos → record the sticker → submit to QC. You cannot edit while QC is reviewing; returned items appear at the top.</div></div>
   </div>
 </div>

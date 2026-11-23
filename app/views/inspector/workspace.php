@@ -125,7 +125,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
                 </span>
                 <button type="button" class="rem-toggle<?= $it['remarks'] ? ' has' : '' ?>" title="Remarks" aria-label="Remarks"><?= icon('edit', 'sm') ?></button>
               </span>
-              <div class="rem"><input class="input" type="text" name="r[<?= $id ?>][remarks]" value="<?= e($it['remarks']) ?>" placeholder="Remarks<?= $it['result'] === 'fail' ? ' (required for FAIL)' : '' ?>" maxlength="255"<?= $dis ?>></div>
+              <div class="rem"><input class="input" type="text" name="r[<?= $id ?>][remarks]" value="<?= e($it['remarks']) ?>" placeholder="Remarks (optional)" maxlength="255"<?= $dis ?>></div>
             </div>
           <?php endforeach; ?>
         <?php endforeach; ?>
