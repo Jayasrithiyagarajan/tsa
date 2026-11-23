@@ -44,7 +44,7 @@ $c = $m['card'] ?? null;
     <div style="flex:1;min-width:220px">
       <p class="small muted">Passport-style photo: face centred, plain light background, portrait (3 : 4). JPG or PNG, up to <?= (int) config('upload_max_mb') ?> MB.
         <?= $c ? 'A new photo is used for your next card; the card you hold now does not change.' : '' ?></p>
-      <input class="input mt-1" type="file" name="photo" id="photo-input" accept="image/jpeg,image/png,image/webp" required style="padding-top:7px">
+      <input class="input mt-1" type="file" name="photo" id="photo-input" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" required style="padding-top:7px">
       <button class="btn btn-primary mt-1"><?= icon('upload', 'sm') ?> <?= $photo ? 'Replace photo' : 'Upload photo' ?></button>
     </div>
   </form>

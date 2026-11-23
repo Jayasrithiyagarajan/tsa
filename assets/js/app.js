@@ -236,4 +236,57 @@
 
   // demo login helper
   $$('[data-demo]').forEach((b) => b.addEventListener('click', () => { $('#email').value = b.dataset.demo; $('#password').focus(); }));
+
+  // HEIC / HEIF photos (iPhone): convert to JPEG in the browser before upload so previews,
+  // certificates and PDFs can show them. The server also converts any HEIC that gets through.
+  const HEIC_RE = /\.(heic|heif)$/i;
+  const isHeic = (f) => /^image\/hei[cf]/i.test(f.type) || HEIC_RE.test(f.name);
+  let heicLib = null;
+  const loadHeic = () => heicLib || (heicLib = new Promise((res, rej) => {
+    if (window.heic2any) return res(window.heic2any);
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+    s.onload = () => (window.heic2any ? res(window.heic2any) : rej(new Error('HEIC converter missing')));
+    s.onerror = () => { heicLib = null; rej(new Error('Could not load the HEIC converter')); };
+    document.head.appendChild(s);
+  }));
+  document.addEventListener('change', async (e) => {
+    const input = e.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+    if (input.dataset.heicDone) { delete input.dataset.heicDone; return; }   // our own re-dispatched event
+    const files = Array.from(input.files || []);
+    if (!files.some(isHeic)) return;
+    e.stopImmediatePropagation();   // hold page handlers (previews, auto-submit) until the JPEG is ready
+    const form = input.form;
+    if (form) form.dataset.heicBusy = String(+(form.dataset.heicBusy || 0) + 1);
+    IMS.toast('Converting HEIC photo…');
+    try {
+      const conv = await loadHeic();
+      const dt = new DataTransfer();
+      for (const f of files) {
+        if (!isHeic(f)) { dt.items.add(f); continue; }
+        let blob = await conv({ blob: f, toType: 'image/jpeg', quality: 0.9 });
+        if (Array.isArray(blob)) blob = blob[0];
+        dt.items.add(new File([blob], f.name.replace(HEIC_RE, '') + '.jpg', { type: 'image/jpeg', lastModified: f.lastModified }));
+      }
+      input.files = dt.files;
+    } catch (err) {
+      IMS.toast('Could not convert the HEIC photo in this browser. The server will try instead.', 4000);
+    }
+    input.dataset.heicDone = '1';
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    if (form) {
+      const n = +form.dataset.heicBusy - 1;
+      if (n > 0) form.dataset.heicBusy = String(n);
+      else {
+        delete form.dataset.heicBusy;
+        if (form.dataset.heicSubmit) { delete form.dataset.heicSubmit; form.requestSubmit ? form.requestSubmit() : form.submit(); }
+      }
+    }
+  }, true);
+  // a form submitted while a photo is still converting waits, then submits itself
+  document.addEventListener('submit', (e) => {
+    const f = e.target;
+    if (f.dataset && f.dataset.heicBusy) { e.preventDefault(); e.stopImmediatePropagation(); f.dataset.heicSubmit = '1'; IMS.toast('Finishing photo conversion…'); }
+  }, true);
 })();

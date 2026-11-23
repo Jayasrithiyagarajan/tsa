@@ -33,7 +33,7 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
     <?php if (Auth::isSuper()): ?>
     <form method="post" action="<?= url('admin/jobs/' . $job['id'] . '/timesheet') ?>" enctype="multipart/form-data" class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
       <?= Csrf::field() ?>
-      <input class="input" type="file" name="timesheet" accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp" required style="max-width:280px">
+      <input class="input" type="file" name="timesheet" accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp,image/heic,image/heif,.heic,.heif" required style="max-width:280px">
       <button class="btn btn-secondary btn-sm"><?= icon('upload', 'sm') ?> <?= $hasTs ? 'Replace' : 'Upload' ?> time sheet</button>
     </form>
     <?php endif; ?>

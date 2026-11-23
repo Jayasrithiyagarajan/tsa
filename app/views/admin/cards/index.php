@@ -57,7 +57,7 @@ $ttab = fn ($t, $label, $n) => '<a class="' . ($type === $t ? 'on' : '') . '" hr
   <div class="m-b"><div class="form-grid">
     <div class="field col-12"><label>Verification e-mails (back side)</label><input class="input" name="card_emails" value="<?= e(setting('card_emails', 'info@tuv-east.com - operations@tuv-east.com')) ?>"><div class="help">Separate with " - " or commas.</div></div>
     <div class="field col-12"><label>Footer address (back side)</label><input class="input" name="card_address" value="<?= e(setting('card_address', 'Main Office: Eastern Province - Al Khobar, 6205 Prince Muteb St, Al Sharq Business Tower, Saudi Arabia')) ?>"></div>
-    <div class="field col-12"><label>Accreditation logos under the photo (PNG / JPG, about 3.5 : 1)</label><input class="input" type="file" name="card_logos" accept="image/png,image/jpeg,image/webp" style="padding-top:7px">
+    <div class="field col-12"><label>Accreditation logos under the photo (PNG / JPG, about 3.5 : 1)</label><input class="input" type="file" name="card_logos" accept="image/png,image/jpeg,image/webp,image/heic,image/heif,.heic,.heif" style="padding-top:7px">
       <div class="help">Upload one image with your accreditation marks (e.g. UAF · LEEA · SASO). Without it the Saudi Accreditation mark from the company logo is used.</div>
       <?php if (setting('card_logos_path')): ?><label class="check mt-1"><input type="checkbox" name="reset_logos" value="1"> Remove uploaded logos and use the default</label><?php endif; ?></div>
   </div></div>

@@ -28,7 +28,7 @@
       <div class="card-b">
         <div style="border:1px dashed var(--border-strong);border-radius:12px;padding:16px;text-align:center;background:#fff;min-height:100px;display:grid;place-items:center">
           <?php if ($u['signature_path']): ?><img src="<?= url('documents/signature/' . $u['id']) ?>" alt="Your signature" style="max-height:80px"><?php else: ?><span class="muted small">No signature uploaded</span><?php endif; ?></div>
-        <div class="field mt-2"><label>Upload a scan (PNG with transparent background works best)</label><input class="input" type="file" name="signature" accept="image/png,image/jpeg" required style="padding-top:7px"></div>
+        <div class="field mt-2"><label>Upload a scan (PNG with transparent background works best)</label><input class="input" type="file" name="signature" accept="image/png,image/jpeg,image/heic,image/heif,.heic,.heif" required style="padding-top:7px"></div>
         <p class="small muted mt-1">Printed on checklists you submit and on certificates you sign or review.</p>
       </div>
       <div class="card-f"><button class="btn btn-primary"><?= icon('upload', 'sm') ?> Upload signature</button></div>

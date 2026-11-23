@@ -42,7 +42,7 @@ $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
         <?php if ($qcNote): ?><div class="alert alert-warning small"><?= icon('alert') ?><div><b>Returned by QC for rework</b><?= $qcNote['comments'] ? '<br>' . nl2br(e($qcNote['comments'])) : '' ?></div></div><?php endif; ?>
         <form method="post" action="<?= url('inspector/subjobs/' . $sj['id'] . '/operator-document') ?>" enctype="multipart/form-data">
           <?= Csrf::field() ?>
-          <div class="field"><label>Document (PDF or image) <span class="req">*</span></label><input class="input" type="file" name="document" required accept=".pdf,image/*" style="padding-top:7px"></div>
+          <div class="field"><label>Document (PDF or image) <span class="req">*</span></label><input class="input" type="file" name="document" required accept=".pdf,image/*,image/heic,image/heif,.heic,.heif" style="padding-top:7px"></div>
           <div class="field mt-1"><label>Note (optional)</label><input class="input" name="caption" maxlength="190"></div>
           <hr style="margin:14px 0;border:0;border-top:1px solid var(--border)">
           <div class="small" style="font-weight:600;margin-bottom:6px">Certificate of Competence</div>
@@ -87,7 +87,7 @@ $od = json_decode((string) ($sj['operator_data'] ?? ''), true) ?: [];
     <div class="field col-6"><label>Title (blue band) <span class="req">*</span></label><input class="input" name="title" value="<?= e($card['title']) ?>" required maxlength="80"></div>
     <div class="field col-6"><label>Issue date <span class="req">*</span></label><input class="input" type="date" name="issue_date" value="<?= e($card['issue_date']) ?>" required></div>
     <div class="field col-6"><label>Expiry date <span class="req">*</span></label><input class="input" type="date" name="expiry_date" value="<?= e($card['expiry_date']) ?>" required></div>
-    <div class="field col-12"><label>Replace photo (optional)</label><input class="input" type="file" name="photo" accept="image/jpeg,image/png,image/webp" style="padding-top:7px"></div>
+    <div class="field col-12"><label>Replace photo (optional)</label><input class="input" type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" style="padding-top:7px"></div>
     <div class="col-12 small strong" style="margin-top:6px">Back side</div>
     <div class="field col-6"><label>Job Ref <span class="req">*</span></label><input class="input mono" name="job_ref" value="<?= e($card['job_ref']) ?>" required maxlength="60"></div>
     <div class="field col-6"><label>Certification <span class="req">*</span></label><input class="input" name="certification" value="<?= e($card['certification']) ?>" required maxlength="120"></div>

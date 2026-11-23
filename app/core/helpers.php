@@ -255,8 +255,21 @@ function store_upload(array $file, string $folder, ?array $mimes = null): array
     }
     $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
     $mimes ??= config('upload_mimes');
-    if (!in_array($mime, $mimes, true)) {
+    // iPhone HEIC / HEIF photos are accepted wherever JPEG is, and stored as JPEG so browsers and PDFs can show them.
+    $heic = !in_array($mime, $mimes, true) && in_array('image/jpeg', $mimes, true) && is_heic_file($file['tmp_name'], $mime);
+    if (!$heic && !in_array($mime, $mimes, true)) {
         throw new InvalidArgumentException('File type not allowed.');
+    }
+    $converted = null;
+    if ($heic) {
+        $converted = tempnam(sys_get_temp_dir(), 'heic');
+        if (!heic_to_jpeg($file['tmp_name'], $converted)) {
+            @unlink($converted);
+            throw new InvalidArgumentException('This HEIC photo could not be converted on the server. Please reload the page and choose it again, or upload it as JPG.');
+        }
+        $mime = 'image/jpeg';
+        $file['size'] = (int) filesize($converted);
+        $file['name'] = preg_replace('/\.(heic|heif)$/i', '', (string) $file['name']) . '.jpg';
     }
     $ext = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'application/pdf' => 'pdf'][$mime] ?? 'bin';
     $dir = rtrim(config('upload_dir'), '/') . '/' . $folder . '/' . date('Y/m');
@@ -264,7 +277,10 @@ function store_upload(array $file, string $folder, ?array $mimes = null): array
         mkdir($dir, 0775, true);
     }
     $name = bin2hex(random_bytes(12)) . '.' . $ext;
-    if (!move_uploaded_file($file['tmp_name'], $dir . '/' . $name)) {
+    $saved = $converted !== null
+        ? (rename($converted, $dir . '/' . $name) || (copy($converted, $dir . '/' . $name) && @unlink($converted)))
+        : move_uploaded_file($file['tmp_name'], $dir . '/' . $name);
+    if (!$saved) {
         throw new RuntimeException('Could not save file.');
     }
     return [
@@ -273,6 +289,38 @@ function store_upload(array $file, string $folder, ?array $mimes = null): array
         'size' => (int) $file['size'],
         'name' => mb_substr(basename($file['name']), 0, 190),
     ];
+}
+
+/** Apple HEIC / HEIF photo? Checks the sniffed MIME, then the ISO-BMFF "ftyp" brand for older libmagic builds that don't know HEIC. */
+function is_heic_file(string $path, string $mime): bool
+{
+    if (in_array($mime, ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence'], true)) return true;
+    $head = (string) @file_get_contents($path, false, null, 0, 16);
+    return strlen($head) >= 12 && substr($head, 4, 4) === 'ftyp'
+        && in_array(substr($head, 8, 4), ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'mif1', 'msf1'], true);
+}
+
+/** Convert HEIC / HEIF to JPEG with Imagick (ImageMagick built with libheif). Returns false when the server can't. */
+function heic_to_jpeg(string $src, string $dest): bool
+{
+    if (!class_exists('Imagick')) return false;
+    try {
+        $im = new Imagick();
+        $im->readImage($src . '[0]');
+        if (method_exists($im, 'autoOrient')) {
+            $im->autoOrient();
+        } elseif (method_exists($im, 'autoOrientImage')) {
+            $im->autoOrientImage();
+        }
+        $im->setImageFormat('jpeg');
+        $im->setImageCompressionQuality(88);
+        $im->stripImage();
+        $ok = $im->writeImage($dest);
+        $im->clear();
+        return $ok && is_file($dest) && filesize($dest) > 0;
+    } catch (Throwable $e) {
+        return false;
+    }
 }
 
 function upload_abs(string $rel): string

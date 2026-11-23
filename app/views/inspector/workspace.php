@@ -526,7 +526,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
         <?= Csrf::field() ?>
         <div class="row wrap" style="justify-content:center;gap:10px">
           <?= icon('camera', 'lg') ?>
-          <input type="file" name="files[]" multiple accept="image/*,application/pdf" capture="environment" class="input" style="max-width:320px;padding-top:7px">
+          <input type="file" name="files[]" multiple accept="image/*,application/pdf,image/heic,image/heif,.heic,.heif" capture="environment" class="input" style="max-width:320px;padding-top:7px">
           <select class="select" name="kind" style="width:auto"><option value="photo">Photo</option><option value="document">Supporting document</option><?php if ($sj['requires_certificate']): ?><option value="certificate_upload">Certificate (signed PDF)</option><?php endif; ?></select>
           <input class="input" name="caption" placeholder="Caption (optional)" style="max-width:220px">
           <label class="check small"><input type="checkbox" name="on_certificate" value="1"<?= $pageCount > 1 ? ' checked' : '' ?>> Show on certificate</label>

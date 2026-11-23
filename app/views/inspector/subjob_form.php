@@ -109,7 +109,7 @@ $old = fn ($k, $d = '') => old($k, $d);
           <div class="field col-6"><label>Title (blue band) <span class="req">*</span></label><input class="input" name="title" value="<?= e($old('title')) ?>" required maxlength="80" placeholder="e.g. CRANE OPERATOR LEVEL - III"></div>
           <div class="field col-6"><label>Issue date <span class="req">*</span></label><input class="input" type="date" name="issue_date" value="<?= e($old('issue_date', date('Y-m-d'))) ?>" required></div>
           <div class="field col-6"><label>Expiry date <span class="req">*</span></label><input class="input" type="date" name="expiry_date" value="<?= e($old('expiry_date', date('Y-m-d', strtotime('+1 year -1 day')))) ?>" required></div>
-          <div class="field col-12"><label>Photo (passport style, JPG / PNG)</label><input class="input" type="file" name="photo" accept="image/jpeg,image/png,image/webp" style="padding-top:7px"><div class="help">Portrait 3 : 4, plain background.</div></div>
+          <div class="field col-12"><label>Photo (passport style, JPG / PNG)</label><input class="input" type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" style="padding-top:7px"><div class="help">Portrait 3 : 4, plain background.</div></div>
         </div></div>
       </div>
       <div class="card" style="margin-top:16px">

@@ -44,7 +44,7 @@ $readOnly = !Auth::isSuper();          // only a Super Admin creates or edits us
       <div class="card" data-role-only="inspector qc"><div class="card-h"><h2><?= icon('edit', 'sm') ?> Signature</h2></div>
         <div class="card-b">
           <?php if (!empty($u['signature_path'])): ?><div style="border:1px dashed var(--border-strong);border-radius:10px;padding:10px;text-align:center;background:#fff"><img src="<?= url('documents/signature/' . $u['id']) ?>" alt="Signature" style="max-height:70px"></div><?php endif; ?>
-          <div class="field mt-1"><label>Upload signature (PNG / JPG)</label><input class="input" type="file" name="signature" accept="image/png,image/jpeg" style="padding-top:7px"></div>
+          <div class="field mt-1"><label>Upload signature (PNG / JPG)</label><input class="input" type="file" name="signature" accept="image/png,image/jpeg,image/heic,image/heif,.heic,.heif" style="padding-top:7px"></div>
           <p class="small muted mt-1">Printed on checklists and certificates once submitted / issued.</p>
         </div></div>
       <div class="card" data-role-only="inspector qc"><div class="card-h"><h2><?= icon('qr', 'sm') ?> ID card</h2></div>
@@ -61,7 +61,7 @@ $readOnly = !Auth::isSuper();          // only a Super Admin creates or edits us
             <?php endif; ?>
           <?php endif; ?>
           <?php if (!empty($p['photo_path'])): ?><div class="mt-2" style="text-align:center"><img src="<?= url('id-photo/' . $u['id']) ?>" alt="ID photo" style="width:90px;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"></div><?php endif; ?>
-          <div class="field mt-1"><label>ID photo (JPG / PNG, portrait 3 : 4)</label><input class="input" type="file" name="id_photo" accept="image/jpeg,image/png,image/webp" style="padding-top:7px"></div>
+          <div class="field mt-1"><label>ID photo (JPG / PNG, portrait 3 : 4)</label><input class="input" type="file" name="id_photo" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" style="padding-top:7px"></div>
           <p class="small muted mt-1">The inspector can also upload this from their portal. Used for the next ID card issued.</p>
         </div></div>
       <?php if (!$readOnly): ?><div class="card"><div class="card-b"><button class="btn btn-primary btn-block"><?= icon('check', 'sm') ?> Save user</button><a class="btn btn-ghost btn-block mt-1" href="<?= url('admin/users') ?>">Cancel</a></div></div><?php endif; ?>
