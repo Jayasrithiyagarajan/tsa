@@ -538,14 +538,19 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
           <?php endif; ?>
           <button class="btn btn-primary"><?= icon('upload', 'sm') ?> Upload</button>
         </div>
-        <div class="small mt-1">JPG, PNG, WEBP or PDF · max <?= (int) config('upload_max_mb') ?> MB each. Up to 4 photos marked "show on certificate" print in the report image area.</div>
+        <?php $cap = DocumentService::photoCapacity($certTpl['layout'] ?? null); $capUsed = 0; foreach ($attachments as $ca) if ($ca['on_certificate'] && str_starts_with((string) $ca['mime'], 'image/')) $capUsed++; ?>
+        <div class="small mt-1">JPG, PNG, WEBP or PDF · max <?= (int) config('upload_max_mb') ?> MB each.
+          <?php if ($cap['max'] > 0): ?><b>This certificate prints up to <?= (int) $cap['max'] ?> photo<?= $cap['max'] === 1 ? '' : 's' ?></b> marked "Show on certificate" — <?= e($cap['note']) ?>
+            <span class="badge <?= $capUsed > $cap['max'] ? 'badge-red' : 'badge-green' ?>" style="margin-left:6px"><?= $capUsed ?> / <?= (int) $cap['max'] ?> used</span>
+            <?php if ($capUsed > $cap['max']): ?><span style="color:#b91c1c"> — the extra <?= $capUsed - $cap['max'] ?> will not print.</span><?php endif; ?>
+          <?php else: ?><b>This certificate has no photo area</b> — photos stay in the job record only.<?php endif; ?></div>
       </form>
       <?php endif; ?>
       <?php if ($attachments): ?>
         <div class="photos">
-          <?php foreach ($attachments as $a): $img = str_starts_with($a['mime'], 'image/'); ?>
+          <?php $prN = 0; foreach ($attachments as $a): $img = str_starts_with($a['mime'], 'image/'); if ($img && $a['on_certificate']) $prN++; ?>
             <div class="photo">
-              <?php if ($a['on_certificate']): ?><span class="tagc badge badge-green"><i></i>On certificate</span><?php endif; ?>
+              <?php if ($a['on_certificate']): ?><span class="tagc badge badge-green"><i></i>On certificate · #<?= $prN ?></span><?php endif; ?>
               <a href="<?= url('documents/attachment/' . $a['id']) ?>" target="_blank"><?php if ($img): ?><img src="<?= url('documents/attachment/' . $a['id']) ?>" alt="<?= e($a['caption'] ?: $a['original_name']) ?>" loading="lazy"><?php else: ?><div style="height:120px;display:grid;place-items:center;color:var(--muted)"><?= icon('file', 'lg') ?></div><?php endif; ?></a>
               <div class="ph-b"><span title="<?= e($a['original_name']) ?>"><?= e($a['caption'] ?: $a['original_name']) ?><br><span class="muted"><?= e(Workflow::label($a['kind'])) ?></span></span>
                 <?php if ($editable): ?><form method="post" action="<?= url('inspector/attachments/' . $a['id'] . '/delete') ?>" data-confirm="Delete this file?"><?= Csrf::field() ?><button class="btn btn-ghost btn-sm" title="Delete"><?= icon('trash', 'sm') ?></button></form><?php endif; ?></div>
@@ -556,6 +561,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
                   <?php if ($img): ?><label class="check small"><input type="checkbox" name="on_certificate" value="1"<?= $a['on_certificate'] ? ' checked' : '' ?>> Show on certificate</label><?php endif; ?>
                   <button class="btn btn-secondary btn-sm">Save</button>
                 </form>
+                <?php if ($img): ?><div class="row" style="gap:6px;padding:0 10px 10px"><?php foreach (['up' => '← Earlier', 'down' => 'Later →'] as $dr => $dl): ?><form method="post" action="<?= url('inspector/attachments/' . $a['id'] . '/move') ?>" style="flex:1"><?= Csrf::field() ?><input type="hidden" name="dir" value="<?= $dr ?>"><button class="btn btn-ghost btn-sm" style="width:100%" title="Change the print order"><?= $dl ?></button></form><?php endforeach; ?></div><?php endif; ?>
               <?php endif; ?>
               <?php if ($pageCount > 1 && $a['on_certificate']): ?>
                 <div style="padding:0 10px 10px">

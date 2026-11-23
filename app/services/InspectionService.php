@@ -596,6 +596,37 @@ final class InspectionService
         return (int) $a['sub_job_id'];
     }
 
+    /** SQL order for photos: manual order if set, otherwise upload order (works before the sort_no migration has run). */
+    public static function attachmentOrder(string $alias = ''): string
+    {
+        static $has = null;
+        if ($has === null) $has = (bool) DB::one("SHOW COLUMNS FROM attachments LIKE 'sort_no'");
+        $p = $alias !== '' ? $alias . '.' : '';
+        return $has ? "COALESCE({$p}sort_no, {$p}id), {$p}id" : "{$p}id";
+    }
+
+    /** Move a photo one place earlier ($dir < 0) or later in the print order. */
+    public static function moveAttachment(int $attachmentId, int $dir): int
+    {
+        $a = DB::one('SELECT * FROM attachments WHERE id = ?', [$attachmentId]);
+        if (!$a) throw new DomainException('Attachment not found.');
+        $sj = JobService::subJob((int) $a['sub_job_id']);
+        self::authorizeWork($sj);
+        if (self::attachmentsLocked($sj)) throw new DomainException('Attachments are locked.');
+        if (!DB::one("SHOW COLUMNS FROM attachments LIKE 'sort_no'")) throw new DomainException('Run php database/migrate.php to enable photo ordering.');
+        $rows = DB::all("SELECT id, COALESCE(sort_no, id) k FROM attachments WHERE sub_job_id = ? AND mime LIKE 'image/%' ORDER BY " . self::attachmentOrder(), [(int) $a['sub_job_id']]);
+        foreach ($rows as $i => $r) {
+            if ((int) $r['id'] !== $attachmentId) continue;
+            $j = $i + ($dir < 0 ? -1 : 1);
+            if (!isset($rows[$j])) break;
+            DB::update('attachments', ['sort_no' => (int) $rows[$j]['k']], 'id = ?', [$attachmentId]);
+            DB::update('attachments', ['sort_no' => (int) $r['k']], 'id = ?', [(int) $rows[$j]['id']]);
+            break;
+        }
+        Audit::log('attachment.moved', 'sub_job', (int) $a['sub_job_id'], ['attachment_id' => $attachmentId, 'dir' => $dir < 0 ? 'up' : 'down']);
+        return (int) $a['sub_job_id'];
+    }
+
     /** Which certificate page a photo prints on (null = every page). */
     public static function setAttachmentPage(int $attachmentId, ?int $certSeq): int
     {

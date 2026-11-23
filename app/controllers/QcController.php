@@ -94,7 +94,7 @@ final class QcController extends Controller
         $failed = $checklist ? DB::all("SELECT i.label, i.section, r.result, r.remarks FROM checklist_responses r JOIN checklist_template_items i ON i.id = r.item_id
                                          WHERE r.checklist_id = ? AND (r.result = 'fail' OR (r.remarks IS NOT NULL AND r.remarks <> '')) ORDER BY i.sort_order", [$checklist['id']]) : [];
         $issues = $sj['kind'] === 'operator' ? [] : InspectionService::issues((int) $sj['id']);
-        $attachments = DB::all('SELECT * FROM attachments WHERE sub_job_id = ? ORDER BY id', [$sj['id']]);
+        $attachments = DB::all('SELECT * FROM attachments WHERE sub_job_id = ? ORDER BY ' . InspectionService::attachmentOrder(), [$sj['id']]);
         $sticker = DB::one("SELECT * FROM stickers WHERE sub_job_id = ? AND status = 'closed' LIMIT 1", [$sj['id']]);
         $reviews = DB::all('SELECT q.*, u.name reviewer FROM qc_reviews q JOIN users u ON u.id = q.reviewer_id WHERE q.sub_job_id = ? ORDER BY q.id DESC', [$sj['id']]);
         $override = $sj['override_by'] ? DB::value('SELECT name FROM users WHERE id = ?', [$sj['override_by']]) : null;

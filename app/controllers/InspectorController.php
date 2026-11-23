@@ -321,7 +321,7 @@ final class InspectorController extends Controller
             $f['iso'] = $ts ? date('Y-m-d', $ts) : '';          // <input type="date"> needs ISO; non-date legacy text shows empty
             $fields[] = $f;
         }
-        $attachments = DB::all('SELECT a.*, u.name uploader FROM attachments a LEFT JOIN users u ON u.id = a.uploaded_by WHERE a.sub_job_id = ? ORDER BY a.id DESC', [$sj['id']]);
+        $attachments = DB::all('SELECT a.*, u.name uploader FROM attachments a LEFT JOIN users u ON u.id = a.uploaded_by WHERE a.sub_job_id = ? ORDER BY ' . InspectionService::attachmentOrder('a'), [$sj['id']]);
         $sticker = DB::one("SELECT * FROM stickers WHERE sub_job_id = ? AND status = 'closed' ORDER BY id DESC LIMIT 1", [$sj['id']]);
         $myStickers = $sticker ? [] : DB::all("SELECT sticker_no, color FROM stickers WHERE status = 'allocated' AND inspector_id = ? ORDER BY color, sticker_no LIMIT 300", [(int) ($sj['inspector_id'] ?: Auth::id())]);
         $reviews = DB::all('SELECT q.*, u.name reviewer FROM qc_reviews q JOIN users u ON u.id = q.reviewer_id WHERE q.sub_job_id = ? ORDER BY q.id DESC', [$sj['id']]);
@@ -433,6 +433,17 @@ final class InspectorController extends Controller
         try {
             $sjId = InspectionService::updateAttachment((int) $id, input('caption'), !empty($_POST['on_certificate']));
             flash('success', 'Photo updated.');
+            redirect('inspector/subjobs/' . $sjId . '#tab-files');
+        } catch (DomainException $e) {
+            flash('error', $e->getMessage());
+            redirect($_SERVER['HTTP_REFERER'] ?? 'inspector');
+        }
+    }
+
+    public function moveAttachment(string $id): void
+    {
+        try {
+            $sjId = InspectionService::moveAttachment((int) $id, ((string) ($_POST['dir'] ?? '')) === 'up' ? -1 : 1);
             redirect('inspector/subjobs/' . $sjId . '#tab-files');
         } catch (DomainException $e) {
             flash('error', $e->getMessage());

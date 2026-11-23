@@ -11,6 +11,10 @@ if (PHP_SAPI !== 'cli') exit("CLI only\n");
 require __DIR__ . '/../app/bootstrap.php';
 $_SESSION = [];
 
+if (!DB::one("SHOW COLUMNS FROM attachments LIKE 'sort_no'")) {
+    DB::pdo()->exec("ALTER TABLE attachments ADD sort_no INT NULL");   // manual photo order (NULL = upload order)
+    echo "✓ added attachments.sort_no\n";
+}
 if (!DB::one("SHOW COLUMNS FROM checklist_templates LIKE 'layout'")) {
     DB::pdo()->exec("ALTER TABLE checklist_templates ADD layout TEXT NULL AFTER revision_date");
     echo "✓ added checklist_templates.layout\n";

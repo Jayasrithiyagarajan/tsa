@@ -136,6 +136,7 @@ $r->post('/inspector/subjobs/{id}/upload',     [InspectorController::class, 'upl
 $r->post('/inspector/subjobs/{id}/delete',     [InspectorController::class, 'deleteSubJob'], ['inspector', 'admin']);
 $r->post('/inspector/attachments/{id}/delete', [InspectorController::class, 'deleteAttachment'], ['inspector', 'admin', 'qc']);
 $r->post('/inspector/attachments/{id}/page',   [InspectorController::class, 'attachmentPage'], ['inspector', 'admin', 'qc']);
+$r->post('/inspector/attachments/{id}/move',   [InspectorController::class, 'moveAttachment'], ['inspector', 'admin', 'qc']);
 $r->post('/inspector/attachments/{id}/update', [InspectorController::class, 'updateAttachment'], ['inspector', 'admin', 'qc']);
 $r->post('/inspector/subjobs/{id}/submit',     [InspectorController::class, 'submit'], ['inspector', 'admin']);
 $r->get('/inspector/history',                  [InspectorController::class, 'history'], $I);

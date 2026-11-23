@@ -66,9 +66,28 @@ final class DocumentService
             'issue_date' => $issued ? $cert['issue_date'] : ($qc ? substr($qc['created_at'], 0, 10) : null),
             'data' => json_decode((string) ($cl['data'] ?? ''), true) ?: [],
             'photos' => array_map(fn ($a) => upload_data_uri($a['file_path']), DB::all(
-                "SELECT file_path FROM attachments WHERE sub_job_id = ? AND kind = 'photo' AND mime LIKE 'image/%' ORDER BY on_certificate DESC, id LIMIT 12", [$subJobId])),
+                "SELECT file_path FROM attachments WHERE sub_job_id = ? AND kind = 'photo' AND mime LIKE 'image/%' ORDER BY on_certificate DESC, " . InspectionService::attachmentOrder() . " LIMIT 12", [$subJobId])),
             'review_date' => $issued ? $cert['issue_date'] : ($qc ? substr($qc['created_at'], 0, 10) : null),
         ];
+    }
+
+    /** How many certificate photos each printed format has room for, with a note for the upload tab. */
+    public static function photoCapacity(?string $layout): array
+    {
+        return [
+            'ec' => ['max' => 30, 'note' => 'The first 2 print inside the form, the rest on continuation sheets of 8.'],
+            'sc' => ['max' => 19, 'note' => 'Up to 3 drawings (caption containing "draw") plus 16 inspection pictures.'],
+            'ss' => ['max' => 66, 'note' => 'Up to 2 drawings (caption containing "draw") plus 64 inspection pictures.'],
+            'mo' => ['max' => 7, 'note' => '1 VIN photo (the first) plus 6 inspection pictures.'],
+            'tr' => ['max' => 6, 'note' => 'Trailer pictures, 2 x 3.'],
+            'ch' => ['max' => 6, 'note' => 'Report pictures.'],
+            'pp' => ['max' => 8, 'note' => 'Vehicle pictures, 2 x 4.'],
+            'df' => ['max' => 4, 'note' => 'Photos in the image area.'],
+            'ut' => ['max' => 4, 'note' => 'Photos in the box beside the readings.'],
+            'dt' => ['max' => 1, 'note' => 'One photo fills the image area (the first).'],
+            'lp' => ['max' => 0, 'note' => ''], 'dr' => ['max' => 0, 'note' => ''], 'es' => ['max' => 0, 'note' => ''], 'li' => ['max' => 0, 'note' => ''],
+            'ld' => ['max' => 0, 'note' => ''], 'sp' => ['max' => 0, 'note' => ''], 'an' => ['max' => 0, 'note' => ''],
+        ][(string) $layout] ?? ['max' => 4, 'note' => 'Photos in the certificate image area.'];
     }
 
     public static function certificateModel(int $subJobId, int $seq = 1): ?array
@@ -86,9 +105,9 @@ final class DocumentService
             $f['value'] = CertificateService::fieldValue($f, $sj, $cert, $data);
             $fields[] = $f;
         }
-        $photoLimit = ['ec' => 30, 'sc' => 30, 'ss' => 96, 'mo' => 7, 'tr' => 6, 'ch' => 6, 'pp' => 8][$tpl['layout'] ?? ''] ?? 4;
+        $photoLimit = self::photoCapacity($tpl['layout'] ?? null)['max'];
         // photos tagged for this page, plus untagged ones (cert_seq NULL = every page); page-specific photos print first
-        $photos = DB::all("SELECT * FROM attachments WHERE sub_job_id = ? AND on_certificate = 1 AND mime LIKE 'image/%' AND (cert_seq IS NULL OR cert_seq = ?) ORDER BY cert_seq IS NULL, id LIMIT $photoLimit", [$subJobId, $seq]);
+        $photos = DB::all("SELECT * FROM attachments WHERE sub_job_id = ? AND on_certificate = 1 AND mime LIKE 'image/%' AND (cert_seq IS NULL OR cert_seq = ?) ORDER BY cert_seq IS NULL, " . InspectionService::attachmentOrder() . " LIMIT $photoLimit", [$subJobId, $seq]);
         foreach ($photos as &$p) {
             $p['src'] = upload_data_uri($p['file_path']);
         }
