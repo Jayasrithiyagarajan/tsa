@@ -41,7 +41,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
     <div><small>Client</small><b><?= e($sj['client_name']) ?></b></div>
     <div><small>Location</small><b><?= e($sj['location'] ?: '—') ?></b></div>
     <div><small>Scheduled</small><b><?= e(fmt_date($sj['scheduled_date']) ?: '—') ?></b></div>
-    <div><small>Serial No.</small><b><?= e($sj['eq_serial_no'] ?: '—') ?></b></div>
+    <div><small>Equipment Serial No</small><b><?= e($sj['eq_serial_no'] ?: '—') ?></b></div>
     <div><small>Make / model</small><b><?= e(trim($sj['manufacturer'] . ' ' . $sj['eq_model']) ?: '—') ?></b></div>
     <div><small>Certificate No.</small><b class="mono" style="font-size:12.5px"><?= e($cert['certificate_no'] ?? 'Assigned on start') ?></b></div>
   </div>
@@ -99,8 +99,8 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
         <div class="card-b" style="border-bottom:1px solid var(--border)"><div class="form-grid">
           <div class="field col-4"><label><?= $isReport ? 'Report No.' : 'Certificate No.' ?></label><div class="bound mono"><?= icon('lock', 'sm') ?><?= e($cert['certificate_no'] ?? Numbering::certificate($sj)) ?></div></div>
           <div class="field col-6"><label>Equipment Type</label><input class="input" type="text" name="eq_description" value="<?= e($sj['eq_description']) ?>" maxlength="190"<?= $dis ?>></div>
-          <div class="field col-6"><label>Equipment ID / S No.</label><input class="input" type="text" name="equipment_no" value="<?= e($sj['equipment_no']) ?>" maxlength="80"<?= $dis ?>></div>
-          <div class="field col-4"><label>Serial No.</label><input class="input" type="text" name="serial_no" value="<?= e($checklist['serial_no']) ?>"<?= $dis ?>></div>
+          <div class="field col-6"><label>Equipment ID / No</label><input class="input" type="text" name="equipment_no" value="<?= e($sj['equipment_no']) ?>" maxlength="80"<?= $dis ?>></div>
+          <div class="field col-4"><label>Equipment Serial No</label><input class="input" type="text" name="serial_no" value="<?= e($checklist['serial_no']) ?>"<?= $dis ?>></div>
           <div class="field col-4"><label>Date of inspection</label><input class="input" type="date" name="inspection_date" value="<?= e($checklist['inspection_date']) ?>"<?= $dis ?>></div>
           <?php if ($isReport): ?>
             <div class="form-section mt-1"><?= icon('file', 'sm') ?> Report cover data <span class="muted small" style="font-weight:500">— client, model, brand, year and dates are filled from the job record</span></div>
