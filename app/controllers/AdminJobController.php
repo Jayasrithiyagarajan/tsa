@@ -124,7 +124,15 @@ final class AdminJobController extends Controller
                 'priority' => input('priority', 'normal'), 'notes' => nullable(input('notes')),
             ], 'id = ?', [(int) $id]);
             Audit::log('job.updated', 'job', (int) $id);
-        }, 'Job details saved.');
+            $msg = 'Job details saved.';
+            $newInsp = (int) input('inspector_id');   // inspector changed in the edit form
+            if ($newInsp && $newInsp !== (int) DB::value('SELECT lead_inspector_id FROM jobs WHERE id = ?', [(int) $id])) {
+                $res = JobService::assignJob((int) $id, $newInsp, 'Changed from the job edit form');
+                $msg .= ' Inspector changed to ' . DB::value('SELECT name FROM users WHERE id = ?', [$newInsp]) . ($res['assigned'] ? ' (' . $res['assigned'] . ' sub-job(s) moved).' : '.');
+                if ($res['skipped']) $msg .= ' Not qualified, left unchanged: ' . implode(', ', $res['skipped']) . '.';
+            }
+            flash('success', $msg);
+        });
     }
 
     public function assign(string $id): void

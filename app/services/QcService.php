@@ -97,7 +97,12 @@ final class CertificateService
         if (($f['key'] ?? '') === 'location' && ($f['label'] ?? '') === 'Test Location') { unset($f['source']); $f['type'] = 'text'; }
         if (($f['key'] ?? '') === 'test_method' && ($f['type'] ?? '') === 'select') { $f['type'] = 'text'; unset($f['options']); }   // Test Method is typed in, not picked from a list
         if (preg_match('/^Identification\s*\/\s*S/i', (string) ($f['label'] ?? ''))) { $f['source'] = 'equipment.serial_no'; unset($f['required']); }   // Identification / SN = the equipment serial no. (the one entered in the checklist)
-        if (preg_match('/^Examined\s+Item/i', (string) ($f['label'] ?? ''))) { $f['source'] = 'equipment.equipment_no'; unset($f['required']); }   // Examined Item = the Equipment ID / No.
+        if (in_array($f['source'] ?? '', ['job.po_no', 'equipment.description', 'equipment.equipment_no'], true)) {   // Request / P.O. No., Equipment Description and Equipment ID / S No. are typed in, never fetched
+            unset($f['source']);
+            if (empty($f['type'])) $f['type'] = 'text';
+        }
+        if (preg_match('/^Installation\s+Location\s*:?\s*$/i', (string) ($f['label'] ?? ''))) { unset($f['source']); if (empty($f['type'])) $f['type'] = 'text'; }   // Installation Location is typed in, not fetched from the job location
+        if (preg_match('/^Examined\s+Item/i', (string) ($f['label'] ?? ''))) { $f['source'] = 'equipment.equipment_no'; unset($f['required']); }   // Examined Item is fetched from the Equipment ID / No. (editable)
         return $f;
     }
 

@@ -103,7 +103,7 @@ final class InspectionService
         $prev = json_decode($prev, true) ?: [];
         $keep = [];
         foreach (json_decode($tpl['fields'], true) ?: [] as $f) {
-            if (empty($f['source']) && !empty($f['carry']) && isset($prev[$f['key']])) {
+            if (empty($f['source']) && !empty($f['carry']) && ($f['key'] ?? '') !== 'device_sn' && isset($prev[$f['key']])) {   // Device S.N is always typed in fresh
                 $keep[$f['key']] = $prev[$f['key']];
             }
         }

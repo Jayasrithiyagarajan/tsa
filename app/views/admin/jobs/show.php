@@ -155,6 +155,10 @@ foreach ($inspectors as $u) $inspSkills[$u['id']] = $u['skills'];
     <div class="field col-4"><label>Scheduled</label><input class="input" type="date" name="scheduled_date" value="<?= e($job['scheduled_date']) ?>"></div>
     <div class="field col-4"><label>Due</label><input class="input" type="date" name="due_date" value="<?= e($job['due_date']) ?>"></div>
     <div class="field col-4"><label>Priority</label><select class="select" name="priority"><?php foreach (['low', 'normal', 'high', 'urgent'] as $p): ?><option value="<?= $p ?>"<?= selected($p, $job['priority']) ?>><?= e(Workflow::label($p)) ?></option><?php endforeach; ?></select></div>
+    <div class="field col-12"><label>Inspector</label><select class="select" name="inspector_id">
+      <option value="">— No change / not assigned —</option>
+      <?php foreach ($inspectors as $u): ?><option value="<?= (int) $u['id'] ?>"<?= selected((string) $u['id'], (string) ($job['lead_inspector_id'] ?? '')) ?>><?= e($u['name']) ?><?= $u['skills'] ? ' · ' . e($u['skills']) : '' ?> (<?= (int) $u['open_load'] ?> open)</option><?php endforeach; ?>
+    </select><div class="help">Changing the inspector makes him the lead inspector and moves the job's sub-jobs that are still pending or assigned to him. Sub-jobs already in progress or submitted keep their current inspector.</div></div>
     <div class="field col-12"><label>Notes</label><textarea class="textarea" name="notes"><?= e($job['notes']) ?></textarea></div>
   </div></div>
   <div class="m-f"><button type="button" class="btn btn-ghost" data-modal-close>Cancel</button><button class="btn btn-primary">Save</button></div>
