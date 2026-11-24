@@ -518,9 +518,7 @@ final class InspectionService
                     }
                     if ($missing) $issues[] = $label . 'fill in ' . implode(', ', $missing) . '.';
                     if (!$c['result']) $issues[] = $label . 'select the inspection result.';
-                    if ($c['result'] === 'accepted' && $stats && $stats['fail'] > 0) {
-                        $issues[] = $label . 'result is "Accepted" but the checklist has failed items.';
-                    }
+                    // failed checklist items no longer block an Accepted result: the inspector decides the certificate result
                 }
             } elseif (!DB::value("SELECT id FROM attachments WHERE sub_job_id = ? AND kind = 'certificate_upload'", [$subJobId])) {
                 $issues[] = 'Upload the signed certificate (no template is configured for this inspection type).';
