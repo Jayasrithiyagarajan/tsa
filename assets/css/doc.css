@@ -524,7 +524,7 @@ table.f.sst .ni.dash span { width: 3.2mm; padding-left: 0; }
 .sst-draw { border: 0.5pt solid #7f7f7f; text-align: center; padding: 0; }
 .sst-draw img { max-width: 100%; vertical-align: middle; }
 table.f.sst.sst-ph td { padding: 0; text-align: center; vertical-align: middle; }
-table.f.sst.sst-ph img { max-width: 43mm; max-height: 45mm; }
+table.f.sst.sst-ph img { max-width: 100mm; max-height: 100mm; }
 table.f.sst.sgn td { font-size: 10pt; }
 table.f.sst.sgn td.sl { font-weight: bold; font-size: 11pt; padding-left: 2mm; }
 table.f.sst.sgn td.sgc { text-align: center; padding: 0; }

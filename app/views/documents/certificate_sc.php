@@ -114,6 +114,18 @@ foreach ($m['photos'] ?? [] as $p) {
     if (preg_match('/draw/i', (string) ($p['caption'] ?? ''))) $drawings[] = $p; else $pics[] = $p;
 }
 $pages = [];
+// Picture grids: every picture fills the same box exactly (same width and height, nothing cropped; the shape is adjusted to the box)
+$fill = fn (string $src, float $bw, float $bh): string => '<img src="' . $src . '" style="width:' . $bw . 'mm;height:' . $bh . 'mm" alt="">';
+// Fit a picture inside a box (mm): scaled by its real shape, centred horizontally and vertically (Dompdf has no object-fit)
+$fit = function (string $src, float $bw, float $bh): string {
+    $bin = str_starts_with($src, 'data:') ? base64_decode(substr($src, strpos($src, ',') + 1)) : @file_get_contents($src);
+    $sz = $bin ? @getimagesizefromstring($bin) : false;
+    if (!$sz || !$sz[0] || !$sz[1]) return '<img src="' . $src . '" style="max-width:' . $bw . 'mm;max-height:' . $bh . 'mm" alt="">';
+    $k = min($bw / $sz[0], $bh / $sz[1]);
+    $w = round($sz[0] * $k, 2); $h = round($sz[1] * $k, 2); $pt = round(($bh - $h) / 2, 2);
+    // fixed-height box: a spacer pushes the picture to the vertical centre (no padding, so it is the same with or without border-box)
+    return '<div style="text-align:center;line-height:0;font-size:0;height:' . $bh . 'mm"><div style="height:' . $pt . 'mm;line-height:0;font-size:0">&nbsp;</div><img src="' . $src . '" style="width:' . $w . 'mm;height:' . $h . 'mm" alt=""></div>';
+};
 $title = '<div class="cert-title scf-t">' . e($tpl['title']) . '</div>';
 $pages[] = ['body' => $t1 . $t2 . $stage . $types . $intro . $std, 'top' => 36.75, 'left' => 13.45, 'width' => 183.1, 'extra' => $title];
 $pages[] = ['body' => $res . $att . $det . $cert, 'top' => 24.7, 'left' => 13.45, 'width' => 183.1];
@@ -125,7 +137,7 @@ for ($i = 0; $i < min(3, count($drawings)); $i++) {   // one page per drawing, n
     $d = $drawings[$i] ?? null;
     [$top, $left, $w, $ind] = $dg[$i];
     $head = $i === 0 ? '<div class="scf-h" style="padding-left:' . $ind . 'mm">Scaffolding Structure Darwing:</div>' : '';
-    $pages[] = ['body' => $head . '<div class="scf-draw">' . ($d ? '<img src="' . $d['src'] . '" alt="">' : '') . '</div>',
+    $pages[] = ['body' => $head . '<div class="scf-draw">' . ($d ? $fit($d['src'], $w - 5, 193) : '') . '</div>',
         'top' => $top, 'left' => $left, 'width' => $w];
 }
 
@@ -143,13 +155,13 @@ foreach ($chunks as $i => $chunk) {
             $g .= '<tr>';
             for ($k = 0; $k < 2; $k++) {
                 $p = $chunk[$r * 2 + $k] ?? null;
-                $g .= '<td class="c">' . ($p ? '<img src="' . $p['src'] . '" alt="">' : '') . '</td>';
+                $g .= '<td class="c">' . ($p ? $fill($p['src'], 80, 62) : '') . '</td>';
             }
             $g .= '</tr>';
         }
         $g .= '</table>';
     }
-    $pages[] = ['body' => $head . $g . ($i === $lastIx ? $sign : ''), 'top' => $i === 0 && $chunk ? 33.6 : ($i === $lastIx && $chunk ? 49.2 : 44.5), 'left' => 19.25, 'width' => 168.2];
+    $pages[] = ['body' => $head . $g . ($i === $lastIx ? $sign : ''), 'top' => $i === 0 && $chunk ? 33.6 : 44.5, 'left' => 19.25, 'width' => 168.2];
 }
 $wm = ['draft' => 'DRAFT', 'pending_qc' => 'DRAFT', 'revoked' => 'REVOKED', 'rejected' => 'DRAFT'][$c['status']] ?? null;
 

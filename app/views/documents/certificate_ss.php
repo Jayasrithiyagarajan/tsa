@@ -135,6 +135,18 @@ foreach ($m['photos'] ?? [] as $p) {
     if (preg_match('/draw/i', (string) ($p['caption'] ?? ''))) $drawings[] = $p; else $pics[] = $p;
 }
 $pages = [];
+// Picture grids: every picture fills the same box exactly (same width and height, nothing cropped; the shape is adjusted to the box)
+$fill = fn (string $src, float $bw, float $bh): string => '<img src="' . $src . '" style="width:' . $bw . 'mm;height:' . $bh . 'mm" alt="">';
+// Fit a picture inside a box (mm): scaled by its real shape, centred horizontally and vertically (Dompdf has no object-fit)
+$fit = function (string $src, float $bw, float $bh): string {
+    $bin = str_starts_with($src, 'data:') ? base64_decode(substr($src, strpos($src, ',') + 1)) : @file_get_contents($src);
+    $sz = $bin ? @getimagesizefromstring($bin) : false;
+    if (!$sz || !$sz[0] || !$sz[1]) return '<img src="' . $src . '" style="max-width:' . $bw . 'mm;max-height:' . $bh . 'mm" alt="">';
+    $k = min($bw / $sz[0], $bh / $sz[1]);
+    $w = round($sz[0] * $k, 2); $h = round($sz[1] * $k, 2); $pt = round(($bh - $h) / 2, 2);
+    // fixed-height box: a spacer pushes the picture to the vertical centre (no padding, so it is the same with or without border-box)
+    return '<div style="text-align:center;line-height:0;font-size:0;height:' . $bh . 'mm"><div style="height:' . $pt . 'mm;line-height:0;font-size:0">&nbsp;</div><img src="' . $src . '" style="width:' . $w . 'mm;height:' . $h . 'mm" alt=""></div>';
+};
 $title = '<div class="cert-title sst-t">' . e($tpl['title']) . '</div>';
 $pages[] = ['body' => $t1 . $t2 . $stage . $types . $intro . $std, 'top' => 39.9, 'left' => 14.85, 'width' => 180.6, 'extra' => $lhCss . $title];
 $pages[] = ['body' => $res . $cn . $att . $det . $cert, 'top' => 27.9, 'left' => 14.7, 'width' => 182.6];
@@ -145,7 +157,7 @@ $dbox = [208.3, 228.6];
 for ($i = 0; $i < min(2, count($drawings)); $i++) {   // one page per drawing, none when there are no drawings
     $d = $drawings[$i] ?? null;
     $head = $i === 0 ? '<div class="sst-h" style="height:' . ($pdfMode ? 14.7 : 14.3) . 'mm">' . $drawTitle . '</div>' : '';
-    $pages[] = ['body' => $head . '<div class="sst-draw" style="height:' . $dbox[$i] . 'mm' . ($pdfMode ? '' : ';line-height:' . $dbox[$i] . 'mm') . '">' . ($d ? '<img src="' . $d['src'] . '" style="max-height:' . ($dbox[$i] - 8) . 'mm" alt="">' : '') . '</div>',
+    $pages[] = ['body' => $head . '<div class="sst-draw" style="height:' . $dbox[$i] . 'mm' . ($pdfMode ? '' : ';line-height:' . $dbox[$i] . 'mm') . '">' . ($d ? $fit($d['src'], 180, $dbox[$i] - 4) : '') . '</div>',
         'top' => $i === 0 ? 38.4 - ($pdfMode ? 0.8 : 0) : 38.2, 'left' => 12.7, 'width' => 184.2];
 }
 
@@ -169,7 +181,7 @@ for ($i = 0; $i < $nPg; $i++) {
         $g .= '<tr>';
         for ($k = 0; $k < 4; $k++) {
             $p = $chunk[$r * 4 + $k] ?? null;
-            $g .= '<td style="height:' . $rh . 'mm">' . ($p ? '<img src="' . $p['src'] . '" alt="">' : '') . '</td>';
+            $g .= '<td style="height:' . $rh . 'mm">' . ($p ? $fill($p['src'], $cols[$k] - 3, $rh - 3) : '') . '</td>';
         }
         $g .= '</tr>';
     }
