@@ -112,6 +112,7 @@ final class DocumentService
             $p['src'] = upload_data_uri($p['file_path']);
         }
         unset($p);
+        $photos = array_values(array_filter($photos, fn ($p) => !empty($p['src'])));   // a photo whose file is missing on disk is skipped (it would otherwise crash the layout)
         $verifyUrl = abs_url('verify/' . $cert['verify_token']);
         return [
             'sj' => $sj, 'cert' => $cert, 'template' => $tpl, 'fields' => $fields,
