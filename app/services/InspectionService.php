@@ -315,6 +315,7 @@ final class InspectionService
                 $after  = CertificateService::fieldValue($f, $sj, $certNew, $data);
                 if ($before === $after) continue;
                 $src = $f['source'] ?? ''; $k = $f['key'];
+                if (!$src && $k === 'serial' && in_array($tpl['layout'] ?? '', ['li', 'es', 'ld'], true)) continue;   // Lift No. is typed in and never linked to the checklist serial no.
                 if ($src === 'equipment.serial_no' || (!$src && in_array($k, ['serial', 'serial_no'], true))) { $back['serial_no'] = $after; continue; }
                 $ck = ['equipment.description' => 'eq_desc', 'equipment.model' => 'model', 'equipment.manufacturer' => 'brand', 'equipment.year_built' => 'year'][$src]
                     ?? (!$src ? (['description' => 'eq_desc', 'manufacturer' => 'brand'][$k] ?? $k) : null);

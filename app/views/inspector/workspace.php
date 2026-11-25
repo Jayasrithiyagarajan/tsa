@@ -463,7 +463,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
                   })();</script>
                 <?php elseif ($f['bound']): ?>
                   <?php if (!empty($f['is_date'])): ?>
-                  <input class="input" type="date" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['iso']) ?>" title="<?= $f['source'] === 'cert.issue_date' ? 'Defaults to today — pick another date if needed' : 'Pre-filled from the job record — you can edit it' ?>"<?= $dis ?>>
+                  <input class="input" type="date" name="fields[<?= e($f['key']) ?>]" data-src="<?= e($f['source']) ?>" value="<?= e($f['iso']) ?>" title="<?= $f['source'] === 'cert.issue_date' ? 'Defaults to today — pick another date if needed' : 'Pre-filled from the job record — you can edit it' ?>"<?= $dis ?>>
                   <?php else: ?>
                   <input class="input" type="text" name="fields[<?= e($f['key']) ?>]" value="<?= e($f['value']) ?>" placeholder="From job record" title="Pre-filled from the job record — you can edit it"<?= $dis ?>>
                   <?php endif; ?>
@@ -490,7 +490,11 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
             <script>(function () {
               var f = document.getElementById('certificate-form'); if (!f) return;
               var iv = f.querySelector('[name^="fields["][name*="interval"]'), d = f.querySelector('[name="inspection_date"]'), n = f.querySelector('[name="next_inspection_date"]');
-              if (!iv || !d || !n) return;
+              if (!n) return;
+              // the Expiration Date field on the certificate always shows the same date as Next inspection date
+              function mirror() { f.querySelectorAll('[data-src="cert.next_inspection_date"]').forEach(function (x) { x.value = n.value; }); }
+              n.addEventListener('input', mirror); n.addEventListener('change', mirror); mirror();
+              if (!iv || !d) return;
               function calc() {
                 var m = /(\d+)\s*(year|month)/i.exec(iv.value || ''), p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d.value || ''); if (!m || !p) return;
                 var x = new Date(Date.UTC(+p[1], +p[2] - 1 + (+m[1]) * (/year/i.test(m[2]) ? 12 : 1), +p[3])); x.setUTCDate(x.getUTCDate() - 1);   // + N months - 1 day

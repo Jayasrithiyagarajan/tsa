@@ -96,6 +96,7 @@ final class CertificateService
         if (($f['key'] ?? '') === 'address' && ($f['label'] ?? '') === 'Address / Location') { $f['source'] = 'job.location'; unset($f['required']); }
         if (($f['key'] ?? '') === 'location' && ($f['label'] ?? '') === 'Test Location') { unset($f['source']); $f['type'] = 'text'; }
         if (($f['key'] ?? '') === 'classification' && ($f['type'] ?? '') === 'select') { $f['type'] = 'text'; unset($f['options']); }   // Classification is typed in (lift / escalator forms)
+        if (preg_match('/^Load\s+Test\s+Date/i', (string) ($f['label'] ?? ''))) $f['type'] = 'text';   // Load Test Date is typed in (e.g. N/A), not picked from a date picker
         if (($f['key'] ?? '') === 'test_method' && ($f['type'] ?? '') === 'select') { $f['type'] = 'text'; unset($f['options']); }   // Test Method is typed in, not picked from a list
         if (preg_match('/^Identification\s*\/\s*S/i', (string) ($f['label'] ?? ''))) { $f['source'] = 'equipment.serial_no'; unset($f['required']); }   // Identification / SN = the equipment serial no. (the one entered in the checklist)
         if (in_array($f['source'] ?? '', ['job.po_no', 'equipment.description'], true)) {   // Request / P.O. No. and Equipment Description are typed in, never fetched
@@ -135,7 +136,7 @@ final class CertificateService
         ];
         if ($src !== '') {
             // Development: bound fields can be overridden by the inspector (stored under the field key)
-            $ov = trim((string) ($data[$f['key']] ?? ''));
+            $ov = $src === 'cert.next_inspection_date' ? '' : trim((string) ($data[$f['key']] ?? ''));   // Expiration / Next Inspection Date always follows the certificate's next inspection date
             if ($ov !== '' && self::isDateField($f) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $ov)) $ov = fmt_date($ov);
             return $ov !== '' ? $ov : (string) ($map[$src] ?? '');
         }
@@ -199,7 +200,8 @@ final class CertificateService
     /** Fields that are dates get a date picker: typed 'date', bound to a certificate date, or labelled "... Date ...". */
     public static function isDateField(array $f): bool
     {
-        if (($f['key'] ?? '') === 'last_exam') return false;   // Last Examination Date is typed in (no date picker)
+        if (in_array($f['key'] ?? '', ['last_exam', 'load_test'], true) || preg_match('/^Load\s+Test\s+Date/i', (string) ($f['label'] ?? '')) === 1) return false;   // Last Examination / Load Test Date are typed in (no date picker)
+        if (false) return false;   // Last Examination Date is typed in (no date picker)
         return ($f['type'] ?? '') === 'date'
             || in_array($f['source'] ?? '', ['cert.issue_date', 'cert.inspection_date', 'cert.next_inspection_date'], true)
             || (($f['type'] ?? 'text') === 'text' && preg_match('/\bdate\b/i', (string) ($f['label'] ?? '')) === 1);
