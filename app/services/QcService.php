@@ -359,6 +359,8 @@ final class StickerService
         if (!$s) throw new DomainException('Sticker not found.');
         Workflow::assert('sticker', $s['status'], 'void');
         if (trim($reason) === '') throw new DomainException('A reason is required.');
+        if ($s['sub_job_id'] && DB::value('SELECT status FROM sub_jobs WHERE id = ?', [$s['sub_job_id']]) === 'approved')
+            throw new DomainException('This sticker cannot be voided because its sub-job is already closed.');
         DB::update('stickers', ['status' => 'void', 'void_reason' => $reason], 'id = ?', [$id]);
         Audit::log('sticker.voided', 'sticker', $id, ['reason' => $reason, 'sub_job_id' => $s['sub_job_id']]);
     }

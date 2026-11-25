@@ -39,7 +39,7 @@ $swatch = fn ($c) => '<i style="display:inline-block;width:10px;height:10px;bord
   <div class="table-wrap"><table class="t stack-sm">
     <thead><tr><th>Sticker</th><th>Project / job</th><th>Client</th><th>Equipment</th><th>Inspector</th><th>Linked</th><th>Certificate</th><th>Status</th><th></th></tr></thead>
     <tbody><?php foreach ($rows as $s): ?>
-      <tr>
+      <tr class="<?= $s['status'] === 'closed' && $s['sj_status'] === 'approved' ? 'row-used' : '' ?>">
         <td data-label="Sticker"><span class="row" style="gap:8px"><?= $swatch($s['color']) ?><span class="mono strong nowrap"><?= e($s['sticker_no']) ?></span></span><div class="sub"><?= $s['color'] === 'red' ? 'Failed' : 'Accepted' ?></div></td>
         <td data-label="Project"><a class="mono" href="<?= url('admin/jobs/' . $s['job_id']) ?>"><?= e($s['sub_job_no']) ?></a><div class="sub"><?= e($s['job_title'] ?: $s['type_name']) ?></div></td>
         <td data-label="Client"><?= e($s['client_name']) ?></td>
@@ -51,7 +51,7 @@ $swatch = fn ($c) => '<i style="display:inline-block;width:10px;height:10px;bord
         <td class="actions">
           <?php if ($s['status'] === 'closed'): ?>
             <a class="btn btn-ghost btn-sm" href="<?= url('documents/sticker/' . $s['id']) ?>" title="Digital sticker"><?= icon('eye', 'sm') ?></a>
-<?php if (Auth::isSuper()): ?><button type="button" class="btn btn-ghost btn-sm" style="color:var(--red)" title="Void" data-void="<?= url('admin/stickers/' . $s['id'] . '/void') ?>" data-no="<?= e($s['sticker_no']) ?>"><?= icon('x', 'sm') ?></button><?php endif; ?>
+<?php if (Auth::isSuper() && $s['sj_status'] !== 'approved'): ?><button type="button" class="btn btn-ghost btn-sm" style="color:var(--red)" title="Void" data-void="<?= url('admin/stickers/' . $s['id'] . '/void') ?>" data-no="<?= e($s['sticker_no']) ?>"><?= icon('x', 'sm') ?></button><?php endif; ?>
           <?php endif; ?>
         </td>
       </tr>
@@ -60,6 +60,10 @@ $swatch = fn ($c) => '<i style="display:inline-block;width:10px;height:10px;bord
   <?php View::render('partials/pager', ['meta' => $meta], null); ?>
   <?php else: View::render('partials/empty', ['icon' => 'tag', 'title' => 'No stickers linked to projects', 'text' => 'Inspectors link stickers from the job\'s Sticker tab.'], null); endif; ?>
 </div>
+<style>
+  .t tr.row-used > td { background: rgba(139, 92, 246, .10); }
+  .t tr.row-used > td:first-child { box-shadow: inset 3px 0 0 #8b5cf6; }
+</style>
 <form method="post" id="void-form"><?= Csrf::field() ?><input type="hidden" name="reason"></form>
 <script>
 document.addEventListener('click', function (e) {
