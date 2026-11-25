@@ -8,37 +8,40 @@
 final class Mailer
 {
     /** @param string|array $to  one address or a list. Returns true when the SMTP server accepted the message. Never throws. */
-    public static function send($to, string $subject, string $html): bool
+    public static function send($to, string $subject, string $html, $cc = []): bool
     {
-        $to = array_values(array_unique(array_filter(
-            array_map(fn ($e) => strtolower(trim((string) $e)), (array) $to),
+        $clean = fn ($v) => array_values(array_unique(array_filter(
+            array_map(fn ($e) => strtolower(trim((string) $e)), (array) $v),
             fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL)
         )));
+        $to = $clean($to);
         if (!$to) return false;
+        $cc = array_values(array_diff($clean($cc), $to));
 
         $cfg = (array) config('mail', []);
         $from = $cfg['from'] ?? 'no-reply@tuv-east.com';
         $fromName = $cfg['from_name'] ?? 'TUV EAST';
-        $raw = self::build($from, $fromName, $to, $subject, $html);
+        $raw = self::build($from, $fromName, $to, $subject, $html, $cc);
         $err = 'SMTP is not configured (set mail.host in config/config.local.php)';
         if (!empty($cfg['host'])) {
             try {
-                self::smtp($cfg, $from, $to, $raw);
+                self::smtp($cfg, $from, array_merge($to, $cc), $raw);
                 return true;
             } catch (Throwable $e) {
                 $err = $e->getMessage();
             }
         }
-        self::spool($to, $raw, $err);
+        self::spool(array_merge($to, $cc), $raw, $err);
         return false;
     }
 
-    private static function build(string $from, string $fromName, array $to, string $subject, string $html): string
+    private static function build(string $from, string $fromName, array $to, string $subject, string $html, array $cc = []): string
     {
         $h = [
             'Date: ' . date('r'),
             'From: ' . mb_encode_mimeheader($fromName, 'UTF-8', 'B') . " <$from>",
             'To: ' . implode(', ', $to),
+            ...($cc ? ['Cc: ' . implode(', ', $cc)] : []),
             'Subject: ' . mb_encode_mimeheader($subject, 'UTF-8', 'B'),
             'Message-ID: <' . bin2hex(random_bytes(12)) . '@' . (explode('@', $from)[1] ?? 'localhost') . '>',
             'MIME-Version: 1.0',
@@ -111,8 +114,13 @@ final class MailEvents
             $n = (int) DB::value("SELECT COUNT(*) FROM sub_jobs WHERE job_id = ? AND status <> 'cancelled'", [$jobId]);
             $rows = [['Job No.', $j['job_no']], ['Title', $j['title']], ['Client', $j['client_name']], ['Location', $j['location']],
                 ['PO No.', $j['po_no']], ['Scheduled', $j['scheduled_date'] ? fmt_date($j['scheduled_date']) : null], ['Inspections', (string) $n]];
-            Mailer::send(self::clientRecipients((int) $j['client_id']), "Job {$j['job_no']} created - {$j['title']}",
+            $subj = "Job {$j['job_no']} created - {$j['title']}";
+            Mailer::send(self::clientRecipients((int) $j['client_id']), $subj,
                 self::wrap('A new job has been created', 'Your inspection job has been registered with TUV EAST. You can follow its progress in the customer portal.', $rows, abs_url('portal/jobs/' . $jobId), 'Open job'));
+            Mailer::send(self::adminRecipients(), $subj,
+                self::wrap('A new job has been created', 'A new job has been registered for ' . $j['client_name'] . '.', $rows, abs_url('admin/jobs/' . $jobId), 'Open job'));
+            Mailer::send(self::inspectorRecipients($jobId), $subj,
+                self::wrap('A new job has been created', 'A job you are assigned to has been created for ' . $j['client_name'] . '.', $rows, abs_url('inspector/jobs/' . $jobId), 'Open job'));
         });
     }
 
@@ -126,23 +134,44 @@ final class MailEvents
                 ['Certificates issued', (string) $certs]];
             Mailer::send(self::clientRecipients((int) $j['client_id']), "Job {$j['job_no']} completed - certificates ready",
                 self::wrap('Your job is completed', 'Final approval has been given and the job is closed. ' . ($certs ? 'Your certificates and reports are ready to download from the customer portal.' : 'Your reports are ready to download from the customer portal.'), $rows, abs_url('portal/jobs/' . $jobId), 'Download documents'));
+            $subj = "Job {$j['job_no']} completed";
+            Mailer::send(self::adminRecipients(), $subj,
+                self::wrap('A job is completed', 'Job ' . $j['job_no'] . ' for ' . $j['client_name'] . ' has been closed.', $rows, abs_url('admin/jobs/' . $jobId), 'Open job'));
+            Mailer::send(self::inspectorRecipients($jobId), $subj,
+                self::wrap('A job is completed', 'Job ' . $j['job_no'] . ' for ' . $j['client_name'] . ' that you worked on has been closed.', $rows, abs_url('inspector/jobs/' . $jobId), 'Open job'));
         });
     }
 
     public static function customerAccount(int $userId, string $password): void
     {
         self::guard(function () use ($userId, $password) {
-            $u = DB::one('SELECT u.name, u.email, c.name client_name FROM users u LEFT JOIN clients c ON c.id = u.client_id WHERE u.id = ?', [$userId]);
+            $u = DB::one('SELECT u.name, u.email, u.role, c.name client_name FROM users u LEFT JOIN clients c ON c.id = u.client_id WHERE u.id = ?', [$userId]);
             if (!$u) return;
-            $rows = [['Name', $u['name']], ['Company', $u['client_name']], ['Login email', $u['email']], ['Temporary password', $password]];
-            Mailer::send($u['email'], 'Your TUV EAST customer account',
-                self::wrap('Your account is ready', 'A TUV EAST customer account has been created for you. Sign in with the details below and change your password after your first login.', $rows, abs_url('login'), 'Sign in'));
+            $role = ucfirst(str_replace('_', ' ', $u['role'] === 'qc' ? 'QC' : ($u['role'] === 'superadmin' ? 'Super Admin' : $u['role'])));
+            $rows = [['Name', $u['name']], ['Role', $role], ['Company', $u['client_name']], ['Login email', $u['email']], ['Temporary password', $password]];
+            Mailer::send($u['email'], 'Your TUV EAST account',
+                self::wrap('Your account is ready', 'A TUV EAST ' . $role . ' account has been created for you. Sign in with the details below and change your password after your first login.', $rows, abs_url('login'), 'Sign in'),
+                self::adminRecipients());
         });
     }
 
     private static function job(int $id): ?array
     {
         return DB::one('SELECT j.*, c.name client_name FROM jobs j JOIN clients c ON c.id = j.client_id WHERE j.id = ?', [$id]);
+    }
+
+    /** Every active admin and super admin login. */
+    private static function adminRecipients(): array
+    {
+        return array_filter(array_column(DB::all("SELECT email FROM users WHERE role IN ('admin','superadmin') AND status = 'active'"), 'email'));
+    }
+
+    /** Inspectors holding a (non-cancelled) sub-job of the job. */
+    private static function inspectorRecipients(int $jobId): array
+    {
+        return array_filter(array_column(DB::all("SELECT DISTINCT u.email FROM users u WHERE u.status = 'active' AND (
+                u.id IN (SELECT inspector_id FROM sub_jobs WHERE job_id = ? AND status <> 'cancelled' AND inspector_id IS NOT NULL)
+                OR u.id = (SELECT lead_inspector_id FROM jobs WHERE id = ?))", [$jobId, $jobId]), 'email'));
     }
 
     /** The client's contact address plus every active customer login of that client. */

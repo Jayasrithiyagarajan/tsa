@@ -112,7 +112,7 @@ final class AdminUserController extends Controller
                 $f = store_upload($_FILES['id_photo'], 'id-photos', ['image/jpeg', 'image/png', 'image/webp']);
                 InspectorCardService::setProfilePhoto($id, $f['path']);
             }
-            if ($wasNew && $data['role'] === 'customer') MailEvents::customerAccount((int) $id, (string) input('password'));
+            if ($wasNew) MailEvents::customerAccount((int) $id, (string) input('password'));
             // back to the list of this kind of user (superadmin / admin share the Administrators tab)
             $tab = in_array($data['role'], ['superadmin', 'admin'], true) ? 'admin' : $data['role'];
             return 'admin/users?role=' . $tab;
