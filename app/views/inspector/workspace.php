@@ -604,7 +604,7 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
         <div class="row wrap" style="gap:16px;align-items:center">
           <div class="kpi" style="flex:1;min-width:240px"><span class="k-ic <?= $red ? 't-red' : 't-blue' ?>"><?= icon('lock') ?></span><span>
             <div class="k-v mono" style="font-size:20px"><?= e($sticker['sticker_no']) ?></div>
-            <div class="k-l"><?= badge('closed') ?> <?= $red ? 'Red · Failed' : 'Blue · Accepted' ?> sticker</div>
+            <div class="k-l"><?= badge('closed') ?> <?= $red ? 'Red · Failed' : 'White · Accepted' ?> sticker</div>
             <div class="k-t">Linked <?= e(fmt_datetime($sticker['linked_at'])) ?> · locked to this job<?= $sticker['issued_at'] ? ' · valid until ' . e(fmt_date($sticker['expiry_date'])) : '' ?></div></span></div>
           <a class="btn btn-secondary" href="<?= url('documents/sticker/' . $sticker['id']) ?>" target="_blank"><?= icon('eye', 'sm') ?> Digital sticker</a>
         </div>
@@ -615,12 +615,12 @@ $certBadge = $cert ? Workflow::label($cert['status']) : '—';
           <?= Csrf::field() ?>
           <div class="field" style="flex:1;min-width:220px"><label>Sticker number affixed to the equipment</label>
             <input class="input mono" name="sticker_no" list="my-stickers" placeholder="TE-001003" required autocomplete="off" style="text-transform:uppercase">
-            <datalist id="my-stickers"><?php foreach ($myStickers as $m): ?><option value="<?= e($m['sticker_no']) ?>"><?= $m['color'] === 'red' ? 'Red · Failed' : 'Blue · Accepted' ?></option><?php endforeach; ?></datalist></div>
+            <datalist id="my-stickers"><?php foreach ($myStickers as $m): ?><option value="<?= e($m['sticker_no']) ?>"><?= $m['color'] === 'red' ? 'Red · Failed' : 'White · Accepted' ?></option><?php endforeach; ?></datalist></div>
           <button class="btn btn-primary" style="align-self:flex-end"><?= icon('lock', 'sm') ?> Link sticker</button>
         </form>
         <p class="small muted mt-1">
           <?php $blue = count(array_filter($myStickers, fn ($m) => $m['color'] !== 'red')); ?>
-          You hold <?= $blue ?> blue and <?= count($myStickers) - $blue ?> red sticker(s). Use <b>blue</b> for an Accepted result and <b>red</b> for Failed / repair.
+          You hold <?= $blue ?> white and <?= count($myStickers) - $blue ?> red sticker(s). Use <b>white</b> for an Accepted result and <b>red</b> for Failed / repair.
           Only stickers allocated to you can be linked, and a linked sticker is locked to this job.</p>
       <?php else: View::render('partials/empty', ['icon' => 'tag', 'title' => 'No sticker linked', 'text' => ''], null); endif; ?>
     </div>

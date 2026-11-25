@@ -12,7 +12,7 @@ $swatch = fn ($c) => '<i style="display:inline-block;width:10px;height:10px;bord
 
 <div class="kpis">
   <a class="kpi" href="<?= url('admin/project-stickers', ['status' => 'closed']) ?>"><span class="k-ic t-blue"><?= icon('lock') ?></span><span><div class="k-v"><?= (int) $counts['closed'] ?></div><div class="k-l">Linked & closed</div></span></a>
-  <a class="kpi" href="<?= url('admin/project-stickers', ['result' => 'accepted']) ?>"><span class="k-ic t-blue"><?= icon('check') ?></span><span><div class="k-v"><?= (int) $counts['accepted'] ?></div><div class="k-l">Blue · Accepted</div></span></a>
+  <a class="kpi" href="<?= url('admin/project-stickers', ['result' => 'accepted']) ?>"><span class="k-ic t-blue"><?= icon('check') ?></span><span><div class="k-v"><?= (int) $counts['accepted'] ?></div><div class="k-l">White · Accepted</div></span></a>
   <a class="kpi" href="<?= url('admin/project-stickers', ['result' => 'failed']) ?>"><span class="k-ic t-red"><?= icon('alert') ?></span><span><div class="k-v"><?= (int) $counts['failed'] ?></div><div class="k-l">Red · Failed</div></span></a>
   <a class="kpi" href="<?= url('admin/project-stickers', ['result' => 'pending']) ?>"><span class="k-ic t-amber"><?= icon('clock') ?></span><span><div class="k-v"><?= (int) $counts['pending'] ?></div><div class="k-l">Job not yet approved</div></span></a>
 </div>

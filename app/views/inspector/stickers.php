@@ -1,7 +1,7 @@
 <?php $blue = array_values(array_filter($hand, fn ($s) => $s['color'] !== 'red')); $red = array_values(array_filter($hand, fn ($s) => $s['color'] === 'red')); ?>
 <div class="page-head"><div class="ph-text"><h1>My stickers</h1><div class="sub">Physical stickers the office has handed to you. Link one to a job from the job's Sticker tab — once linked it is closed and locked to that job.</div></div></div>
 <div class="kpis">
-  <div class="kpi"><span class="k-ic t-blue"><?= icon('tag') ?></span><span><div class="k-v"><?= count($blue) ?></div><div class="k-l">Blue in hand</div><div class="k-t">For Accepted results</div></span></div>
+  <div class="kpi"><span class="k-ic t-blue"><?= icon('tag') ?></span><span><div class="k-v"><?= count($blue) ?></div><div class="k-l">White in hand</div><div class="k-t">For Accepted results</div></span></div>
   <div class="kpi"><span class="k-ic t-red"><?= icon('tag') ?></span><span><div class="k-v"><?= count($red) ?></div><div class="k-l">Red in hand</div><div class="k-t">For Failed / repair results</div></span></div>
   <div class="kpi"><span class="k-ic t-gray"><?= icon('lock') ?></span><span><div class="k-v"><?= (int) $meta['total'] ?></div><div class="k-l">Linked to jobs</div><div class="k-t">Closed</div></span></div>
 </div>
@@ -13,7 +13,7 @@
   <?php if ($tab === 'hand'): ?>
     <?php if ($hand): ?>
       <div class="card-b stack">
-        <?php foreach (['Blue · Accepted' => $blue, 'Red · Failed' => $red] as $label => $list): if (!$list) continue; ?>
+        <?php foreach (['White · Accepted' => $blue, 'Red · Failed' => $red] as $label => $list): if (!$list) continue; ?>
           <div><div class="small strong mb-2"><?= e($label) ?> (<?= count($list) ?>)</div>
             <div class="row wrap" style="gap:6px"><?php foreach ($list as $s): ?>
               <span class="pill mono" title="Allocated <?= e(fmt_datetime($s['allocated_at'])) ?>"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;background:<?= $s['color'] === 'red' ? 'var(--red)' : '#1d4fb8' ?>"></i><?= e($s['sticker_no']) ?></span>

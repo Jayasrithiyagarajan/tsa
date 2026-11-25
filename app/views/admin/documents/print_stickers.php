@@ -21,7 +21,7 @@ foreach ($series as $sr) $first[$sr['prefix']] = (int) (preg_match('/(\d+)$/', (
     <span class="grow"></span>
     <form class="row" method="get" style="gap:8px" data-autosubmit>
       <select class="select" name="series" style="width:auto"><option value="">All series</option>
-        <?php foreach ($series as $sr): ?><option value="<?= e($sr['prefix']) ?>" <?= $prefix === $sr['prefix'] ? 'selected' : '' ?>><?= e($sr['prefix']) ?> · <?= $sr['color'] === 'red' ? 'Red' : 'Blue' ?> (<?= (int) $sr['in_stock'] ?>)</option><?php endforeach; ?></select>
+        <?php foreach ($series as $sr): ?><option value="<?= e($sr['prefix']) ?>" <?= $prefix === $sr['prefix'] ? 'selected' : '' ?>><?= e($sr['prefix']) ?> · <?= $sr['color'] === 'red' ? 'Red' : 'White' ?> (<?= (int) $sr['in_stock'] ?>)</option><?php endforeach; ?></select>
       <div class="search"><?= icon('search', 'sm') ?><input class="input" name="q" value="<?= e($q) ?>" placeholder="Sticker or batch…"></div>
     </form>
   </div>
@@ -41,7 +41,7 @@ foreach ($series as $sr) $first[$sr['prefix']] = (int) (preg_match('/(\d+)$/', (
       <tr>
         <?php if (Auth::isSuper()): ?><td class="stk-chk"><input type="checkbox" name="ids[]" value="<?= (int) $s['id'] ?>" aria-label="Select <?= e($s['sticker_no']) ?>"></td><?php endif; ?>
         <td data-label="Sticker"><span class="row" style="gap:8px"><?= $swatch($s['color']) ?><span class="mono strong"><?= e($s['sticker_no']) ?></span></span></td>
-        <td data-label="Result"><?= $s['color'] === 'red' ? 'Rejected (red)' : 'Accepted (blue)' ?></td>
+        <td data-label="Result"><?= $s['color'] === 'red' ? 'Rejected (red)' : 'Accepted (white)' ?></td>
         <td data-label="Batch" class="sub"><?= e($s['batch_no'] ?: '—') ?></td>
         <td data-label="Generated" class="small nowrap"><?= e(fmt_date($s['created_at'])) ?></td>
       </tr>
@@ -88,7 +88,7 @@ foreach ($series as $sr) $first[$sr['prefix']] = (int) (preg_match('/(\d+)$/', (
   <div class="m-h"><h3>Print stickers</h3><button type="button" class="icon-btn" data-modal-close><?= icon('x', 'sm') ?></button></div>
   <div class="m-b"><div class="form-grid">
     <div class="field col-12"><label>Series</label><select class="select" name="series">
-      <?php foreach ($series as $sr): ?><option value="<?= e($sr['prefix']) ?>"><?= e($sr['prefix']) ?> · <?= $sr['color'] === 'red' ? 'Red — Rejected' : 'Blue — Accepted' ?> · <?= (int) $sr['in_stock'] ?> in stock</option><?php endforeach; ?></select></div>
+      <?php foreach ($series as $sr): ?><option value="<?= e($sr['prefix']) ?>"><?= e($sr['prefix']) ?> · <?= $sr['color'] === 'red' ? 'Red — Rejected' : 'White — Accepted' ?> · <?= (int) $sr['in_stock'] ?> in stock</option><?php endforeach; ?></select></div>
     <div class="field col-4"><label>Start number</label><input class="input" type="number" name="start" min="1" value="<?= (int) reset($first) ?>" required></div>
     <div class="field col-4"><label>Count</label><input class="input" type="number" name="count" min="1" max="2000" value="50" required></div>
     <div class="field col-4"><label>End number</label><input class="input" type="number" name="end" readonly tabindex="-1"></div>

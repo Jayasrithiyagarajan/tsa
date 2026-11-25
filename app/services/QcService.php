@@ -240,7 +240,7 @@ final class StickerService
         $prefix = strtoupper(preg_replace('/[^A-Za-z0-9\-]/', '', $prefix));
         if ($prefix === '') throw new DomainException('Enter a sticker prefix, e.g. TE-.');
         $other = DB::value("SELECT color FROM stickers WHERE sticker_no LIKE ? AND sticker_no REGEXP ? LIMIT 1", [$prefix . '%', '^' . preg_quote($prefix) . '[0-9]+$']);
-        if ($other && $other !== $color) throw new DomainException("Series $prefix is already used for " . ($other === 'red' ? 'red' : 'blue') . ' stickers. Use another prefix for this colour.');
+        if ($other && $other !== $color) throw new DomainException("Series $prefix is already used for " . ($other === 'red' ? 'red' : 'white') . ' stickers. Use another prefix for this colour.');
         if ($inspectorId) self::inspector($inspectorId);
         $ids = [];
         DB::tx(function () use ($prefix, $from, $to, $color, $batch, &$ids) {
@@ -365,12 +365,12 @@ final class StickerService
         Audit::log('sticker.voided', 'sticker', $id, ['reason' => $reason, 'sub_job_id' => $s['sub_job_id']]);
     }
 
-    /** Blue stickers (stock colour "green") are for Accepted results, red ones for everything else. */
+    /** White stickers (stock colour "green") are for Accepted results, red ones for everything else. */
     public static function colourMismatch(string $colour, ?string $result): ?string
     {
         if (!$result) return null;
-        if ($result === 'accepted' && $colour === 'red') return 'the result is Accepted, so use a blue sticker, not a red one.';
-        if ($result !== 'accepted' && $colour !== 'red') return 'the result is ' . Workflow::label($result) . ', so use a red (Failed) sticker, not a blue one.';
+        if ($result === 'accepted' && $colour === 'red') return 'the result is Accepted, so use a white sticker, not a red one.';
+        if ($result !== 'accepted' && $colour !== 'red') return 'the result is ' . Workflow::label($result) . ', so use a red (Failed) sticker, not a white one.';
         return null;
     }
 
