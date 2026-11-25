@@ -96,6 +96,7 @@ $r->post('/admin/stickers',                 [AdminDocumentController::class, 'ad
 $r->get('/admin/print-stickers',            [AdminDocumentController::class, 'printStickers'], $A);
 $r->get('/admin/project-stickers',          [AdminDocumentController::class, 'projectStickers'], $A);
 $r->post('/admin/stickers/allocate',        [AdminDocumentController::class, 'allocateStickers'], $SA);
+$r->post('/admin/stickers/delete',          [AdminDocumentController::class, 'deleteStickers'], $SA);
 $r->post('/admin/stickers/return',          [AdminDocumentController::class, 'returnStickers'], $SA);
 $r->get('/admin/stickers/print',            [DocumentController::class, 'stickerSheet'], $SA);
 $r->post('/admin/stickers/print',           [DocumentController::class, 'stickerSheet'], $SA);

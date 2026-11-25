@@ -366,6 +366,24 @@ final class StickerService
         Audit::log('sticker.voided', 'sticker', $id, ['reason' => $reason, 'sub_job_id' => $s['sub_job_id']]);
     }
 
+    /**
+     * Permanently deletes stickers so their numbers can be generated again. Stickers linked to a job
+     * (status closed) are never deleted - void them first. Returns [deleted, skipped].
+     * @return int[]
+     */
+    public static function remove(array $ids): array
+    {
+        $ids = self::ids($ids);
+        $in = implode(',', array_fill(0, count($ids), '?'));
+        $rows = DB::all("SELECT id, sticker_no FROM stickers WHERE id IN ($in) AND status IN ('in_stock','allocated','void')", $ids);
+        if ($rows) {
+            $del = array_column($rows, 'id');
+            DB::run('DELETE FROM stickers WHERE id IN (' . implode(',', array_fill(0, count($del), '?')) . ')', $del);
+            Audit::log('sticker.deleted', 'sticker', null, ['count' => count($rows), 'numbers' => array_slice(array_column($rows, 'sticker_no'), 0, 50)]);
+        }
+        return [count($rows), count($ids) - count($rows)];
+    }
+
     /** White stickers (stock colour "green") are for Accepted results, red ones for everything else. */
     public static function colourMismatch(string $colour, ?string $result): ?string
     {

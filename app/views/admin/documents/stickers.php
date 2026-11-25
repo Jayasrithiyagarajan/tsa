@@ -91,13 +91,14 @@ $printFrom = (string) input('print_from', '');
       <select class="select" name="inspector_id" style="width:auto"><?= $inspOptions() ?></select>
       <button class="btn btn-secondary btn-sm" data-need-insp><?= icon('send', 'sm') ?> Allocate selected</button>
       <button class="btn btn-ghost btn-sm" formaction="<?= url('admin/stickers/return') ?>" data-confirm-btn="Return the selected unused stickers to office stock?"><?= icon('rotate', 'sm') ?> Return to stock</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red)" formaction="<?= url('admin/stickers/delete') ?>" data-confirm-btn="Permanently delete the selected stickers? Their numbers can then be generated again. Stickers linked to a job are skipped."><?= icon('x', 'sm') ?> Delete selected</button>
       <button class="btn btn-ghost btn-sm" formaction="<?= url('admin/stickers/print') ?>" formtarget="_blank"><?= icon('printer', 'sm') ?> Print selected</button>
     </div>
     <div class="table-wrap"><table class="t stack-sm">
       <thead><tr><th style="width:32px"><input type="checkbox" data-all title="Select all on this page"></th><th>Sticker</th><th>Batch</th><th>Generated</th><th>Allocated to</th><th>Status</th><th></th></tr></thead>
       <tbody><?php foreach ($rows as $s): ?>
         <tr>
-          <td class="stk-chk"><?php if ($s['status'] !== 'void'): ?><input type="checkbox" name="ids[]" value="<?= (int) $s['id'] ?>"><?php endif; ?></td>
+          <td class="stk-chk"><input type="checkbox" name="ids[]" value="<?= (int) $s['id'] ?>"></td>
           <td data-label="Sticker"><span class="row" style="gap:8px"><?= $swatch($s['color']) ?><span class="mono strong"><?= e($s['sticker_no']) ?></span></span></td>
           <td data-label="Batch" class="sub"><?= e($s['batch_no'] ?: '—') ?></td>
           <td data-label="Generated" class="small nowrap"><?= e(fmt_date($s['created_at'])) ?></td>

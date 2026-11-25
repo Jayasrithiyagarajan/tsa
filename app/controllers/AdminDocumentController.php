@@ -160,6 +160,14 @@ final class AdminDocumentController extends Controller
         });
     }
 
+    public function deleteStickers(): void
+    {
+        $this->attempt(function () {
+            [$n, $skipped] = StickerService::remove((array) ($_POST['ids'] ?? []));
+            flash($n ? 'success' : 'error', "$n sticker(s) deleted. Their numbers can be generated again." . ($skipped ? " $skipped skipped (linked to a job - void them first)." : ''));
+        });
+    }
+
     public function voidSticker(string $id): void
     {
         $this->attempt(fn () => StickerService::void((int) $id, (string) input('reason', '')), 'Sticker voided.');
