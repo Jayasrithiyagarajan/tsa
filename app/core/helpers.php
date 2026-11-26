@@ -234,9 +234,12 @@ function csv_export(string $filename, array $rows, array $columns): void
     header('Content-Disposition: attachment; filename="' . $filename . '-' . date('Ymd') . '.csv"');
     $out = fopen('php://output', 'w');
     fwrite($out, "\xEF\xBB\xBF");
+    // CSV / formula injection: a cell starting with = + - @ (or tab / CR) runs as a formula in Excel.
+    // Text from the public request form could do that, so prefix such cells with an apostrophe (plain numbers like -5 stay numbers).
+    $safe = fn ($v) => (is_string($v) && $v !== '' && preg_match('/^[=+\-@\t\r]/', $v) && !is_numeric($v)) ? "'" . $v : $v;
     fputcsv($out, array_values($columns));
     foreach ($rows as $r) {
-        fputcsv($out, array_map(fn ($k) => $r[$k] ?? '', array_keys($columns)));
+        fputcsv($out, array_map(fn ($k) => $safe($r[$k] ?? ''), array_keys($columns)));
     }
     fclose($out);
     Audit::log('export.csv', 'report', null, ['file' => $filename, 'rows' => count($rows)]);
@@ -352,13 +355,34 @@ function validate(array $data, array $rules): array
             if ($name === 'email' && !filter_var($v, FILTER_VALIDATE_EMAIL)) { $errors[$field] = 'Enter a valid email address.'; break; }
             if ($name === 'max' && mb_strlen((string) $v) > (int) $arg) { $errors[$field] = "Maximum $arg characters."; break; }
             if ($name === 'min' && mb_strlen((string) $v) < (int) $arg) { $errors[$field] = "Minimum $arg characters."; break; }
-            if ($name === 'date' && !strtotime((string) $v)) { $errors[$field] = 'Enter a valid date.'; break; }
+            if (is_array($v)) { $errors[$field] = 'Invalid value.'; break; }   // e.g. company_name[]=x would be saved as "Array"
+            if ($name === 'date' && !is_ymd((string) $v)) { $errors[$field] = 'Enter a valid date.'; break; }   // strtotime() accepted 2026-02-31 and "next monday"
             if ($name === 'int' && !ctype_digit((string) $v)) { $errors[$field] = 'Invalid value.'; break; }
             if ($name === 'in' && !in_array($v, explode(',', $arg), true)) { $errors[$field] = 'Invalid option.'; break; }
             if ($name === 'phone' && !preg_match('/^[0-9+\-\s()]{6,20}$/', (string) $v)) { $errors[$field] = 'Enter a valid phone number.'; break; }
         }
     }
     return $errors;
+}
+
+/**
+ * Developer conveniences (demo log-ins, error details) only when env=local AND the request comes from this
+ * machine through a local host name - so a live server accidentally left on env=local does not leak them.
+ */
+function dev_mode(): bool
+{
+    if (config('env') !== 'local') return false;
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
+    return in_array($ip, ['127.0.0.1', '::1'], true)
+        && ($host === 'localhost' || $host === '127.0.0.1' || $host === '[::1]' || str_ends_with($host, '.localhost') || str_ends_with($host, '.test'));
+}
+
+/** True only for a real calendar date written as YYYY-MM-DD (rejects 2026-02-31, "next monday", 0000-00-00). */
+function is_ymd($v): bool
+{
+    if (!is_string($v) || !preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $v, $m)) return false;
+    return (int) $m[1] >= 1900 && checkdate((int) $m[2], (int) $m[3], (int) $m[1]);
 }
 
 function nullable($v)

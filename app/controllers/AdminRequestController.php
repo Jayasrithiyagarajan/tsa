@@ -73,7 +73,7 @@ final class AdminRequestController extends Controller
                       LEFT JOIN jobs j ON j.id = r.converted_job_id WHERE r.id = ?', [(int) $id]);
         if (!$r) $this->notFound();
         $items = DB::all('SELECT i.*, t.name type_name FROM service_request_items i LEFT JOIN inspection_types t ON t.id = i.inspection_type_id WHERE i.request_id = ?', [$r['id']]);
-        $history = DB::all("SELECT a.*, u.name user_name FROM audit_logs a LEFT JOIN users u ON u.id = a.user_id WHERE a.entity_type = 'service_request' AND a.entity_id = ? ORDER BY a.id", [$r['id']]);
+        $history = DB::all("SELECT a.*, u.name user_name FROM audit_logs a LEFT JOIN users u ON u.id = a.user_id WHERE a.entity_type = 'service_request' AND a.entity_id = ? AND a.created_at >= ? ORDER BY a.id", [$r['id'], $r['created_at']]);   // ignore history of a deleted request that had the same ID
         $match = $r['client_id'] ? null : DB::one('SELECT id, name, code FROM clients WHERE name LIKE ? OR (email IS NOT NULL AND email = ?) LIMIT 1', ['%' . $r['company_name'] . '%', $r['email']]);
         $this->view('admin/requests/show', compact('r', 'items', 'history', 'match') + [
             'title' => $r['request_no'], 'crumbs' => ['Client Requests' => 'admin/requests', $r['request_no'] => null],

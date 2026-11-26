@@ -20,7 +20,7 @@
       <div class="field col-6"><label>Phone</label><input class="input" name="phone" value="<?= e(old('phone')) ?>"><?= field_error('phone') ?></div>
       <div class="field col-6 field-location"><label>Inspection location</label><input class="input" name="location" value="<?= e(old('location')) ?>"></div>
       <div class="field col-3 field-po"><label>P.O. / reference</label><input class="input" name="po_no" value="<?= e(old('po_no')) ?>"></div>
-      <div class="field col-3 field-date"><label>Preferred date</label><input class="input" type="date" name="preferred_date" value="<?= e(old('preferred_date')) ?>"></div>
+      <div class="field col-3 field-date"><label>Preferred date</label><input class="input" type="date" name="preferred_date" value="<?= e(old('preferred_date')) ?>"><?= field_error('preferred_date') ?></div>
       <div class="field col-12"><label>Notes (paste the email or call summary)</label><textarea class="textarea" name="description"><?= e(old('description')) ?></textarea></div>
       <div class="form-section"><?= icon('truck', 'sm') ?> Requested inspections</div>
       <div class="col-12"><?php View::render('partials/request_items', ['types' => $types], null); ?></div>

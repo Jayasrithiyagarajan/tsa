@@ -287,9 +287,15 @@ final class InspectionService
             if (isset($in['result'])) $upd['result'] = in_array($in['result'], $options, true) ? $in['result'] : null;
             if (isset($in['result_statement'])) $upd['result_statement'] = nullable(mb_substr($in['result_statement'], 0, 1000));
             if (isset($in['remarks'])) $upd['remarks'] = nullable(mb_substr($in['remarks'], 0, 2000));
-            if (!empty($in['inspection_date']) && strtotime($in['inspection_date'])) {
+            if (!empty($in['inspection_date']) && !is_ymd((string) $in['inspection_date'])) {
+                throw new DomainException('Enter a valid inspection date.');
+            }
+            if (!empty($in['next_inspection_date']) && !is_ymd((string) $in['next_inspection_date'])) {
+                throw new DomainException('Enter a valid next inspection date.');
+            }
+            if (!empty($in['inspection_date'])) {
                 $upd['inspection_date'] = $in['inspection_date'];
-                $upd['next_inspection_date'] = !empty($in['next_inspection_date']) && strtotime($in['next_inspection_date'])
+                $upd['next_inspection_date'] = !empty($in['next_inspection_date'])
                     ? $in['next_inspection_date']
                     : self::nextDate($in['inspection_date'], (int) $sj['validity_months']);
                 // "Within an Interval" (3 / 6 / 12 Months): the next inspection date follows it - inspection date + N months - 1 day -
@@ -309,6 +315,9 @@ final class InspectionService
             // push changed values back to the checklist (serial no., inspection date, remarks, report-cover values)
             $oldData = json_decode($cert['data'] ?? '{}', true) ?: [];
             $certNew = array_merge($cert, $upd);
+            if (isset($upd['inspection_date']) && ($dateIssues = self::certificateDateIssues([$certNew]))) {
+                throw new DomainException(str_replace('Certificate: ', '', $dateIssues[0]) . ' Nothing was saved.');
+            }
             $back = [];
             foreach ($tpl ? (json_decode($tpl['fields'], true) ?: []) : [] as $f) {
                 $before = CertificateService::fieldValue($f, $sj, $cert, $oldData);
@@ -481,7 +490,45 @@ final class InspectionService
                 'inspector_id' => $sj['inspector_id'] ?: Auth::id(),
             ], 'id = ?', [$st['id']]);
             Audit::log('sticker.linked', 'sticker', (int) $st['id'], ['sub_job_id' => $subJobId, 'sub_job_no' => $sj['sub_job_no']]);
+            self::syncCertificateSticker($subJobId, $st['sticker_no']);
         });
+    }
+
+    /** Write the linked sticker number into the "Sticker No." field of every certificate page (it was free text and could say "TBD"). */
+    public static function syncCertificateSticker(int $subJobId, string $stickerNo): void
+    {
+        foreach (DB::all('SELECT id, template_id, data FROM certificates WHERE sub_job_id = ?', [$subJobId]) as $c) {
+            if (!$c['template_id']) continue;
+            $tpl = DB::one('SELECT * FROM certificate_templates WHERE id = ?', [$c['template_id']]);
+            $keys = array_column(CertificateService::templateFields($tpl ?: null), 'key');
+            if (!in_array('sticker_no', $keys, true)) continue;
+            $data = json_decode((string) ($c['data'] ?? ''), true) ?: [];
+            if (($data['sticker_no'] ?? '') === $stickerNo) continue;
+            $data['sticker_no'] = $stickerNo;
+            DB::update('certificates', ['data' => json_encode($data, JSON_UNESCAPED_UNICODE)], 'id = ?', [$c['id']]);
+        }
+    }
+
+    /**
+     * Date rules every certificate page must meet before it can be submitted or issued:
+     * real calendar dates, and the next inspection date strictly after the inspection date.
+     * @param array $certs certificate rows (inspection_date, next_inspection_date)
+     */
+    public static function certificateDateIssues(array $certs): array
+    {
+        $issues = [];
+        foreach (array_values($certs) as $idx => $c) {
+            $label = count($certs) > 1 ? 'Certificate page ' . ($idx + 1) . ': ' : 'Certificate: ';
+            $insp = (string) ($c['inspection_date'] ?? '');
+            $next = (string) ($c['next_inspection_date'] ?? '');
+            if (!is_ymd($insp)) { $issues[] = $label . 'enter a valid inspection date.'; continue; }
+            if ($next === '' ) continue;                       // no next date on this certificate type
+            if (!is_ymd($next)) { $issues[] = $label . 'enter a valid next inspection date.'; continue; }
+            if ($next <= $insp) {
+                $issues[] = $label . 'the next inspection date (' . fmt_date($next) . ') must be after the inspection date (' . fmt_date($insp) . ').';
+            }
+        }
+        return $issues;
     }
 
     /** Completeness rules applied on submit. Returns human-readable issues; empty = ready. */
@@ -497,6 +544,7 @@ final class InspectionService
             } else {
                 $stats = self::checklistStats((int) $cl['id']);
                 if ($stats['missing'] > 0) $issues[] = "Checklist: {$stats['missing']} mandatory item(s) have no result.";
+                // client requirement: a remark on a FAIL item stays optional
             }
         }
         $certs = DB::all('SELECT * FROM certificates WHERE sub_job_id = ? ORDER BY seq', [$subJobId]);
@@ -521,6 +569,7 @@ final class InspectionService
                     if (!$c['result']) $issues[] = $label . 'select the inspection result.';
                     // failed checklist items no longer block an Accepted result: the inspector decides the certificate result
                 }
+                array_push($issues, ...self::certificateDateIssues($certs));
             } elseif (!DB::value("SELECT id FROM attachments WHERE sub_job_id = ? AND kind = 'certificate_upload'", [$subJobId])) {
                 $issues[] = 'Upload the signed certificate (no template is configured for this inspection type).';
             }
@@ -529,8 +578,33 @@ final class InspectionService
             $colour = DB::value("SELECT color FROM stickers WHERE sub_job_id = ? AND status = 'closed'", [$subJobId]);
             if (!$colour) $issues[] = 'Sticker: link the sticker number affixed to the equipment.';
             elseif ($msg = StickerService::colourMismatch($colour, $cert['result'] ?? null)) $issues[] = 'Sticker: ' . $msg;
+            $linkedNo = DB::value("SELECT sticker_no FROM stickers WHERE sub_job_id = ? AND status = 'closed'", [$subJobId]);
+            foreach ($certs as $idx => $c) {
+                $typedNo = trim((string) ((json_decode((string) ($c['data'] ?? ''), true) ?: [])['sticker_no'] ?? ''));
+                if ($linkedNo && $typedNo !== '' && strcasecmp($typedNo, $linkedNo) !== 0) {
+                    $issues[] = (count($certs) > 1 ? 'Certificate page ' . ($idx + 1) : 'Certificate') . ": Sticker No. \"$typedNo\" does not match the linked sticker $linkedNo.";
+                }
+            }
         }
         return $issues;
+    }
+
+    /**
+     * Hash of everything the inspector can correct: checklist answers and remarks, certificate pages (fields, result,
+     * dates, statement, remarks), photos / files and the linked sticker. Status and timestamp columns are left out
+     * because restarting the inspection changes them without any real correction.
+     */
+    public static function workFingerprint(int $subJobId): string
+    {
+        $cl = DB::one('SELECT id, serial_no, inspection_date, remarks, data FROM checklists WHERE sub_job_id = ?', [$subJobId]);
+        $parts = [
+            'checklist' => $cl ? array_diff_key($cl, ['id' => 1]) : null,
+            'responses' => $cl ? DB::all('SELECT item_id, result, remarks FROM checklist_responses WHERE checklist_id = ? ORDER BY item_id', [$cl['id']]) : [],
+            'certificates' => DB::all('SELECT seq, data, result, result_statement, remarks, inspection_date, next_inspection_date FROM certificates WHERE sub_job_id = ? ORDER BY seq', [$subJobId]),
+            'files' => DB::all('SELECT id, caption, on_certificate, sort_no FROM attachments WHERE sub_job_id = ? ORDER BY id', [$subJobId]),
+            'sticker' => DB::value("SELECT sticker_no FROM stickers WHERE sub_job_id = ? AND status = 'closed'", [$subJobId]),
+        ];
+        return hash('sha256', json_encode($parts));
     }
 
     /**
@@ -545,6 +619,14 @@ final class InspectionService
             self::authorizeWork($sj);
             Workflow::assert('sub_job', $sj['status'], 'submitted');
             $issues = self::issues($subJobId);
+            // returned for rework and nothing changed since: QC would just get the same work back
+            $rework = DB::one("SELECT details FROM audit_logs WHERE entity_type = 'sub_job' AND entity_id = ? AND action = 'qc.rework'
+                               AND id > COALESCE((SELECT MAX(id) FROM audit_logs WHERE entity_type = 'sub_job' AND entity_id = ? AND action = 'inspection.submitted'), 0)
+                               ORDER BY id DESC LIMIT 1", [$subJobId, $subJobId]);
+            $rw = $rework ? (json_decode((string) $rework['details'], true) ?: []) : [];
+            if (!empty($rw['fingerprint']) && hash_equals($rw['fingerprint'], self::workFingerprint($subJobId))) {
+                $issues[] = 'Nothing has changed since QC returned this for rework. Make the corrections QC asked for: "' . mb_substr((string) ($rw['comments'] ?? ''), 0, 200) . '"';
+            }
             $override = [];
             if ($issues) {
                 $overrideReason = trim((string) $overrideReason);

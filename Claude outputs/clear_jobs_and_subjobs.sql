@@ -42,6 +42,10 @@ DELETE FROM notifications;
 -- 7) Service requests stay, but they no longer point at a deleted job
 UPDATE service_requests SET converted_job_id = NULL WHERE converted_job_id IS NOT NULL;
 
+-- 8) Audit history of the deleted records. Without this, a new job / sub-job / certificate that
+--    gets the same ID later shows the old record's history, and KPI durations go negative.
+DELETE FROM audit_logs WHERE entity_type IN ('job', 'sub_job', 'certificate', 'checklist', 'attachment', 'qc_review');
+
 COMMIT;
 SET FOREIGN_KEY_CHECKS = 1;
 

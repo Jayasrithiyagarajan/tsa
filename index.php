@@ -189,5 +189,5 @@ try {
         json_out(['error' => $e instanceof DomainException ? $e->getMessage() : 'Server error'], $e instanceof DomainException ? 422 : 500);
     }
     http_response_code(500);
-    View::render('errors/500', ['title' => 'Something went wrong', 'error' => config('env') === 'local' ? $e : null], 'auth');
+    View::render('errors/500', ['title' => 'Something went wrong', 'error' => dev_mode() ? $e : null], 'auth');
 }

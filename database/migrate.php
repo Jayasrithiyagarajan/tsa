@@ -30,6 +30,21 @@ if (DB::value("SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHE
     echo "✓ checklist item labels widened to TEXT\n";
 }
 
+// default_statement was VARCHAR(255): longer statements (F-7.5.1-04 / -05) were cut off mid-sentence on printed
+// certificates, and the comparison with the seed below then saw a "change" on every run and kept adding versions.
+if (DB::value("SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'certificate_templates' AND COLUMN_NAME = 'default_statement'") !== 'text') {
+    DB::pdo()->exec('ALTER TABLE certificate_templates MODIFY default_statement TEXT NULL');
+    echo "✓ certificate default statements widened to TEXT\n";
+}
+// repair statements that were truncated at 255 characters: restore the full seed text they are the beginning of
+foreach (require __DIR__ . '/seed_templates.php' as $seedDef) {
+    $full = (string) ($seedDef['certificate']['default_statement'] ?? '');
+    if (mb_strlen($full) <= 255) continue;
+    $n = DB::run('UPDATE certificate_templates SET default_statement = ? WHERE CHAR_LENGTH(default_statement) = 255 AND default_statement = ?',
+        [$full, mb_substr($full, 0, 255)])->rowCount();
+    if ($n) echo "✓ restored the full result statement on $n truncated certificate template version(s)\n";
+}
+
 if (DB::value("SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'certificates' AND COLUMN_NAME = 'result_statement'") !== 'text') {
     DB::pdo()->exec('ALTER TABLE certificates MODIFY result_statement TEXT NULL');
     echo "✓ certificate result statements widened to TEXT\n";

@@ -131,7 +131,7 @@ CREATE TABLE certificate_templates (
   revision_date      VARCHAR(20)  NULL,
   fields             LONGTEXT NOT NULL,
   result_options     VARCHAR(190) NOT NULL DEFAULT 'accepted,rejected,repair',
-  default_statement  VARCHAR(255) NULL,
+  default_statement  TEXT NULL,
   notes              TEXT NULL,                            -- legal / standard notes (one per line)
   inspector_label    VARCHAR(60) NOT NULL DEFAULT 'Inspector:',
   show_image_area    TINYINT(1) NOT NULL DEFAULT 1,

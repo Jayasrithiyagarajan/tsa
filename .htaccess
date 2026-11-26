@@ -5,6 +5,11 @@ RewriteEngine On
 RewriteRule ^(app|config|database|storage|vendor|docs/src)(/|$) - [F,L]
 RewriteRule (^|/)\.(?!well-known) - [F,L]
 RewriteRule \.(sql|md|lock|json|ini|log)$ - [F,L]
+# Archives, backups, editor leftovers and dump files must never be downloadable (e.g. a zipped copy of the site)
+RewriteRule \.(zip|rar|7z|tar|gz|tgz|bz2|bak|old|orig|swp|dump|env)$ - [F,L,NC]
+RewriteRule \.bak-[^/]*$ - [F,L,NC]
+# Working folders / files that are not part of the app
+RewriteRule ^(output|QA-Reports|Claude.outputs)(/|$) - [F,L,NC]
 
 # Front controller
 RewriteCond %{REQUEST_FILENAME} !-f

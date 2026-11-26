@@ -10,11 +10,15 @@ final class RequestService
     public static function create(array $data, array $items, string $channel): int
     {
         return DB::tx(function () use ($data, $items, $channel) {
-            $clientId = $data['client_id'] ?? null;
-            if (!$clientId && !empty($data['email'])) {
-                // auto-match a registered client by email so the admin does not have to
+            // The website channel is anonymous: it never decides the client (a typed e-mail or a posted client_id
+            // could attach a stranger's request to a registered client). The admin sees a "possible match" on the
+            // request page and links the client when converting. Portal and admin channels pass a trusted client_id.
+            $clientId = $channel === 'website' ? null : ((int) ($data['client_id'] ?? 0) ?: null);
+            if (!$clientId && $channel !== 'website' && !empty($data['email'])) {
+                // admin-logged email / phone request: auto-match a registered client by email so the admin does not have to
                 $clientId = DB::value('SELECT id FROM clients WHERE email = ? LIMIT 1', [strtolower($data['email'])]);
             }
+            $validTypes = array_map('intval', array_column(DB::all("SELECT id FROM inspection_types WHERE status = 'active'"), 'id'));
             $id = DB::insert('service_requests', [
                 'request_no'     => Numbering::request(),
                 'channel'        => $channel,
@@ -36,7 +40,8 @@ final class RequestService
                 }
                 DB::insert('service_request_items', [
                     'request_id'            => $id,
-                    'inspection_type_id'    => nullable($it['inspection_type_id'] ?? null),
+                    // unknown / inactive type → "Not sure / other" instead of a foreign-key error (HTTP 500)
+                    'inspection_type_id'    => in_array((int) ($it['inspection_type_id'] ?? 0), $validTypes, true) ? (int) $it['inspection_type_id'] : null,
                     'equipment_description' => mb_substr(trim($it['equipment_description']), 0, 190),
                     'equipment_no'          => nullable($it['equipment_no'] ?? null),
                     'quantity'              => max(1, min(500, (int) ($it['quantity'] ?? 1))),

@@ -30,7 +30,7 @@
           <input class="input" id="password" name="password" type="password" autocomplete="current-password" required></div>
         <button class="btn btn-primary btn-lg btn-block" type="submit">Sign in <?= icon('arrow-right', 'sm') ?></button>
       </form>
-      <?php if (config('env') === 'local'): ?>
+      <?php if (dev_mode()): ?>
       <div class="demo-box">
         Demo accounts (local only) — pick one, password is in <span class="mono">database/install.php</span>.
         <div class="demo-grid">

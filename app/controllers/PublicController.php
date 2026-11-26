@@ -21,7 +21,10 @@ final class PublicController extends Controller
             redirect('request/thanks/received');
         }
         $recent = array_filter($_SESSION['web_requests'] ?? [], fn ($t) => $t > time() - 3600);
-        if (count($recent) >= 5) {
+        // per browser session (5/h) and per IP address (10/h, from the audit log - a new cookie does not reset it)
+        $byIp = (int) DB::value("SELECT COUNT(*) FROM audit_logs WHERE action = 'request.created' AND created_at >= ? AND ip_address = ?
+                                 AND JSON_UNQUOTE(JSON_EXTRACT(details, '$.channel')) = 'website'", [date('Y-m-d H:i:s', time() - 3600), $_SERVER['REMOTE_ADDR'] ?? '']);
+        if (count($recent) >= 5 || $byIp >= 10) {
             flash('error', 'Too many requests from this browser. Please call us or email info@tuv-east.com.');
             redirect('request');
         }

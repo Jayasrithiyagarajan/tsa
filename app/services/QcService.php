@@ -13,6 +13,15 @@ final class QcService
                 throw new DomainException('Four-eyes rule: you cannot approve an inspection you performed.');
             }
             $cert = DB::one('SELECT * FROM certificates WHERE sub_job_id = ? ORDER BY seq LIMIT 1', [$subJobId]);
+            // never issue a certificate with impossible dates (it would show as expired on the public verification page)
+            $dateIssues = InspectionService::certificateDateIssues(DB::all('SELECT inspection_date, next_inspection_date FROM certificates WHERE sub_job_id = ? ORDER BY seq', [$subJobId]));
+            if ($dateIssues) {
+                throw new DomainException('Cannot approve: ' . implode(' ', $dateIssues) . ' Return it for rework.');
+            }
+            // the issued certificate always prints the sticker that is actually linked (never "TBD" or a typo)
+            if ($linkedNo = DB::value("SELECT sticker_no FROM stickers WHERE sub_job_id = ? AND status = 'closed'", [$subJobId])) {
+                InspectionService::syncCertificateSticker($subJobId, $linkedNo);
+            }
             DB::update('sub_jobs', ['status' => 'approved', 'approved_at' => now(), 'result' => $cert['result'] ?? ($sj['kind'] === 'operator' ? 'accepted' : $sj['result'])], 'id = ?', [$subJobId]);
             DB::insert('qc_reviews', ['sub_job_id' => $subJobId, 'reviewer_id' => Auth::id(), 'decision' => 'approved', 'comments' => nullable($comments)]);
 
@@ -60,7 +69,8 @@ final class QcService
             DB::update('certificates', ['status' => 'draft'], 'sub_job_id = ?', [$subJobId]);
             DB::update('checklists', ['status' => 'draft', 'completed_at' => null], 'sub_job_id = ?', [$subJobId]);
             DB::insert('qc_reviews', ['sub_job_id' => $subJobId, 'reviewer_id' => Auth::id(), 'decision' => 'rework', 'comments' => $comments]);
-            Audit::log('qc.rework', 'sub_job', $subJobId, ['comments' => $comments]);
+            // fingerprint of the work as QC saw it: re-submitting needs at least one correction (see InspectionService::submit)
+            Audit::log('qc.rework', 'sub_job', $subJobId, ['comments' => $comments, 'fingerprint' => InspectionService::workFingerprint($subJobId)]);
             if ($sj['inspector_id']) {
                 Notify::user((int) $sj['inspector_id'], "{$sj['sub_job_no']} returned for rework", mb_substr($comments, 0, 250), 'inspector/subjobs/' . $subJobId);
             }

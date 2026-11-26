@@ -15,7 +15,7 @@
           <div class="field col-6"><label>Phone <span class="req">*</span></label><input class="input" name="phone" value="<?= e(old('phone')) ?>" required placeholder="+966 …"><?= field_error('phone') ?></div>
           <div class="form-section mt-1"><?= icon('pin', 'sm') ?> Inspection details</div>
           <div class="field col-8"><label>Inspection location <span class="req">*</span></label><input class="input" name="location" value="<?= e(old('location')) ?>" required placeholder="Site / city"><?= field_error('location') ?></div>
-          <div class="field col-4"><label>Preferred date</label><input class="input" type="date" name="preferred_date" min="<?= date('Y-m-d') ?>" value="<?= e(old('preferred_date')) ?>"></div>
+          <div class="field col-4"><label>Preferred date</label><input class="input" type="date" name="preferred_date" min="<?= date('Y-m-d') ?>" value="<?= e(old('preferred_date')) ?>"><?= field_error('preferred_date') ?></div>
           <div class="field col-12"><label>Notes</label><textarea class="textarea" name="description" placeholder="Access requirements, P.O. number, standards required…"><?= e(old('description')) ?></textarea></div>
           <div class="form-section mt-1"><?= icon('truck', 'sm') ?> Equipment to inspect</div>
           <div class="col-12"><?php View::render('partials/request_items', ['types' => $types], null); ?></div>

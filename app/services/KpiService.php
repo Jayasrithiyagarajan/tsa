@@ -125,8 +125,12 @@ final class KpiService
         [$a, $b] = self::range($from, $to);
         $sla = (int) (setting('kpi_sla_days') ?: 3);
         $req = DB::one("SELECT COUNT(*) n, SUM(status = 'converted') conv FROM service_requests WHERE created_at BETWEEN ? AND ?", [$a, $b]);
+        // first response = earliest status change / conversion logged AFTER the request was received
+        // (audit rows of a deleted request that had the same ID are older and must not count)
         $resp = self::avg("SELECT AVG(TIMESTAMPDIFF(MINUTE, r.created_at, x.first_at)) / 60 FROM service_requests r
-                           JOIN (SELECT entity_id, MIN(created_at) first_at FROM audit_logs WHERE entity_type = 'service_request' AND action IN ('request.status','request.converted') GROUP BY entity_id) x ON x.entity_id = r.id
+                           JOIN (SELECT a.entity_id, MIN(a.created_at) first_at FROM audit_logs a JOIN service_requests r2 ON r2.id = a.entity_id
+                                 WHERE a.entity_type = 'service_request' AND a.action IN ('request.status','request.converted') AND a.created_at >= r2.created_at
+                                 GROUP BY a.entity_id) x ON x.entity_id = r.id
                            WHERE r.created_at BETWEEN ? AND ?", [$a, $b]);
         $assign = self::avg("SELECT AVG(TIMESTAMPDIFF(MINUTE, s.created_at, x.first_at)) / 60 FROM sub_jobs s
                              JOIN (SELECT sub_job_id, MIN(assigned_at) first_at FROM job_assignments GROUP BY sub_job_id) x ON x.sub_job_id = s.id
@@ -299,7 +303,7 @@ final class KpiService
     {
         return "SELECT q.*, s.sub_job_no, s.inspector_id, s.override_by, t.name type_name, u.name inspector_name,
                     (SELECT MAX(a.created_at) FROM audit_logs a WHERE a.entity_type = 'sub_job' AND a.entity_id = q.sub_job_id
-                        AND a.action = 'inspection.submitted' AND a.created_at <= q.created_at) submitted_at
+                        AND a.action = 'inspection.submitted' AND a.created_at <= q.created_at AND a.created_at >= s.created_at) submitted_at
                 FROM qc_reviews q JOIN sub_jobs s ON s.id = q.sub_job_id JOIN inspection_types t ON t.id = s.inspection_type_id
                 LEFT JOIN users u ON u.id = s.inspector_id";
     }

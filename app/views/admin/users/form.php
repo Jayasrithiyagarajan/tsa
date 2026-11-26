@@ -32,7 +32,7 @@ $readOnly = !Auth::isSuper();          // only a Super Admin creates or edits us
           <div class="field col-4"><label>Employee No.</label><input class="input" name="employee_no" value="<?= e($v('employee_no')) ?>"></div>
           <div class="field col-8"><label>Qualification (printed on certificates)</label><input class="input" name="qualification" value="<?= e($v('qualification')) ?>" placeholder="e.g. Level II"></div>
           <div class="field col-4"><label>Certificate No.</label><input class="input" name="cert_no" value="<?= e($v('cert_no')) ?>"></div>
-          <div class="field col-4"><label>Qualification expiry</label><input class="input" type="date" name="cert_expiry" value="<?= e($v('cert_expiry')) ?>"></div>
+          <div class="field col-4"><label>Qualification expiry</label><input class="input" type="date" name="cert_expiry" value="<?= e($v('cert_expiry')) ?>"><?= field_error('cert_expiry') ?></div>
           <div class="field col-4"><label>Base location</label><input class="input" name="base_location" value="<?= e($v('base_location')) ?>"></div>
           <div class="col-12" data-role-only="inspector"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><label class="label" style="margin:0">Qualified to inspect</label><span style="font-size:.8rem"><a href="#" id="skills-select-all" style="color:var(--accent)">Select all</a> · <a href="#" id="skills-deselect-all" style="color:var(--muted)">Deselect all</a></span></div>
             <div class="row wrap" style="gap:8px 18px" id="skills-list">

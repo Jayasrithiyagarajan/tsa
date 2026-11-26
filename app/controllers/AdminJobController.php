@@ -102,8 +102,10 @@ final class AdminJobController extends Controller
         }
         unset($s);
         $history = DB::all("SELECT a.*, u.name user_name FROM audit_logs a LEFT JOIN users u ON u.id = a.user_id
-                            WHERE (a.entity_type = 'job' AND a.entity_id = ?) OR (a.entity_type = 'sub_job' AND a.entity_id IN (SELECT id FROM sub_jobs WHERE job_id = ?))
-                            ORDER BY a.id DESC LIMIT 30", [$job['id'], $job['id']]);
+                            WHERE ((a.entity_type = 'job' AND a.entity_id = ?)
+                                   OR (a.entity_type = 'sub_job' AND EXISTS (SELECT 1 FROM sub_jobs s WHERE s.id = a.entity_id AND s.job_id = ? AND a.created_at >= s.created_at)))
+                              AND a.created_at >= ?   -- IDs can be reused after a data clean-up: ignore history older than this job
+                            ORDER BY a.id DESC LIMIT 30", [$job['id'], $job['id'], $job['created_at']]);
         $this->view('admin/jobs/show', [
             'job' => $job, 'subs' => $subs, 'history' => $history, 'progress' => JobService::progress((int) $job['id']),
             'inspectors' => JobService::inspectorsFor(),

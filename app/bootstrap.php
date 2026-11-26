@@ -19,7 +19,7 @@ spl_autoload_register(function (string $class) {
 
 date_default_timezone_set(config('timezone'));
 error_reporting(E_ALL);
-ini_set('display_errors', config('env') === 'local' ? '1' : '0');
+ini_set('display_errors', (PHP_SAPI === 'cli' && config('env') === 'local') || dev_mode() ? '1' : '0');
 
 if (PHP_SAPI !== 'cli') {
     session_name(config('session_name'));
