@@ -357,6 +357,7 @@ function validate(array $data, array $rules): array
             if ($name === 'min' && mb_strlen((string) $v) < (int) $arg) { $errors[$field] = "Minimum $arg characters."; break; }
             if (is_array($v)) { $errors[$field] = 'Invalid value.'; break; }   // e.g. company_name[]=x would be saved as "Array"
             if ($name === 'date' && !is_ymd((string) $v)) { $errors[$field] = 'Enter a valid date.'; break; }   // strtotime() accepted 2026-02-31 and "next monday"
+            if ($name === 'not_past' && (string) $v < date('Y-m-d')) { $errors[$field] = 'Choose today or a later date.'; break; }
             if ($name === 'int' && !ctype_digit((string) $v)) { $errors[$field] = 'Invalid value.'; break; }
             if ($name === 'in' && !in_array($v, explode(',', $arg), true)) { $errors[$field] = 'Invalid option.'; break; }
             if ($name === 'phone' && !preg_match('/^[0-9+\-\s()]{6,20}$/', (string) $v)) { $errors[$field] = 'Enter a valid phone number.'; break; }
@@ -376,6 +377,22 @@ function dev_mode(): bool
     $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
     return in_array($ip, ['127.0.0.1', '::1'], true)
         && ($host === 'localhost' || $host === '127.0.0.1' || $host === '[::1]' || str_ends_with($host, '.localhost') || str_ends_with($host, '.test'));
+}
+
+/** One password policy for every place a password is set. Returns an error message, or null when the password is acceptable. */
+function password_policy_error(string $pw): ?string
+{
+    if (mb_strlen($pw) < 8 || !preg_match('/[A-Za-z]/', $pw) || !preg_match('/\d/', $pw)) {
+        return 'Use at least 8 characters with letters and numbers.';
+    }
+    return null;
+}
+
+/** users.must_change_password exists once database/migrate.php has run; until then the forced change is simply off. */
+function has_must_change_column(): bool
+{
+    static $has = null;
+    return $has ??= (bool) DB::one("SHOW COLUMNS FROM users LIKE 'must_change_password'");
 }
 
 /** True only for a real calendar date written as YYYY-MM-DD (rejects 2026-02-31, "next monday", 0000-00-00). */

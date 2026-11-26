@@ -310,7 +310,7 @@ final class DocumentService
         $white = [1, 1, 1]; $black = [0, 0, 0]; $grey = $hex('#e6e7e8'); $txt = $hex('#221f1f'); $red = $hex('#ed2127');
         $blueInk = $hex('#2d3690'); $redInk = $hex('#d32027');
         $labels = ['Equipment Type', 'Identification No', 'Equip S/N', 'Capacity / SWL', 'Inspection Date', 'Next Inspection Date', 'Inspected By'];
-        $addr = ['Kingdom of Saudi Arabia - Main Office - Eastern Province', 'Al Khobar, 3205 Prince Muteb St., Al sharq Tower, 5th Floor', 'Phone : 0138185501 - Mob.: +966566485177', 'E-mail : info@tuv-east.com - operations@tuv-east.com'];
+        $addr = ['Kingdom of Saudi Arabia - Main Office - Eastern Province', 'Al Khobar, 6205 Prince Muteb St., Al-Sharq Tower, 5th Floor', 'Phone : 0138185501 - Mob.: +966566485177', 'E-mail : info@tuv-east.com - operations@tuv-east.com'];
 
         $box = fn (float $x, float $y, float $w, float $h, array $col) => $c->filled_rectangle($x * $m, $y * $m, $w * $m, $h * $m, $col);
         $frame = function (float $x, float $y, float $w, float $h, float $b, array $edge, array $fill) use ($box) { $box($x, $y, $w, $h, $edge); $box($x + $b, $y + $b, $w - 2 * $b, $h - 2 * $b, $fill); };

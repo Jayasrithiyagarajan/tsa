@@ -36,7 +36,13 @@ final class InspectionService
     {
         if ($sj['status'] === 'submitted' && (Auth::is('qc') || Auth::is('admin'))) return;   // correction during QC review
         if ($sj['status'] !== 'in_progress') {
-            throw new DomainException('Start the inspection before recording results (current status: ' . Workflow::label($sj['status']) . ').');
+            throw new DomainException(match ($sj['status']) {
+                'submitted' => 'This inspection is with QC for review and is locked until QC responds.',
+                'approved'  => 'This inspection is approved and can no longer be changed.',
+                'cancelled' => 'This sub-job is cancelled.',
+                'rework'    => 'QC returned this inspection for rework: press "Start inspection" to reopen it, then make the corrections.',
+                default     => 'Start the inspection before recording results.',
+            });
         }
     }
 
@@ -360,7 +366,14 @@ final class InspectionService
         if ($typed !== '') {
             $sjNow = JobService::subJob($subJobId);
             $linked = DB::value("SELECT sticker_no FROM stickers WHERE sub_job_id = ? AND status = 'closed'", [$subJobId]);
-            if ($sjNow && $sjNow['requires_sticker'] && !$linked) self::linkSticker($subJobId, $typed);
+            if ($sjNow && $sjNow['requires_sticker'] && !$linked && !in_array(strtoupper($typed), ['N/A', 'NA', '-', 'TBD'], true)) {
+                try {
+                    self::linkSticker($subJobId, $typed);
+                } catch (DomainException $e) {
+                    // the certificate itself WAS saved: say so, instead of a bare error that looks like nothing was stored
+                    throw new DomainException('Certificate details saved, but the sticker was not linked: ' . $e->getMessage());
+                }
+            }
         }
     }
 
@@ -476,8 +489,14 @@ final class InspectionService
                 throw new DomainException("Sticker $cur is already linked to this job and is locked.");
             }
             $no = strtoupper(trim($stickerNo));
+            if ($no === '') throw new DomainException('Enter the sticker number.');
             $st = DB::one('SELECT * FROM stickers WHERE sticker_no = ? FOR UPDATE', [$no]);
             if (!$st) throw new DomainException("Sticker $no is not registered.");
+            if ($st['status'] === 'closed') {
+                $usedOn = DB::value('SELECT sub_job_no FROM sub_jobs WHERE id = ?', [(int) $st['sub_job_id']]);
+                throw new DomainException("Sticker {$st['sticker_no']} is already used" . ($usedOn ? " on $usedOn" : '') . '.');
+            }
+            if ($st['status'] === 'void') throw new DomainException("Sticker {$st['sticker_no']} is void and cannot be used.");
             if (!Auth::is('admin') && ($st['status'] !== 'allocated' || (int) $st['inspector_id'] !== Auth::id())) {
                 throw new DomainException("Sticker {$st['sticker_no']} is not allocated to you" . ($st['status'] === 'allocated' ? '' : ' (' . Workflow::label($st['status']) . ')') . '.');
             }
@@ -565,7 +584,7 @@ final class InspectionService
                             $missing[] = $f['label'];
                         }
                     }
-                    if ($missing) $issues[] = $label . 'fill in ' . implode(', ', $missing) . '.';
+                    if ($missing) $issues[] = $label . 'fill in ' . rtrim(implode(', ', $missing), '.') . '.';   // labels like "Sticker No." end with a dot: no ".."
                     if (!$c['result']) $issues[] = $label . 'select the inspection result.';
                     // failed checklist items no longer block an Accepted result: the inspector decides the certificate result
                 }

@@ -61,7 +61,7 @@ $cmp = function ($me, $team, bool $higherBetter, string $unit) {
       </div>
     </div>
     <div class="card"><div class="card-h"><h2><?= icon('layers', 'sm') ?> By inspection type</h2></div>
-      <div class="card-b flush"><table class="t"><tbody>
+      <div class="card-b flush table-wrap"><table class="t"><tbody>
         <?php foreach ($by_type as $t): ?><tr><td><?= e($t['type']) ?></td><td class="num"><b><?= (int) $t['n'] ?></b></td><td class="num sub"><?= $t['hours'] === null ? '—' : e(number_format((float) $t['hours'], 1)) . ' h' ?></td></tr><?php endforeach; ?>
         <?php if (!$by_type): ?><tr><td class="muted">No approved inspections.</td></tr><?php endif; ?>
       </tbody></table></div></div>
@@ -70,7 +70,7 @@ $cmp = function ($me, $team, bool $higherBetter, string $unit) {
         <?php foreach ($reworks as $r): ?><li><b class="mono"><?= e($r['sub_job_no']) ?></b><div class="small"><?= e(mb_strimwidth((string) $r['comments'], 0, 160, '…')) ?></div><div class="tl-t"><?= e($r['reviewer']) ?> · <?= e(fmt_date($r['created_at'])) ?></div></li><?php endforeach; ?>
       </ul><?php else: ?><div class="ok-line"><?= icon('check') ?> No rework requests in this period</div><?php endif; ?></div></div>
     <div class="card"><div class="card-h"><h2><?= icon('award', 'sm') ?> Last 6 months</h2></div>
-      <div class="card-b flush"><table class="t"><thead><tr><th>Month</th><th class="num">Approved</th><th class="num">First-pass</th></tr></thead><tbody>
+      <div class="card-b flush table-wrap"><table class="t"><thead><tr><th>Month</th><th class="num">Approved</th><th class="num">First-pass</th></tr></thead><tbody>
         <?php foreach ($monthly as $m): ?><tr><td><?= e($m['month']) ?></td><td class="num"><?= (int) $m['completed'] ?></td><td class="num"><?= $m['fpy'] === null ? '—' : e(number_format($m['fpy'], 0)) . '%' ?></td></tr><?php endforeach; ?>
       </tbody></table></div></div>
   </div>

@@ -16,7 +16,7 @@
         <?php foreach (['White · Accepted' => $blue, 'Red · Failed' => $red] as $label => $list): if (!$list) continue; ?>
           <div><div class="small strong mb-2"><?= e($label) ?> (<?= count($list) ?>)</div>
             <div class="row wrap" style="gap:6px"><?php foreach ($list as $s): ?>
-              <span class="pill mono" title="Allocated <?= e(fmt_datetime($s['allocated_at'])) ?>"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;background:<?= $s['color'] === 'red' ? 'var(--red)' : '#1d4fb8' ?>"></i><?= e($s['sticker_no']) ?></span>
+              <span class="pill mono" title="Allocated <?= e(fmt_datetime($s['allocated_at'])) ?>"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;background:<?= $s['color'] === 'red' ? 'var(--red)' : '#fff;box-shadow:inset 0 0 0 1px #94a3b8' ?>"></i><?= e($s['sticker_no']) ?></span>
             <?php endforeach; ?></div></div>
         <?php endforeach; ?>
       </div>
@@ -27,7 +27,7 @@
       <thead><tr><th>Sticker</th><th>Job</th><th>Equipment</th><th>Linked</th><th>Status</th><th></th></tr></thead>
       <tbody><?php foreach ($used as $s): ?>
         <tr>
-          <td data-label="Sticker"><span class="row" style="gap:8px"><i style="width:10px;height:10px;border-radius:3px;background:<?= $s['color'] === 'red' ? 'var(--red)' : '#1d4fb8' ?>"></i><span class="mono strong"><?= e($s['sticker_no']) ?></span></span></td>
+          <td data-label="Sticker"><span class="row" style="gap:8px"><i style="width:10px;height:10px;border-radius:3px;background:<?= $s['color'] === 'red' ? 'var(--red)' : '#fff;box-shadow:inset 0 0 0 1px #94a3b8' ?>"></i><span class="mono strong"><?= e($s['sticker_no']) ?></span></span></td>
           <td data-label="Job"><a class="mono" href="<?= url('inspector/subjobs/' . $s['sub_job_id']) ?>"><?= e($s['sub_job_no']) ?></a><div class="sub"><?= e($s['client_name']) ?></div></td>
           <td data-label="Equipment"><?= e($s['eq_description']) ?> <span class="sub"><?= e($s['equipment_no']) ?></span></td>
           <td data-label="Linked" class="nowrap small"><?= e(fmt_datetime($s['linked_at'])) ?></td>

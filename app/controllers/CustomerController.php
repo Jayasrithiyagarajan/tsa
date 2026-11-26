@@ -41,6 +41,10 @@ final class CustomerController extends Controller
         $c = $this->cid();
         $rows = DB::all("SELECT r.*, j.job_no, (SELECT COALESCE(SUM(quantity),0) FROM service_request_items i WHERE i.request_id = r.id) items
                          FROM service_requests r LEFT JOIN jobs j ON j.id = r.converted_job_id WHERE r.client_id = ? ORDER BY r.id DESC", [$c]);
+        if ($this->wantsCsv()) {
+            csv_export('my-requests', $rows, ['request_no' => 'Request No', 'channel' => 'Channel', 'location' => 'Location', 'po_no' => 'P.O. No',
+                'preferred_date' => 'Preferred Date', 'items' => 'Items', 'status' => 'Status', 'job_no' => 'Job', 'created_at' => 'Submitted']);
+        }
         $this->view('customer/requests', compact('rows') + ['title' => 'Inspection Requests', 'crumbs' => ['Inspection Requests' => null]]);
     }
 
@@ -59,9 +63,10 @@ final class CustomerController extends Controller
         $c = $this->cid();
         $client = DB::one('SELECT * FROM clients WHERE id = ?', [$c]);
         $u = Auth::user();
-        $errors = validate($_POST, ['location' => 'required|max:190', 'preferred_date' => 'date', 'po_no' => 'max:60', 'description' => 'max:2000']);
-        $items = array_values(array_filter($_POST['items'] ?? [], fn ($i) => is_array($i) && trim($i['equipment_description'] ?? '') !== ''));
+        $errors = validate($_POST, ['location' => 'required|max:190', 'preferred_date' => 'date|not_past', 'po_no' => 'max:60', 'description' => 'max:2000']);
+        $items = array_values(array_filter((array) ($_POST['items'] ?? []), fn ($i) => is_array($i) && is_string($i['equipment_description'] ?? '') && trim($i['equipment_description'] ?? '') !== ''));
         if (!$items) $errors['items'] = 'Add at least one equipment item.';
+        elseif ($e = RequestService::itemErrors($items)) $errors['items'] = $e;
         if ($errors) $this->failValidation($errors);
         RequestService::create([
             'client_id' => $c, 'company_name' => $client['name'], 'contact_name' => $u['name'], 'email' => $u['email'], 'phone' => $u['phone'] ?: $client['phone'],
@@ -74,6 +79,12 @@ final class CustomerController extends Controller
     public function jobs(): void
     {
         $c = $this->cid();
+        if ($this->wantsCsv()) {
+            csv_export('my-jobs', DB::all("SELECT j.*, (SELECT COUNT(*) FROM sub_jobs s WHERE s.job_id = j.id AND s.status <> 'cancelled') inspections,
+                    (SELECT COUNT(*) FROM sub_jobs s WHERE s.job_id = j.id AND s.status = 'approved') approved
+                FROM jobs j WHERE j.client_id = ? ORDER BY j.id DESC", [$c]), ['job_no' => 'Job No', 'title' => 'Title', 'location' => 'Location', 'po_no' => 'P.O. No',
+                'scheduled_date' => 'Scheduled', 'status' => 'Status', 'inspections' => 'Inspections', 'approved' => 'Approved', 'completed_at' => 'Completed']);
+        }
         [$jobs, $meta] = paginate("SELECT * FROM jobs WHERE client_id = ? ORDER BY id DESC", [$c], 15, 'SELECT COUNT(*) FROM jobs WHERE client_id = ?');
         foreach ($jobs as &$j) $j['progress'] = JobService::progress((int) $j['id']);
         unset($j);

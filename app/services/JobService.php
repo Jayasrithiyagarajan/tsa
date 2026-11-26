@@ -37,11 +37,25 @@ final class JobService
         return $id;
     }
 
+    /** Scheduled / due dates must be real dates, and the due date cannot be before the scheduled date. */
+    public static function assertDates($scheduled, $due): void
+    {
+        $scheduled = trim((string) $scheduled); $due = trim((string) $due);
+        if ($scheduled !== '' && !is_ymd($scheduled)) throw new DomainException('Enter a valid scheduled date.');
+        if ($due !== '' && !is_ymd($due)) throw new DomainException('Enter a valid due date.');
+        if ($scheduled !== '' && $due !== '' && $due < $scheduled) {
+            throw new DomainException('The due date (' . fmt_date($due) . ') cannot be before the scheduled date (' . fmt_date($scheduled) . ').');
+        }
+    }
+
     private static function createRecord(array $d, array $subJobs): int
     {
         return DB::tx(function () use ($d, $subJobs) {
             if (empty($d['client_id'])) throw new DomainException('Client is required.');
             if (trim($d['title'] ?? '') === '') throw new DomainException('Job title is required.');
+            self::assertDates($d['scheduled_date'] ?? '', $d['due_date'] ?? '');
+            if (mb_strlen(trim((string) ($d['location'] ?? ''))) > 190) throw new DomainException('Inspection location can be at most 190 characters.');
+            if (mb_strlen(trim((string) ($d['po_no'] ?? ''))) > 60) throw new DomainException('Request / P.O. No. can be at most 60 characters.');
             $id = DB::insert('jobs', [
                 'job_no'         => Numbering::job(),
                 'client_id'      => (int) $d['client_id'],
@@ -251,6 +265,7 @@ final class JobService
         $prevLead = (int) DB::value('SELECT lead_inspector_id FROM jobs WHERE id = ?', [$jobId]);
         if ($ok) self::assign($ok, $inspectorId, $note);   // notifies the inspector when sub-jobs were assigned
         DB::update('jobs', ['lead_inspector_id' => $inspectorId], 'id = ?', [$jobId]);
+        self::recompute($jobId);
         // A job with no sub-jobs yet (or none this inspector is qualified for) still makes him the lead inspector: tell him too.
         if (!$ok && $prevLead !== $inspectorId) {
             $j = DB::one('SELECT j.job_no, j.title, j.location, j.scheduled_date, c.name client_name FROM jobs j JOIN clients c ON c.id = j.client_id WHERE j.id = ?', [$jobId]);
@@ -278,6 +293,8 @@ final class JobService
     {
         $sj = DB::one('SELECT * FROM sub_jobs WHERE id = ?', [$subJobId]);
         if (!$sj) throw new DomainException('Sub-job not found.');
+        $reason = trim($reason);
+        if ($reason === '') throw new DomainException('Enter a cancellation reason.');   // same rule as cancelling a whole job
         Workflow::assert('sub_job', $sj['status'], 'cancelled');
         DB::tx(function () use ($sj, $subJobId, $reason) {
             DB::update('sub_jobs', ['status' => 'cancelled'], 'id = ?', [$subJobId]);
@@ -394,7 +411,7 @@ final class JobService
     /** Job status is derived from its sub-jobs — never set by hand (except cancel). */
     public static function recompute(int $jobId): string
     {
-        $job = DB::one('SELECT status FROM jobs WHERE id = ?', [$jobId]);
+        $job = DB::one('SELECT status, lead_inspector_id FROM jobs WHERE id = ?', [$jobId]);
         if (!$job || $job['status'] === 'cancelled') return $job['status'] ?? '';
         $c = [];
         foreach (DB::all("SELECT status, COUNT(*) n FROM sub_jobs WHERE job_id = ? AND status <> 'cancelled' GROUP BY status", [$jobId]) as $r) {
@@ -402,7 +419,10 @@ final class JobService
         }
         $total = array_sum($c);
         $n = fn ($k) => $c[$k] ?? 0;
-        if ($total === 0 || $n('pending') === $total) {
+        if ($total === 0) {
+            // no sub-jobs yet: once a lead inspector is set the job is "Assigned" (he adds the sub-jobs), not "Awaiting assignment"
+            $s = $job['lead_inspector_id'] ? 'assigned' : 'pending_assignment';
+        } elseif ($n('pending') === $total) {
             $s = 'pending_assignment';
         } elseif ($n('approved') === $total) {
             // every sub-job passed QC: the job waits for an admin's final approval (close()); a closed job stays closed

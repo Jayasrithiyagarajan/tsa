@@ -124,10 +124,16 @@ final class QcController extends Controller
 
     public function history(): void
     {
-        [$rows, $meta] = paginate("SELECT q.*, sj.sub_job_no, sj.job_id, t.name type_name, c.name client_name, u.name inspector_name, ce.certificate_no
-                                   FROM qc_reviews q JOIN sub_jobs sj ON sj.id = q.sub_job_id JOIN jobs j ON j.id = sj.job_id JOIN clients c ON c.id = j.client_id
-                                   JOIN inspection_types t ON t.id = sj.inspection_type_id LEFT JOIN users u ON u.id = sj.inspector_id
-                                   LEFT JOIN certificates ce ON ce.sub_job_id = sj.id WHERE q.reviewer_id = ? ORDER BY q.id DESC", [Auth::id()]);
+        $sql = "SELECT q.*, sj.sub_job_no, sj.job_id, t.name type_name, c.name client_name, u.name inspector_name,
+                       (SELECT ce.certificate_no FROM certificates ce WHERE ce.sub_job_id = sj.id ORDER BY ce.seq LIMIT 1) certificate_no
+                FROM qc_reviews q JOIN sub_jobs sj ON sj.id = q.sub_job_id JOIN jobs j ON j.id = sj.job_id JOIN clients c ON c.id = j.client_id
+                JOIN inspection_types t ON t.id = sj.inspection_type_id LEFT JOIN users u ON u.id = sj.inspector_id
+                WHERE q.reviewer_id = ? ORDER BY q.id DESC";
+        if ($this->wantsCsv()) {
+            csv_export('qc-decisions', DB::all($sql, [Auth::id()]), ['created_at' => 'Decided', 'decision' => 'Decision', 'sub_job_no' => 'Sub-job', 'type_name' => 'Inspection',
+                'client_name' => 'Client', 'inspector_name' => 'Inspector', 'certificate_no' => 'Certificate No', 'comments' => 'Comments']);
+        }
+        [$rows, $meta] = paginate($sql, [Auth::id()]);
         $this->view('qc/history', compact('rows', 'meta') + ['title' => 'My Decisions', 'crumbs' => ['My Decisions' => null]]);
     }
 
@@ -137,10 +143,16 @@ final class QcController extends Controller
         $p = [];
         $w = "c.status IN ('issued','revoked')";
         if ($q !== '') { $w .= ' AND (c.certificate_no LIKE ? OR cl.name LIKE ? OR e.equipment_no LIKE ?)'; array_push($p, "%$q%", "%$q%", "%$q%"); }
-        [$rows, $meta] = paginate("SELECT c.*, t.name type_name, cl.name client_name, e.description eq_description, e.equipment_no, u.name reviewer_name
-                                   FROM certificates c JOIN sub_jobs sj ON sj.id = c.sub_job_id JOIN jobs j ON j.id = sj.job_id JOIN clients cl ON cl.id = j.client_id
-                                   JOIN inspection_types t ON t.id = sj.inspection_type_id LEFT JOIN equipment e ON e.id = sj.equipment_id LEFT JOIN users u ON u.id = c.reviewer_id
-                                   WHERE $w ORDER BY c.issue_date DESC, c.id DESC", $p);
+        $sql = "SELECT c.*, t.name type_name, cl.name client_name, e.description eq_description, e.equipment_no, u.name reviewer_name
+                FROM certificates c JOIN sub_jobs sj ON sj.id = c.sub_job_id JOIN jobs j ON j.id = sj.job_id JOIN clients cl ON cl.id = j.client_id
+                JOIN inspection_types t ON t.id = sj.inspection_type_id LEFT JOIN equipment e ON e.id = sj.equipment_id LEFT JOIN users u ON u.id = c.reviewer_id
+                WHERE $w ORDER BY c.issue_date DESC, c.id DESC";
+        if ($this->wantsCsv()) {
+            csv_export('issued-certificates', DB::all($sql, $p), ['certificate_no' => 'Certificate No', 'status' => 'Status', 'result' => 'Result', 'client_name' => 'Client',
+                'type_name' => 'Inspection', 'eq_description' => 'Equipment', 'equipment_no' => 'Equipment No', 'inspection_date' => 'Inspection Date',
+                'issue_date' => 'Issue Date', 'next_inspection_date' => 'Next Inspection', 'reviewer_name' => 'Reviewed By']);
+        }
+        [$rows, $meta] = paginate($sql, $p);
         $this->view('qc/certificates', compact('rows', 'meta', 'q') + ['title' => 'Issued Certificates', 'crumbs' => ['Issued Certificates' => null]]);
     }
 }

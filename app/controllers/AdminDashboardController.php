@@ -13,7 +13,7 @@ final class AdminDashboardController extends Controller
             (SELECT COUNT(*) FROM sub_jobs WHERE status = 'in_progress') in_progress,
             (SELECT COUNT(*) FROM sub_jobs WHERE status = 'submitted') awaiting_qc,
             (SELECT COUNT(*) FROM certificates WHERE status = 'issued') certs_issued,
-            (SELECT COUNT(*) FROM certificates WHERE status IN ('draft','pending_qc')) certs_pending,
+            (SELECT COUNT(*) FROM certificates c JOIN sub_jobs s ON s.id = c.sub_job_id WHERE c.status IN ('draft','pending_qc') AND s.status <> 'cancelled') certs_pending,
             (SELECT COUNT(*) FROM checklists WHERE status = 'completed') checklists_done,
             (SELECT COUNT(*) FROM stickers WHERE status = 'in_stock') stickers_stock,
             (SELECT COUNT(*) FROM stickers WHERE status = 'closed') stickers_issued,

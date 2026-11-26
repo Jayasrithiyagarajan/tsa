@@ -118,8 +118,9 @@ final class AdminJobController extends Controller
     public function update(string $id): void
     {
         $this->attempt(function () use ($id) {
-            $errors = validate($_POST, ['title' => 'required|max:190', 'scheduled_date' => 'date', 'due_date' => 'date', 'priority' => 'in:low,normal,high,urgent']);
+            $errors = validate($_POST, ['title' => 'required|max:190', 'location' => 'max:190', 'po_no' => 'max:60', 'scheduled_date' => 'date', 'due_date' => 'date', 'priority' => 'in:low,normal,high,urgent']);
             if ($errors) throw new DomainException(implode(' ', $errors));
+            JobService::assertDates(input('scheduled_date'), input('due_date'));
             DB::update('jobs', [
                 'title' => input('title'), 'location' => nullable(input('location')), 'po_no' => nullable(input('po_no')),
                 'scheduled_date' => nullable(input('scheduled_date')), 'due_date' => nullable(input('due_date')),

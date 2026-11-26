@@ -51,6 +51,15 @@ final class Router
             $_SESSION['intended'] = $_SERVER['REQUEST_URI'] ?? null;
             redirect('login');
         }
+        // temporary password set by an admin: only My Profile (to change it) and sign-out until a new password is chosen
+        if (!empty(Auth::user()['must_change_password'])) {
+            $path = '/' . trim(request_path(), '/');
+            if (!in_array($path, ['/profile', '/profile/password', '/logout'], true)) {
+                if (is_ajax()) json_out(['error' => 'Change your temporary password first.'], 403);
+                flash('warning', 'Please choose your own password before continuing. Your current password was set by an administrator.');
+                redirect('profile');
+            }
+        }
         if ($roles === 'auth') {
             return;
         }

@@ -1,4 +1,5 @@
-<div class="page-head"><div class="ph-text"><h1>Submitted & approved</h1><div class="sub">Your inspections waiting for QC or already approved.</div></div></div>
+<div class="page-head"><div class="ph-text"><h1>Submitted & approved</h1><div class="sub">Your inspections waiting for QC or already approved.</div></div>
+  <?php View::render('partials/export', [], null); ?></div>
 <div class="card">
   <?php if ($rows): ?>
   <div class="table-wrap"><table class="t stack-sm">

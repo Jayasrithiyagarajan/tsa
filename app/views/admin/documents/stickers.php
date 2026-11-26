@@ -2,7 +2,7 @@
 /** Bulk sticker stock: generate (Super Admin only) → print → allocate to inspectors. Stickers linked to jobs live on Project Stickers. */
 $bulkTotal = (int) $counts['in_stock'] + (int) $counts['allocated'] + (int) $counts['void'];
 $tab = fn ($s, $label) => '<a class="' . ($status === $s ? 'on' : '') . '" href="' . url('admin/stickers', array_filter(['status' => $s, 'inspector' => $insp ?: null])) . '">' . e($label) . '<span class="n">' . ($s ? (int) $counts[$s] : $bulkTotal) . '</span></a>';
-$swatch = fn ($c) => '<i style="display:inline-block;width:10px;height:10px;border-radius:3px;flex:none;background:' . ($c === 'red' ? 'var(--red)' : '#1d4fb8') . '"></i>';
+$swatch = fn ($c) => '<i style="display:inline-block;width:10px;height:10px;border-radius:3px;flex:none;background:' . ($c === 'red' ? 'var(--red)' : '#fff;box-shadow:inset 0 0 0 1px #94a3b8') . '"></i>';
 $inspOptions = function (bool $blank = true) use ($inspectors) {
     $h = $blank ? '<option value="">— Choose inspector —</option>' : '';
     foreach ($inspectors as $i) $h .= '<option value="' . (int) $i['id'] . '">' . e($i['name']) . ' (' . (int) $i['in_hand'] . ' in hand)</option>';

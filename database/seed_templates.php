@@ -21,7 +21,7 @@ $seed = [
             'revision' => '02', 'revision_date' => '09/Feb./23',
             'sections' => [
                 'General Requirements' => [
-                    'Drive Right', 'Engine Governor / Injection system', 'Breaks', 'Parking Brakes', 'Abnormal Sound/ Vibration',
+                    'Drive Right', 'Engine Governor / Injection system', 'Brakes', 'Parking Brakes', 'Abnormal Sound/ Vibration',
                     'Fire Extinguisher', 'Engine Cooling Water Temperature', 'Axles', 'Tow Hooks / Tow Rod', 'Rear View of Mirror',
                     'Reverse Warning Lights & Horn', 'Tires & Spare Wheels', 'Driver Console Indications', 'Flame Arrestor',
                     'Lights/ Indicator', 'Hydraulic System', 'Steering', 'Safety Switch', 'Operator Protection', 'Safety Belt',

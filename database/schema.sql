@@ -43,6 +43,7 @@ CREATE TABLE users (
   client_id       INT UNSIGNED NULL,                      -- customers only
   signature_path  VARCHAR(255) NULL,
   status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
+  must_change_password TINYINT(1) NOT NULL DEFAULT 0,
   last_login_at   DATETIME NULL,
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,

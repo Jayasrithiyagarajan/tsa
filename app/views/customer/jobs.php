@@ -1,4 +1,5 @@
-<div class="page-head"><div class="ph-text"><h1>Jobs & progress</h1><div class="sub">Live status of every inspection job for your company.</div></div></div>
+<div class="page-head"><div class="ph-text"><h1>Jobs & progress</h1><div class="sub">Live status of every inspection job for your company.</div></div>
+  <?php View::render('partials/export', [], null); ?></div>
 <?php if (!$jobs): ?><div class="card"><?php View::render('partials/empty', ['icon' => 'briefcase', 'title' => 'No jobs yet', 'text' => 'Jobs are opened when we accept your request.'], null); ?></div><?php endif; ?>
 <?php foreach ($jobs as $j): $p = $j['progress']; ?>
   <a class="job-card" href="<?= url('portal/jobs/' . $j['id']) ?>" style="display:block;color:inherit;text-decoration:none">

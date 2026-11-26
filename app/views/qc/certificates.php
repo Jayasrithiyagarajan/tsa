@@ -1,5 +1,6 @@
 <div class="page-head"><div class="ph-text"><h1>Issued certificates</h1><div class="sub">All certificates released after QC review.</div></div>
-  <form class="search" method="get" style="position:relative;min-width:260px"><span style="position:absolute;left:10px;top:10px;color:var(--faint)"><?= icon('search', 'sm') ?></span><input class="input" style="padding-left:34px" name="q" value="<?= e($q) ?>" placeholder="Certificate, client, equipment…"></form></div>
+  <form class="search" method="get" style="position:relative;min-width:260px"><span style="position:absolute;left:10px;top:10px;color:var(--faint)"><?= icon('search', 'sm') ?></span><input class="input" style="padding-left:34px" name="q" value="<?= e($q) ?>" placeholder="Certificate, client, equipment…"></form>
+  <span class="row" style="gap:6px"><?php View::render('partials/export', [], null); ?></span></div>
 <div class="card">
   <div class="table-wrap"><table class="t stack-sm">
     <thead><tr><th>Certificate</th><th>Client</th><th>Inspection / equipment</th><th>Result</th><th>Issued</th><th>Valid until</th><th>Reviewed by</th><th>Status</th><th></th></tr></thead>

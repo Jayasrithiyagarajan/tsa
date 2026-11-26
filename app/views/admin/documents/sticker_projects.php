@@ -3,7 +3,7 @@
 $f = array_filter(['inspector' => $insp ?: null, 'client' => $client ?: null, 'q' => $q !== '' ? $q : null]);
 $tab = fn ($key, $val, $label, $n) => '<a class="' . (($key === 'status' ? $status : $result) === $val && ($key === 'status' ? $result === '' : $status === '') ? 'on' : '') . '" href="'
     . url('admin/project-stickers', $f + array_filter([$key => $val])) . '">' . e($label) . '<span class="n">' . (int) $n . '</span></a>';
-$swatch = fn ($c) => '<i style="display:inline-block;width:10px;height:10px;border-radius:3px;flex:none;background:' . ($c === 'red' ? 'var(--red)' : '#1d4fb8') . '"></i>';
+$swatch = fn ($c) => '<i style="display:inline-block;width:10px;height:10px;border-radius:3px;flex:none;background:' . ($c === 'red' ? 'var(--red)' : '#fff;box-shadow:inset 0 0 0 1px #94a3b8') . '"></i>';
 ?>
 <div class="page-head">
   <div class="ph-text"><h1>Project stickers</h1><div class="sub">Stickers linked to jobs. Linking closes a sticker — it stays locked to that job and equipment. Each one has a digital sticker. Bulk stock is on <a href="<?= url('admin/stickers') ?>">Sticker Stock</a>.</div></div>

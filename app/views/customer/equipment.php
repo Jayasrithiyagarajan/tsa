@@ -12,7 +12,7 @@
         <td data-label="Equipment"><span class="strong"><?= e($e['description']) ?></span><div class="sub mono"><?= e($e['equipment_no']) ?><?= $e['serial_no'] ? ' · S/N ' . e($e['serial_no']) : '' ?></div></td>
         <td data-label="Make"><?= e(trim($e['manufacturer'] . ' ' . $e['model']) ?: '—') ?></td>
         <td data-label="Capacity"><?= e($e['capacity'] ?: '—') ?></td>
-        <td data-label="Last"><?= e(fmt_date($e['last_inspection_date']) ?: '—') ?></td>
+        <td data-label="Last" class="nowrap"><?= e(fmt_date($e['last_inspection_date']) ?: '—') ?></td>
         <td data-label="Next due"><?php if ($n): ?><span class="badge badge-<?= $n < $today ? 'red' : ($n <= $soon ? 'amber' : 'green') ?>"><i></i><?= $n < $today ? 'Overdue · ' : '' ?><?= e(fmt_date($n)) ?></span><?php else: ?><span class="muted">Not yet inspected</span><?php endif; ?></td>
         <td data-label="Certificate"><?= $e['last_cert'] ? '<a class="mono small" href="' . url('documents/certificate/' . $e['last_cert_sj']) . '">' . e($e['last_cert']) . '</a>' : '—' ?></td>
         <td data-label="Status"><?= badge($e['status']) ?></td>

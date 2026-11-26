@@ -118,9 +118,9 @@ final class MailEvents
             Mailer::send(self::clientRecipients((int) $j['client_id']), $subj,
                 self::wrap('A new job has been created', 'Your inspection job has been registered with TUV EAST. You can follow its progress in the customer portal.', $rows, abs_url('portal/jobs/' . $jobId), 'Open job'));
             Mailer::send(self::adminRecipients(), $subj,
-                self::wrap('A new job has been created', 'A new job has been registered for ' . $j['client_name'] . '.', $rows, abs_url('admin/jobs/' . $jobId), 'Open job'));
+                self::wrap('A new job has been created', 'A new job has been registered for ' . rtrim($j['client_name'], '.') . '.', $rows, abs_url('admin/jobs/' . $jobId), 'Open job'));
             Mailer::send(self::inspectorRecipients($jobId), $subj,
-                self::wrap('A new job has been created', 'A job you are assigned to has been created for ' . $j['client_name'] . '.', $rows, abs_url('inspector/jobs/' . $jobId), 'Open job'));
+                self::wrap('A new job has been created', 'A job you are assigned to has been created for ' . rtrim($j['client_name'], '.') . '.', $rows, abs_url('inspector/jobs/' . $jobId), 'Open job'));
         });
     }
 

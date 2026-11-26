@@ -53,11 +53,12 @@ The demo data contains jobs in every state: approved with issued certificates, a
 in progress, assigned, and awaiting assignment, plus website / email / phone / portal requests.
 
 ## Roles
-- **Super Admin** — everything: user accounts (all roles), bulk sticker batches and allocation, ID cards, templates, settings, audit log.
-- **Admin** — client requests, jobs (create, assign, follow up) and the **final approval** that closes a job after QC;
+- **Super Admin** — everything: user accounts (all roles), bulk sticker batches and allocation, ID cards, templates, settings, audit log,
+  and the **final approval**: uploads the job's time sheet and closes the job after QC.
+- **Admin** — client requests, jobs (create, assign, follow up); sees jobs awaiting final approval but cannot close them;
   certificates, stickers, ID cards, clients, equipment and users are view-only.
-- Job flow: all sub-jobs pass QC → job *Awaiting Final Approval* → an admin closes it → only then the client gets the
-  certificates (portal, notification, public verification).
+- Job flow: all sub-jobs pass QC → job *Awaiting Final Approval* → a Super Admin uploads the time sheet and closes it → only then
+  the client gets the certificates (portal, notification, public verification).
 
 `php database/migrate.php` promotes existing admin accounts to Super Admin; create Admin accounts under Users & Inspectors.
 

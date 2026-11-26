@@ -1,6 +1,6 @@
 <?php
 /** Print Sticker: stickers still in office stock + a popup to print / download a numbered range. @var array $rows @var array $meta @var string $q @var string $prefix @var array $series @var int $total */
-$swatch = fn ($c) => '<i style="display:inline-block;width:10px;height:10px;border-radius:3px;flex:none;background:' . ($c === 'red' ? 'var(--red)' : '#1d4fb8') . '"></i>';
+$swatch = fn ($c) => '<i style="display:inline-block;width:10px;height:10px;border-radius:3px;flex:none;background:' . ($c === 'red' ? 'var(--red)' : '#fff;box-shadow:inset 0 0 0 1px #94a3b8') . '"></i>';
 $pad = fn ($n) => str_pad((string) $n, 6, '0', STR_PAD_LEFT);
 // lowest number still in office stock, per series
 $first = [];

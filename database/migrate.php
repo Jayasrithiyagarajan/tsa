@@ -11,6 +11,16 @@ if (PHP_SAPI !== 'cli') exit("CLI only\n");
 require __DIR__ . '/../app/bootstrap.php';
 $_SESSION = [];
 
+if (!DB::one("SHOW COLUMNS FROM users LIKE 'must_change_password'")) {
+    // set when an admin creates the account or resets the password; the user must choose their own at the next sign-in
+    DB::pdo()->exec("ALTER TABLE users ADD must_change_password TINYINT(1) NOT NULL DEFAULT 0 AFTER status");
+    echo "✓ users.must_change_password added\n";
+}
+
+// spelling: Boom Truck checklist item "Breaks" -> "Brakes" (in place: wording only, so earlier checklists print correctly too)
+if ($n = DB::run("UPDATE checklist_template_items SET label = 'Brakes' WHERE label = 'Breaks'")->rowCount()) echo "✓ checklist item 'Breaks' corrected to 'Brakes' ($n)
+";
+
 if (!DB::one("SHOW COLUMNS FROM attachments LIKE 'sort_no'")) {
     DB::pdo()->exec("ALTER TABLE attachments ADD sort_no INT NULL");   // manual photo order (NULL = upload order)
     echo "✓ added attachments.sort_no\n";

@@ -19,6 +19,6 @@ $pdf = !empty($pdf);
       <?php endif; ?>
     <?php endforeach; ?>
   </div>
-  <div class="addr">Kingdom of Saudi Arabia - Main Office - Eastern Province<br>Al Khobar, 3205 Prince Muteb St., Al sharq Tower, 5th Floor<br>Phone : 0138185501 - Mob.: +966566485177<br>E-mail : info@tuv-east.com - operations@tuv-east.com</div>
+  <div class="addr">Kingdom of Saudi Arabia - Main Office - Eastern Province<br>Al Khobar, 6205 Prince Muteb St., Al-Sharq Tower, 5th Floor<br>Phone : 0138185501 - Mob.: +966566485177<br>E-mail : info@tuv-east.com - operations@tuv-east.com</div>
   <img class="leea" src="<?= $art['leea'] ?>" alt="LEEA Full Member">
 </div>

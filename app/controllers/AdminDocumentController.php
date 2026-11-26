@@ -7,7 +7,7 @@ final class AdminDocumentController extends Controller
         $status = (string) input('status', '');
         $q = trim((string) input('q', ''));
         $type = (int) input('type', 0);
-        $where = ['1=1'];
+        $where = ["sj.status <> 'cancelled'"];   // drafts of cancelled sub-jobs are never issued: keep them out of the register
         $p = [];
         if ($status !== '') { $where[] = 'c.status = ?'; $p[] = $status; }
         if ($type) { $where[] = 'sj.inspection_type_id = ?'; $p[] = $type; }
@@ -24,7 +24,7 @@ final class AdminDocumentController extends Controller
                 'inspector_name' => 'Inspector', 'reviewer_name' => 'Reviewed By']);
         }
         [$rows, $meta] = paginate($sql, $p);
-        $counts = array_column(DB::all('SELECT status, COUNT(*) n FROM certificates GROUP BY status'), 'n', 'status');
+        $counts = array_column(DB::all("SELECT c.status, COUNT(*) n FROM certificates c JOIN sub_jobs sj ON sj.id = c.sub_job_id WHERE sj.status <> 'cancelled' GROUP BY c.status"), 'n', 'status');
         $this->view('admin/documents/certificates', compact('rows', 'meta', 'status', 'q', 'type', 'counts') + [
             'types' => DB::all('SELECT id, name FROM inspection_types ORDER BY name'),
             'title' => 'Certificates', 'crumbs' => ['Certificates' => null],

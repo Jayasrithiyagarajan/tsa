@@ -56,7 +56,7 @@ $bcol = ['< 4 h' => 'var(--green)', '4–24 h' => '#16a34a', '1–3 days' => 'va
       </dl>
       <table class="t mt-2"><tbody><?php foreach ($reviewers as $r): ?><tr><td><?= e($r['reviewer']) ?></td><td class="num"><b><?= (int) $r['reviews'] ?></b> <span class="sub">reviews</span></td></tr><?php endforeach; ?></tbody></table></div></div>
     <div class="card"><div class="card-h"><h2><?= icon('alert', 'sm') ?> Rework by inspector</h2><span class="hint">helps target coaching</span></div>
-      <div class="card-b flush"><table class="t"><thead><tr><th>Inspector</th><th class="num">Reviews</th><th class="num">Returned</th><th class="num">Rate</th></tr></thead><tbody>
+      <div class="card-b flush table-wrap"><table class="t"><thead><tr><th>Inspector</th><th class="num">Reviews</th><th class="num">Returned</th><th class="num">Rate</th></tr></thead><tbody>
         <?php foreach ($by_inspector as $r): $rate = $r['reviews'] ? $r['reworks'] / $r['reviews'] * 100 : 0; ?>
           <tr><td><?= e($r['inspector']) ?></td><td class="num"><?= (int) $r['reviews'] ?></td><td class="num"><?= (int) $r['reworks'] ?></td>
             <td class="num"><span class="badge badge-<?= $rate <= 10 ? 'green' : ($rate <= 25 ? 'amber' : 'red') ?>"><i></i><?= e(number_format($rate, 0)) ?>%</span></td></tr>

@@ -46,6 +46,33 @@
     if (b && !f.dataset.noLock) setTimeout(() => { b.disabled = true; }, 0);
   });
 
+  // accessibility: link each form label to its field (screen readers, and clicking a label focuses the field).
+  // Only where the label has no "for" yet and the field block holds exactly one visible control.
+  let autoId = 0;
+  const linkLabels = (root) => {
+    $$('.field', root).forEach((f) => {
+      const label = $(':scope > label', f);
+      if (!label || label.htmlFor || label.querySelector('input,select,textarea')) return;
+      const ctrls = $$('input:not([type=hidden]):not([type=radio]):not([type=checkbox]), select, textarea', f);
+      if (ctrls.length !== 1) return;
+      const c = ctrls[0];
+      if (!c.id) c.id = 'fld-' + (c.name || 'x').replace(/[^\w-]/g, '_') + '-' + (++autoId);
+      label.htmlFor = c.id;
+    });
+    // inputs with no label at all (checklist remarks, search boxes): use the placeholder as the accessible name
+    $$('input[placeholder]:not([aria-label]), textarea[placeholder]:not([aria-label])', root).forEach((c) => {
+      if (!(c.id && document.querySelector('label[for="' + CSS.escape(c.id) + '"]')) && !c.closest('label')) c.setAttribute('aria-label', c.placeholder);
+    });
+    // filter drop-downs whose first option is the label ("All channels", "Newest first"…)
+    $$('select:not([aria-label])', root).forEach((c) => {
+      if ((c.id && document.querySelector('label[for="' + CSS.escape(c.id) + '"]')) || c.closest('label') || !c.options.length) return;
+      c.setAttribute('aria-label', (c.name ? c.name.replace(/[_\[\]]+/g, ' ').trim() + ': ' : '') + c.options[c.selectedIndex >= 0 ? c.selectedIndex : 0].text);
+    });
+  };
+  linkLabels(document);
+  // rows added later by repeaters (request items, sub-jobs) get linked too
+  new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.nodeType === 1) linkLabels(n.parentElement || n); }))).observe(document.body, { childList: true, subtree: true });
+
   // tabs
   $$('[data-tabs]').forEach((wrap) => {
     const btns = $$('[data-tab]', wrap);
@@ -57,6 +84,11 @@
     btns.forEach((b) => b.addEventListener('click', () => show(b.dataset.tab, true)));
     const h = location.hash.slice(1);
     show(btns.some((b) => b.dataset.tab === h) ? h : (btns[0] && btns[0].dataset.tab));
+    // links to "#tab-…" on the same page (no reload) open that tab too
+    window.addEventListener('hashchange', () => {
+      const id = location.hash.slice(1);
+      if (btns.some((b) => b.dataset.tab === id)) show(id);
+    });
   });
 
   // auto-submit filters

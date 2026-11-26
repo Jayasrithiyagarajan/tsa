@@ -331,8 +331,8 @@ final class InspectorController extends Controller
         $this->view('inspector/workspace', compact('sj', 'checklist', 'items', 'clStats', 'cert', 'certSeq', 'allCerts', 'certTpl', 'fields', 'attachments', 'sticker', 'myStickers', 'reviews', 'issues', 'editable', 'qcEdit') + [
             'title' => $sj['sub_job_no'],
             'crumbs' => $qcEdit ? ['Review Queue' => 'qc/queue', $sj['sub_job_no'] => 'qc/review/' . $sj['id'], 'Edit documents' => null] : (Auth::is('admin')
-                ? ['Jobs & Sub-jobs' => 'admin/jobs', $sj['job_no'] => 'admin/jobs/' . $sj['job_id'], 'Sub-job ' . $sj['seq'] => null]
-                : ['Assigned Jobs' => 'inspector/jobs', $sj['job_no'] => 'inspector/jobs/' . $sj['job_id'], 'Sub-job ' . $sj['seq'] => null]),
+                ? ['Jobs & Sub-jobs' => 'admin/jobs', $sj['job_no'] => 'admin/jobs/' . $sj['job_id'], 'Sub-job ' . (int) substr($sj['job_no'], -4) . '.' . $sj['seq'] => null]
+                : ['Assigned Jobs' => 'inspector/jobs', $sj['job_no'] => 'inspector/jobs/' . $sj['job_id'], 'Sub-job ' . (int) substr($sj['job_no'], -4) . '.' . $sj['seq'] => null]),
         ]);
     }
 
@@ -473,7 +473,16 @@ final class InspectorController extends Controller
 
     public function history(): void
     {
-        [$rows, $meta] = paginate(JobService::SUBJOB_SQL . " WHERE sj.inspector_id = ? AND sj.status IN ('submitted','approved') ORDER BY COALESCE(sj.approved_at, sj.submitted_at) DESC", [Auth::id()]);
+        $sql = JobService::SUBJOB_SQL . " WHERE sj.inspector_id = ? AND sj.status IN ('submitted','approved') ORDER BY COALESCE(sj.approved_at, sj.submitted_at) DESC";
+        if ($this->wantsCsv()) {
+            $all = DB::all($sql, [Auth::id()]);
+            foreach ($all as &$x) $x['certificate_no'] = DB::value('SELECT certificate_no FROM certificates WHERE sub_job_id = ? ORDER BY seq LIMIT 1', [$x['id']]);
+            unset($x);
+            csv_export('my-inspections', $all, ['sub_job_no' => 'Sub-job', 'type_name' => 'Inspection', 'client_name' => 'Client', 'eq_description' => 'Equipment',
+                'equipment_no' => 'Equipment No', 'eq_serial_no' => 'Serial No', 'status' => 'Status', 'result' => 'Result', 'certificate_no' => 'Certificate No',
+                'submitted_at' => 'Submitted', 'approved_at' => 'Approved']);
+        }
+        [$rows, $meta] = paginate($sql, [Auth::id()]);
         foreach ($rows as &$r) $r['cert'] = DB::one('SELECT certificate_no, status FROM certificates WHERE sub_job_id = ?', [$r['id']]);
         unset($r);
         $this->view('inspector/history', compact('rows', 'meta') + ['title' => 'Submitted & Approved', 'crumbs' => ['Submitted & Approved' => null]]);

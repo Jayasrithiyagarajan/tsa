@@ -2,6 +2,20 @@
 
 final class RequestService
 {
+    /** Length checks for equipment items (match the column sizes, so nothing is cut off silently). Returns an error or null. */
+    public static function itemErrors(array $items): ?string
+    {
+        foreach (array_values($items) as $i => $it) {
+            $row = 'Equipment row ' . ($i + 1) . ': ';
+            foreach (['equipment_description' => [190, 'description'], 'equipment_no' => [80, 'equipment no.'], 'notes' => [255, 'notes']] as $k => [$max, $label]) {
+                $v = $it[$k] ?? '';
+                if (is_array($v)) return $row . "invalid $label.";
+                if (mb_strlen(trim((string) $v)) > $max) return $row . "$label can be at most $max characters.";
+            }
+        }
+        return null;
+    }
+
     /**
      * Record a client request from any channel.
      * @param array $data  company_name, contact_name, email, phone, location, po_no, preferred_date, description, client_id?

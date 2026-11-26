@@ -34,7 +34,7 @@
         <td data-label="Company"><span class="strong"><?= e($r['company_name']) ?></span><div class="sub"><?= e($r['contact_name']) ?> · <?= e($r['email'] ?: $r['phone']) ?></div></td>
         <td data-label="Channel"><?= badge($r['channel']) ?></td>
         <td data-label="Location"><?= e($r['location']) ?></td>
-        <td data-label="Preferred"><?= e(fmt_date($r['preferred_date'])) ?: '<span class="muted">—</span>' ?></td>
+        <td data-label="Preferred" class="nowrap"><?= e(fmt_date($r['preferred_date'])) ?: '<span class="muted">—</span>' ?></td>
         <td class="num" data-label="Items"><?= (int) $r['items'] ?></td>
         <td data-label="Status"><?= badge($r['status']) ?></td>
         <td data-label="Received" class="sub nowrap"><?= e(fmt_datetime($r['created_at'])) ?></td>

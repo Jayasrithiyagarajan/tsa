@@ -31,10 +31,11 @@ final class PublicController extends Controller
         $errors = validate($_POST, [
             'company_name' => 'required|max:190', 'contact_name' => 'required|max:120',
             'email' => 'required|email|max:190', 'phone' => 'required|phone', 'location' => 'required|max:190',
-            'preferred_date' => 'date', 'description' => 'max:2000',
+            'preferred_date' => 'date|not_past', 'description' => 'max:2000', 'po_no' => 'max:60',
         ]);
-        $items = array_values(array_filter($_POST['items'] ?? [], fn ($i) => is_array($i) && trim($i['equipment_description'] ?? '') !== ''));
+        $items = array_values(array_filter((array) ($_POST['items'] ?? []), fn ($i) => is_array($i) && is_string($i['equipment_description'] ?? '') && trim($i['equipment_description'] ?? '') !== ''));
         if (!$items) $errors['items'] = 'Add at least one equipment item.';
+        elseif ($e = RequestService::itemErrors($items)) $errors['items'] = $e;
         if ($errors) $this->failValidation($errors);
 
         $id = RequestService::create($_POST, $items, 'website');

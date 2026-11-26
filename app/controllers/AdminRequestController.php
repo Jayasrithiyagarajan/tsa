@@ -55,11 +55,12 @@ final class AdminRequestController extends Controller
         }
         $errors = validate($data, [
             'channel' => 'required|in:email,phone', 'company_name' => 'required|max:190', 'contact_name' => 'required|max:120',
-            'email' => 'email', 'phone' => 'phone', 'preferred_date' => 'date',
+            'email' => 'email|max:190', 'phone' => 'phone', 'preferred_date' => 'date', 'location' => 'max:190', 'po_no' => 'max:60', 'description' => 'max:2000',
         ]);
         if (empty($data['email']) && empty($data['phone'])) $errors['phone'] = 'Provide at least an email or a phone number.';
-        $items = array_values(array_filter($_POST['items'] ?? [], fn ($i) => is_array($i) && trim($i['equipment_description'] ?? '') !== ''));
+        $items = array_values(array_filter((array) ($_POST['items'] ?? []), fn ($i) => is_array($i) && is_string($i['equipment_description'] ?? '') && trim($i['equipment_description'] ?? '') !== ''));
         if (!$items) $errors['items'] = 'Add at least one equipment item.';
+        elseif ($e = RequestService::itemErrors($items)) $errors['items'] = $e;
         if ($errors) $this->failValidation($errors);
         $id = RequestService::create($data, $items, $data['channel']);
         flash('success', 'Request logged.');

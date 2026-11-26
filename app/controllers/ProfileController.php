@@ -27,11 +27,14 @@ final class ProfileController extends Controller
             $this->failValidation(['current' => 'Current password is incorrect.'], 'Password not changed.');
         }
         $new = (string) ($_POST['new'] ?? '');
-        if (strlen($new) < 8 || !preg_match('/[A-Za-z]/', $new) || !preg_match('/\d/', $new)) {
-            $this->failValidation(['new' => 'Use at least 8 characters with letters and numbers.'], 'Password not changed.');
+        if ($pwErr = password_policy_error($new)) {
+            $this->failValidation(['new' => $pwErr], 'Password not changed.');
         }
         if ($new !== ($_POST['confirm'] ?? '')) $this->failValidation(['confirm' => 'Passwords do not match.'], 'Password not changed.');
-        DB::update('users', ['password_hash' => password_hash($new, PASSWORD_DEFAULT)], 'id = ?', [Auth::id()]);
+        if (password_verify($new, $u['password_hash'])) $this->failValidation(['new' => 'Choose a password different from the current one.'], 'Password not changed.');
+        $upd = ['password_hash' => password_hash($new, PASSWORD_DEFAULT)];
+        if (has_must_change_column()) $upd['must_change_password'] = 0;
+        DB::update('users', $upd, 'id = ?', [Auth::id()]);
         Audit::log('auth.password_changed', 'user', Auth::id());
         flash('success', 'Password changed.');
         redirect('profile');

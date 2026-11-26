@@ -49,7 +49,7 @@ $old = fn ($k, $d = '') => old($k, $d);
           <div class="help">Yes: a sticker must be linked before submitting. No: this sub-job has no sticker. <b id="sticker-help"></b></div>
         </div></div>
         <div class="card-b"><div class="form-grid">
-          <div class="field col-6">
+          <div class="field col-12">
             <label id="type-label">Checklist / Inspection type <span class="req">*</span></label>
             <select class="select" name="inspection_type_id" id="type-select" required>
               <option value="">Select…</option>

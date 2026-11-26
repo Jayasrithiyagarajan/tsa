@@ -1,6 +1,6 @@
 <div class="page-head">
   <div class="ph-text"><h1>Inspection requests</h1><div class="sub">Requests from your company — submitted here, on our website, by email or by phone.</div></div>
-  <div class="actions"><a class="btn btn-primary" href="<?= url('portal/requests/new') ?>"><?= icon('plus', 'sm') ?> New request</a></div>
+  <div class="actions"><?php View::render('partials/export', [], null); ?> <a class="btn btn-primary" href="<?= url('portal/requests/new') ?>"><?= icon('plus', 'sm') ?> New request</a></div>
 </div>
 <div class="card">
   <?php if ($rows): ?>
@@ -10,7 +10,7 @@
       <tr>
         <td data-label="Reference"><span class="mono strong"><?= e($r['request_no']) ?></span><div class="sub"><?= e(fmt_datetime($r['created_at'])) ?></div></td>
         <td data-label="Location"><?= e($r['location']) ?></td>
-        <td data-label="Preferred"><?= e(fmt_date($r['preferred_date']) ?: '—') ?></td>
+        <td data-label="Preferred" class="nowrap"><?= e(fmt_date($r['preferred_date']) ?: '—') ?></td>
         <td class="num" data-label="Items"><?= (int) $r['items'] ?></td>
         <td data-label="Channel"><?= badge($r['channel']) ?></td>
         <td data-label="Status"><?= badge($r['status']) ?><?= $r['status_note'] ? '<div class="sub">' . e($r['status_note']) . '</div>' : '' ?></td>

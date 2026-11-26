@@ -25,7 +25,13 @@ abstract class Controller
     protected function failValidation(array $errors, string $msg = 'Please correct the highlighted fields.'): void
     {
         with_old($_POST, $errors);
-        flash('error', $msg);
+        // also list the problems in the message itself: some forms sit in a pop-up (e.g. Edit client) or have no
+        // per-field error slot, and then "highlighted fields" alone tells the user nothing
+        $detail = [];
+        foreach ($errors as $field => $err) {
+            $detail[] = ucfirst(str_replace(['_', '[', ']'], ' ', (string) $field)) . ': ' . $err;
+        }
+        flash('error', $msg . ($detail ? "\n" . implode("\n", array_slice($detail, 0, 6)) : ''));
         redirect_back();
     }
 

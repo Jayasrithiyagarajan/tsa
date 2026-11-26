@@ -66,8 +66,9 @@ final class AdminUserController extends Controller
     private function save(?int $id): void
     {
         $rules = ['name' => 'required|max:120', 'email' => 'required|email|max:190', 'role' => 'required|in:superadmin,admin,inspector,qc,customer', 'phone' => 'phone', 'cert_expiry' => 'date'];
-        if (!$id || input('password')) $rules['password'] = ($id ? '' : 'required|') . 'min:8';
+        if (!$id) $rules['password'] = 'required';
         $errors = validate($_POST, $rules);
+        if (input('password') && !isset($errors['password']) && ($pwErr = password_policy_error((string) input('password')))) $errors['password'] = $pwErr;   // same rule as My Profile
         $email = strtolower((string) input('email'));
         if (DB::value('SELECT id FROM users WHERE email = ? AND id <> ?', [$email, $id ?? 0])) $errors['email'] = 'This email is already registered.';
         if (input('role') === 'customer' && !input('client_id')) $errors['client_id'] = 'Customer users must belong to a client.';
@@ -80,7 +81,11 @@ final class AdminUserController extends Controller
                 'client_id' => input('role') === 'customer' ? (int) input('client_id') : null,
                 'status' => input('status') === 'inactive' ? 'inactive' : 'active',
             ];
-            if (input('password')) $data['password_hash'] = password_hash((string) input('password'), PASSWORD_DEFAULT);
+            if (input('password')) {
+                $data['password_hash'] = password_hash((string) input('password'), PASSWORD_DEFAULT);
+                // a password chosen by an admin is temporary: the user must pick their own at the next sign-in
+                if (has_must_change_column() && $id !== Auth::id()) $data['must_change_password'] = 1;
+            }
             $wasNew = !$id;
             DB::tx(function () use (&$id, $data) {
                 if ($id) {
