@@ -174,7 +174,7 @@ final class CertificateService
                 if (isset($ff2['item'], $ff2['section']) && !in_array($ff2['key'] . '_r', $have, true)) $fields[] = ['key' => $ff2['key'] . '_r', 'label' => 'Remarks', 'type' => 'text', 'required' => false];
             }
         }
-        if (in_array($tpl['layout'] ?? '', ['mp', 'pt', 'ec', 'ut'], true) && !in_array('cert_remarks', array_column($fields, 'key'), true))   // the certificate prints a "Remarks \ Notes" cell: make it editable in the form
+        if (in_array($tpl['layout'] ?? '', ['mp', 'pt', 'ec'], true) && !in_array('cert_remarks', array_column($fields, 'key'), true))   // the certificate prints a "Remarks \ Notes" cell: make it editable in the form
             $fields[] = ['key' => 'cert_remarks', 'label' => 'Remarks \\ Notes', 'type' => 'textarea', 'required' => false];
         if (($tpl['layout'] ?? '') === 'ut') {   // editable Remarks / Notes block of the Ultrasonic Thickness certificate
             $have = array_column($fields, 'key');
