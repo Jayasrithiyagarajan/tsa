@@ -36,6 +36,7 @@ $r->post('/notifications/read-all',         [ProfileController::class, 'readAll'
 $r->get('/documents/checklist/{id}',        [DocumentController::class, 'checklist'], 'auth');
 $r->get('/documents/certificate/{id}',      [DocumentController::class, 'certificate'], 'auth');
 $r->get('/documents/operator-certificate/{id}', [DocumentController::class, 'operatorCertificate'], 'auth');
+$r->get('/documents/operator-card/{id}',        [DocumentController::class, 'operatorCard'], 'auth');
 $r->get('/documents/sticker/{id}',          [DocumentController::class, 'sticker'], 'auth');
 $r->get('/documents/attachment/{id}',       [DocumentController::class, 'attachment'], 'auth');
 $r->get('/id-photo/{id}',                   [AdminCardController::class, 'userPhoto'], ['admin', 'inspector', 'qc']);

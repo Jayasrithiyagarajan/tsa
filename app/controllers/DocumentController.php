@@ -115,6 +115,19 @@ final class DocumentController extends Controller
         DocumentService::pdf($html, 'ID-Card-' . $card['card_no'] . '.pdf', true, [0, 0, InspectorCardService::W_MM * $pt, InspectorCardService::H_MM * $pt]);
     }
 
+    /** Operator ID card of a job as one PDF (front and back): QC and admin can download it from the review page. */
+    public function operatorCard(string $id): void
+    {
+        $sj = $this->load($id);
+        if ($sj['kind'] !== 'operator' || !Auth::is('qc', 'admin', 'superadmin')) $this->notFound();
+        $card = DB::one('SELECT c.*, NULL AS user_status FROM inspector_cards c WHERE c.sub_job_id = ? ORDER BY c.id DESC', [$sj['id']]);
+        if (!$card) $this->notFound();
+        $html = View::partial('documents/id_card', ['m' => InspectorCardService::model($card), 'side' => 'both', 'toolbar' => null]);
+        Audit::log('id_card.downloaded', 'inspector_card', (int) $card['id'], ['side' => 'both', 'review' => true]);
+        $pt = 72 / 25.4;
+        DocumentService::pdf($html, 'ID-Card-' . $card['card_no'] . '.pdf', true, [0, 0, InspectorCardService::W_MM * $pt, InspectorCardService::H_MM * $pt]);
+    }
+
     /** Certificate of Competence handed to the operator once the operator assessment is closed. */
     public function operatorCertificate(string $id): void
     {

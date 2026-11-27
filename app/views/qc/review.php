@@ -32,7 +32,7 @@ if ($op) {
         <?php if ($checklist): ?><button data-tab="doc-cl"><?= icon('clipboard', 'sm') ?> Checklist</button><?php endif; ?>
         <?php if (!$op): ?><button data-tab="doc-files"><?= icon('camera', 'sm') ?> Photos & files <span class="t-count"><?= count($attachments) ?></span></button><?php endif; ?>
       </div>
-      <?php if ($op && $opCard): ?><section class="tab-panel" id="doc-op-card"><div class="card-b"><div class="idc-faces">
+      <?php if ($op && $opCard): ?><section class="tab-panel" id="doc-op-card"><div class="card-b"><div style="display:flex;justify-content:flex-end;margin-bottom:12px"><a class="btn btn-primary" href="<?= url('documents/operator-card/' . $sj['id']) ?>"><?= icon('download', 'sm') ?> Download card</a></div><div class="idc-faces">
         <div><div class="cap">Front</div><?php View::render('partials/id_card', ['m' => $opPrev, 'side' => 'front'], null); ?></div>
         <div><div class="cap">Back</div><?php View::render('partials/id_card', ['m' => $opPrev, 'side' => 'back'], null); ?></div>
       </div></div></section><?php endif; ?>
